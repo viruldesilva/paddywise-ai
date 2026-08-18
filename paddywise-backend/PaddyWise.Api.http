@@ -1,0 +1,6 @@
+@PaddyWise.Api_HostAddress = http://localhost:5164
+
+GET {{PaddyWise.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
