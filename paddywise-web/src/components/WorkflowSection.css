@@ -1,0 +1,106 @@
+.workflow-section {
+  background-color: var(--forest);
+  color: var(--cream);
+}
+
+.workflow-header {
+  text-align: center;
+  max-width: 48rem;
+  margin: 0 auto 4rem;
+}
+
+.workflow-description {
+  font-size: 1.25rem;
+  color: rgba(246, 241, 227, 0.8);
+  margin-top: -1.5rem;
+  line-height: 1.6;
+}
+
+.workflow-track {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+  position: relative;
+}
+
+@media (min-width: 768px) {
+  .workflow-track {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+}
+
+@media (min-width: 1024px) {
+  .workflow-track {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 1.5rem;
+    align-items: flex-start;
+  }
+}
+
+.workflow-step {
+  display: flex;
+  flex-direction: row;
+  gap: 1.5rem;
+  position: relative;
+  flex: 1;
+}
+
+@media (min-width: 1024px) {
+  .workflow-step {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+}
+
+.workflow-number {
+  font-family: var(--font-heading);
+  font-size: 3.5rem;
+  line-height: 0.8;
+  font-weight: 300;
+  flex-shrink: 0;
+}
+
+@media (min-width: 1024px) {
+  .workflow-number {
+    font-size: 4.5rem;
+    margin-bottom: 0.5rem;
+  }
+}
+
+.workflow-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.workflow-title {
+  font-size: 1.25rem;
+  margin-bottom: 0.5rem;
+  color: var(--cream);
+}
+
+.workflow-text {
+  font-size: 0.9375rem;
+  color: rgba(246, 241, 227, 0.7);
+  line-height: 1.6;
+}
+
+/* Connectors only visible on desktop */
+.workflow-connector {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .workflow-connector {
+    display: block;
+    position: absolute;
+    top: 2rem;
+    left: 4.5rem;
+    right: -1rem;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(246,241,227,0.2) 0%, rgba(246,241,227,0) 100%);
+    z-index: 0;
+  }
+}
