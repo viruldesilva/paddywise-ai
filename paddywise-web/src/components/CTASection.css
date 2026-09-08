@@ -1,0 +1,75 @@
+.cta-section {
+  background-color: var(--cream);
+}
+
+.cta-panel {
+  background: linear-gradient(135deg, var(--forest), var(--forest-deep));
+  border-radius: 24px;
+  padding: 4rem 2rem;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.cta-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: radial-gradient(circle at 100% 0%, rgba(127, 166, 108, 0.15) 0%, transparent 50%),
+                    radial-gradient(circle at 0% 100%, rgba(225, 166, 59, 0.1) 0%, transparent 40%);
+  z-index: 0;
+}
+
+@media (min-width: 768px) {
+  .cta-panel {
+    padding: 6rem 4rem;
+  }
+}
+
+.cta-content {
+  position: relative;
+  z-index: 1;
+  max-width: 42rem;
+  margin: 0 auto;
+}
+
+.cta-title {
+  font-family: var(--font-heading);
+  font-size: 2.5rem;
+  color: var(--cream);
+  margin-bottom: 1.5rem;
+  line-height: 1.1;
+}
+
+@media (min-width: 768px) {
+  .cta-title {
+    font-size: 3rem;
+  }
+}
+
+.cta-description {
+  font-size: 1.125rem;
+  color: rgba(246, 241, 227, 0.8);
+  margin-bottom: 3rem;
+  line-height: 1.6;
+}
+
+.cta-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.btn-secondary-light {
+  color: var(--cream);
+  border-color: rgba(246, 241, 227, 0.2);
+}
+
+.btn-secondary-light:hover {
+  background-color: rgba(246, 241, 227, 0.1);
+  color: var(--cream);
+}
