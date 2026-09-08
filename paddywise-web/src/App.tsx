@@ -1,32 +1,21 @@
-import Navbar from './components/Navbar';
-import Hero from './components/Hero';
-import ProblemSection from './components/ProblemSection';
-import FeaturesSection from './components/FeaturesSection';
-import WorkflowSection from './components/WorkflowSection';
-import RolesSection from './components/RolesSection';
-import CTASection from './components/CTASection';
-import ContactSection from './components/ContactSection';
-import Footer from './components/Footer';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Home from './pages/Home';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
 import { useReveal } from './hooks/useReveal';
 
 function App() {
-  // Initialize scroll reveal animations
+  // Initialize scroll reveal animations globally
   useReveal();
 
   return (
-    <>
-      <Navbar />
-      <main>
-        <Hero />
-        <ProblemSection />
-        <FeaturesSection />
-        <WorkflowSection />
-        <RolesSection />
-        <CTASection />
-        <ContactSection />
-      </main>
-      <Footer />
-    </>
+    <Router>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+      </Routes>
+    </Router>
   );
 }
 

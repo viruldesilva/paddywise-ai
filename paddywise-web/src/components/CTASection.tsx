@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import './CTASection.css';
 
@@ -12,7 +13,7 @@ export default function CTASection() {
               Request access to the demo environment, or explore the repository to see how each component fits together.
             </p>
             <div className="cta-actions">
-              <a href="#request-demo" className="btn btn-primary">Request a demo</a>
+              <Link to="/register" className="btn btn-primary">Request a demo</Link>
               <a href="#repository" className="btn btn-secondary btn-secondary-light">
                 View the repository <ArrowRight size={18} className="icon-right" />
               </a>

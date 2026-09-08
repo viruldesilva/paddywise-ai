@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import './Navbar.css';
 
@@ -43,8 +44,8 @@ export default function Navbar() {
         </nav>
 
         <div className="navbar-right">
-          <a href="#signin" className="navbar-link-btn">Sign in</a>
-          <a href="#request-access" className="btn btn-primary">Request access</a>
+          <Link to="/login" className="navbar-link-btn">Sign in</Link>
+          <Link to="/register" className="btn btn-primary">Request access</Link>
         </div>
 
         <button 
@@ -65,8 +66,8 @@ export default function Navbar() {
               <li><a href="#workflow" onClick={toggleMenu}>How it works</a></li>
               <li><a href="#roles" onClick={toggleMenu}>Roles</a></li>
               <li><a href="#contact" onClick={toggleMenu}>Contact</a></li>
-              <li><a href="#signin" onClick={toggleMenu}>Sign in</a></li>
-              <li><a href="#request-access" className="btn btn-primary" onClick={toggleMenu}>Request access</a></li>
+              <li><Link to="/login" onClick={toggleMenu}>Sign in</Link></li>
+              <li><Link to="/register" className="btn btn-primary" onClick={toggleMenu}>Request access</Link></li>
             </ul>
           </nav>
         </div>
