@@ -1,0 +1,220 @@
+.dashboard-container {
+  min-height: 100vh;
+  background-color: var(--cream);
+  display: flex;
+  flex-direction: column;
+}
+
+.dashboard-header {
+  background-color: var(--forest);
+  color: var(--cream);
+  padding: 1.5rem 0;
+  border-bottom: 1px solid rgba(246, 241, 227, 0.1);
+}
+
+.dashboard-header-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.dashboard-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--cream);
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.dashboard-user-meta {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.dashboard-user-greeting {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.dashboard-user-name {
+  font-weight: 600;
+  color: var(--cream);
+}
+
+.dashboard-user-sub {
+  font-size: 0.8125rem;
+  color: var(--shoot-light);
+}
+
+.role-badge-tag {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  padding: 0.25rem 0.65rem;
+  border-radius: 9999px;
+  background: rgba(225, 166, 59, 0.2);
+  color: var(--gold);
+  border: 1px solid rgba(225, 166, 59, 0.4);
+}
+
+.dashboard-content {
+  flex: 1;
+  padding: 2.5rem 0 5rem;
+}
+
+.dashboard-welcome-banner {
+  margin-bottom: 2rem;
+}
+
+.dashboard-welcome-title {
+  font-size: 2rem;
+  color: var(--ink);
+  margin-bottom: 0.5rem;
+}
+
+.dashboard-welcome-desc {
+  color: var(--ink-soft);
+  font-size: 1rem;
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 2.5rem;
+}
+
+.metric-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(33, 45, 30, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.metric-label {
+  font-size: 0.8125rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+
+.metric-value {
+  font-size: 1.75rem;
+  font-family: var(--font-heading);
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.metric-sub {
+  font-size: 0.8125rem;
+  color: var(--shoot);
+}
+
+.dashboard-panels-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 2rem;
+}
+
+@media (max-width: 960px) {
+  .dashboard-panels-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.dashboard-panel {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 1.75rem;
+  box-shadow: 0 2px 8px rgba(33, 45, 30, 0.04);
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.panel-title {
+  font-size: 1.25rem;
+  color: var(--ink);
+}
+
+/* User management table */
+.user-table-wrapper {
+  overflow-x: auto;
+}
+
+.user-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+.user-table th {
+  padding: 0.75rem 1rem;
+  background: var(--cream-deep);
+  color: var(--ink);
+  font-weight: 600;
+  border-bottom: 1px solid var(--line);
+}
+
+.user-table td {
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink-soft);
+}
+
+.user-table tr:hover td {
+  background-color: rgba(127, 166, 108, 0.04);
+}
+
+/* Action buttons */
+.btn-sm {
+  padding: 0.4rem 0.85rem;
+  font-size: 0.8125rem;
+}
+
+.badge-outline {
+  display: inline-block;
+  font-size: 0.75rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  border: 1px solid var(--line);
+  color: var(--ink-soft);
+}
+
+.badge-farmer { background: rgba(127, 166, 108, 0.15); color: #3b6b28; border-color: #7fa66c; }
+.badge-officer { background: rgba(34, 57, 42, 0.15); color: #22392a; border-color: #4b5645; }
+.badge-buyer { background: rgba(225, 166, 59, 0.15); color: #9c6c19; border-color: #e1a63b; }
+.badge-admin { background: rgba(166, 105, 63, 0.15); color: #7a3c18; border-color: #a6693f; }
+
+/* Notice box */
+.info-notice {
+  background: #fdfbf7;
+  border-left: 4px solid var(--gold);
+  padding: 1rem 1.25rem;
+  border-radius: 0 8px 8px 0;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+  line-height: 1.5;
+}
