@@ -1,0 +1,54 @@
+.problem-section {
+  background-color: var(--cream);
+  position: relative;
+}
+
+.problem-header {
+  text-align: center;
+  max-width: 48rem;
+  margin: 0 auto 4rem;
+}
+
+.problem-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+}
+
+@media (min-width: 768px) {
+  .problem-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.problem-card {
+  background-color: var(--cream-deep);
+  border: 1px solid rgba(225, 166, 59, 0.15); /* subtle gold border */
+  border-radius: 16px;
+  padding: 2.5rem 2rem;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.problem-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(33, 45, 30, 0.04);
+}
+
+.problem-number {
+  font-family: var(--font-heading);
+  font-size: 3rem;
+  color: var(--gold);
+  line-height: 1;
+  margin-bottom: 1.5rem;
+}
+
+.problem-title {
+  font-size: 1.5rem;
+  color: var(--ink);
+  margin-bottom: 1rem;
+}
+
+.problem-description {
+  color: var(--ink-soft);
+  line-height: 1.6;
+}
