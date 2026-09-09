@@ -1,5 +1,7 @@
 
+using Microsoft.EntityFrameworkCore;
 using PaddyWise.Api.Data;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
