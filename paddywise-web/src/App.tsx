@@ -6,6 +6,7 @@ import DashboardPage from './pages/DashboardPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { AuthProvider } from './context/AuthContext';
 import { useReveal } from './hooks/useReveal';
+import { ActivityDashboard } from './features/crop-resource/pages/ActivityDashboard';
 
 function AppContent() {
   // Initialize scroll reveal animations globally
@@ -22,6 +23,14 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <DashboardPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/activities"
+          element={
+            <ProtectedRoute>
+              <ActivityDashboard />
             </ProtectedRoute>
           }
         />

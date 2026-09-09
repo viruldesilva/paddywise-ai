@@ -197,6 +197,11 @@ export default function DashboardPage() {
                     </div>
                   </li>
                 </ul>
+                <div style={{ marginTop: '1.5rem', display: 'flex', gap: '1rem' }}>
+                  <button className="btn btn-primary" onClick={() => navigate('/activities')}>
+                    Manage Crop Activities
+                  </button>
+                </div>
               </div>
             </div>
           </div>
