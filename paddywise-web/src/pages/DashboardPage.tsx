@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import type { UserRole } from '../types/auth';
 import { 
@@ -20,6 +20,7 @@ interface DashboardPageProps {
 }
 
 export default function DashboardPage({ roleView }: DashboardPageProps) {
+  const navigate = useNavigate();
   const { user, logout } = useAuth();
 
   if (!user) return null;

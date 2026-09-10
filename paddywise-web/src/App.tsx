@@ -6,6 +6,7 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { useReveal } from './hooks/useReveal';
 import { getRoleDashboardRoute } from './utils/roleRoutes';
+import { ActivityDashboard } from './features/crop-resource/pages/ActivityDashboard';
 
 function RoleRedirect() {
   const { user } = useAuth();
@@ -38,8 +39,9 @@ function AppContent() {
           element={
           <>
           <ProtectedRoute>
-             
-            </ProtectedRoute>
+                  <ActivityDashboard />
+
+          </ProtectedRoute>
           </>
           }
         />
