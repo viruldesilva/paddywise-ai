@@ -1,61 +1,128 @@
 import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
-import type { User, LoginCredentials, RegisterCredentials } from '../types/auth';
+import type {
+  AuthResponseDto,
+  AuthUser,
+  LoginRequestDto,
+  RegisterRequestDto,
+  UserRole,
+} from '../types/auth';
 import { authService } from '../services/authService';
+import { tokenStorage } from '../services/tokenStorage';
 
-interface AuthContextType {
-  user: User | null;
+export interface AuthContextType {
+  user: AuthUser | null;
   token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (credentials: LoginCredentials) => Promise<void>;
-  register: (data: RegisterCredentials) => Promise<void>;
-  logout: () => Promise<void>;
+  login: (emailOrDto: string | LoginRequestDto, password?: string) => Promise<AuthResponseDto>;
+  register: (data: RegisterRequestDto) => Promise<AuthResponseDto>;
+  logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    // Initialize seed accounts and restore any active session
-    authService.init();
-    const session = authService.getCurrentSession();
-    if (session) {
-      setUser(session.user);
-      setToken(session.token);
-    }
-    setIsLoading(false);
+    const initializeAuth = async () => {
+      try {
+        const storedToken = tokenStorage.getAccessToken();
+        const storedUser = tokenStorage.getUser();
+
+        if (storedToken && storedUser) {
+          setUser(storedUser);
+          setToken(storedToken);
+
+          // Verify session validity with backend /api/auth/me
+          try {
+            const me = await authService.getCurrentUser();
+            if (me && me.name && me.role) {
+              const updatedUser: AuthUser = {
+                name: me.name,
+                email: storedUser.email,
+                role: me.role as UserRole,
+                phone: storedUser.phone,
+              };
+              setUser(updatedUser);
+              tokenStorage.saveSession({
+                accessToken: storedToken,
+                refreshToken: tokenStorage.getRefreshToken() || '',
+                name: me.name,
+                email: storedUser.email,
+                role: me.role,
+              });
+            }
+          } catch {
+            // If token verification fails and refresh fails, interceptor clears storage
+            if (!tokenStorage.getAccessToken()) {
+              setUser(null);
+              setToken(null);
+            }
+          }
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    initializeAuth();
   }, []);
 
-  const login = async (credentials: LoginCredentials) => {
+  const login = async (
+    emailOrDto: string | LoginRequestDto,
+    password?: string
+  ): Promise<AuthResponseDto> => {
     setIsLoading(true);
     try {
-      const session = await authService.login(credentials);
-      setUser(session.user);
-      setToken(session.token);
+      const credentials: LoginRequestDto =
+        typeof emailOrDto === 'string'
+          ? { email: emailOrDto, password: password || '' }
+          : emailOrDto;
+
+      const response = await authService.login(credentials);
+      const currentUser: AuthUser = {
+        name: response.name,
+        email: response.email,
+        role: response.role as UserRole,
+      };
+
+      setUser(currentUser);
+      setToken(response.accessToken);
+      return response;
     } finally {
       setIsLoading(false);
     }
   };
 
-  const register = async (data: RegisterCredentials) => {
+  const register = async (data: RegisterRequestDto): Promise<AuthResponseDto> => {
     setIsLoading(true);
     try {
-      const session = await authService.register(data);
-      setUser(session.user);
-      setToken(session.token);
+      const response = await authService.register(data);
+      const currentUser: AuthUser = {
+        name: response.name,
+        email: response.email,
+        role: response.role as UserRole,
+        phone: data.phone,
+      };
+
+      setUser(currentUser);
+      setToken(response.accessToken);
+      return response;
     } finally {
       setIsLoading(false);
     }
   };
 
-  const logout = async () => {
-    await authService.logout();
+  const logout = () => {
+    authService.logout();
     setUser(null);
     setToken(null);
+    if (window.location.pathname !== '/login') {
+      window.location.href = '/login';
+    }
   };
 
   return (
@@ -63,7 +130,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       value={{
         user,
         token,
-        isAuthenticated: !!user,
+        isAuthenticated: !!user && !!token,
         isLoading,
         login,
         register,
