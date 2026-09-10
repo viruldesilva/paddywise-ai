@@ -1,3 +1,0 @@
-﻿<Project>
-  <Import Project="..\build\PaddyWise.Api.props" />
-</Project>
