@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ActivityForm } from '../components/ActivityForm';
 import { FertilizerValidationFlow, type FertilizerData } from '../components/FertilizerValidationFlow';
-import '../assets/Dashboard.css';
+import './ActivityDashboard.css';
 
 type ActivityType = 'Irrigation' | 'Fertilizer' | 'Pesticide' | 'Other';
 
@@ -26,8 +26,8 @@ export const ActivityDashboard: React.FC = () => {
   };
 
   return (
-    <div className="dashboard-container">
-      <div className="dashboard-header">
+    <div className="activity-dashboard-wrapper">
+      <div className="activity-header-section">
         <h1>Crop Activity & Resource Management</h1>
         <p>Record and monitor your agricultural operations</p>
       </div>
