@@ -25,10 +25,10 @@
   gap: 0.75rem;
 }
 
-.navbar-logo {
-  width: 2rem;
-  height: 2rem;
-  color: var(--shoot);
+.navbar-logo-img {
+  height: 2.5rem;
+  width: auto;
+  object-fit: contain;
 }
 
 .navbar-title-group {
