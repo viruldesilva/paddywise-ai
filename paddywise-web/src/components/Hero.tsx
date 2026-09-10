@@ -1,5 +1,5 @@
 import { ArrowRight } from 'lucide-react';
-import PaddyIllustration from './PaddyIllustration';
+import logoImage from '../assets/logo.png';
 import './Hero.css';
 
 export default function Hero() {
@@ -15,7 +15,7 @@ export default function Hero() {
           <p className="hero-description">
             Kumburu connects farmers, extension officers and buyers on one system — so a pest report gets answered in hours, not weeks, and the harvest finds a fair price.
           </p>
-          
+
           <div className="hero-actions">
             <a href="#features" className="btn btn-primary">See how it works</a>
             <a href="#roles" className="btn btn-secondary">
@@ -40,7 +40,8 @@ export default function Hero() {
         </div>
 
         <div className="hero-visual reveal" style={{ transitionDelay: '0.2s' }}>
-          <PaddyIllustration />
+          <img src={logoImage} alt="Hero Image" />
+
         </div>
       </div>
     </section>

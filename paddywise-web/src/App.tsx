@@ -2,7 +2,6 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import Home from './pages/Home';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
-import DashboardPage from './pages/DashboardPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { useReveal } from './hooks/useReveal';
@@ -34,43 +33,16 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
-
-        {/* Role-specific dashboard routes */}
         <Route
-          path="/dashboard/farmer"
+          path="/activities"
           element={
-            <ProtectedRoute allowedRoles={['Farmer']}>
-              <DashboardPage roleView="Farmer" />
+          <>
+          <ProtectedRoute>
+             
             </ProtectedRoute>
+          </>
           }
         />
-        <Route
-          path="/dashboard/officer"
-          element={
-            <ProtectedRoute allowedRoles={['AgriculturalOfficer']}>
-              <DashboardPage roleView="AgriculturalOfficer" />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/dashboard/field-officer"
-          element={
-            <ProtectedRoute allowedRoles={['FieldOfficer']}>
-              <DashboardPage roleView="FieldOfficer" />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/dashboard/admin"
-          element={
-            <ProtectedRoute allowedRoles={['Admin']}>
-              <DashboardPage roleView="Admin" />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* Fallback route */}
-        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
   );
