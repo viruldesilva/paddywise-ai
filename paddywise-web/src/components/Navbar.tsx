@@ -61,7 +61,7 @@ export default function Navbar() {
                 style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 1rem', fontSize: '0.875rem' }}
               >
                 <LayoutDashboard size={16} />
-                Dashboard ({user.fullName.split(' ')[0]})
+                Dashboard ({user.name.split(' ')[0]})
               </Link>
               <button 
                 onClick={handleLogout} 
@@ -103,7 +103,7 @@ export default function Navbar() {
                 <>
                   <li>
                     <Link to="/dashboard" onClick={toggleMenu} style={{ fontWeight: 600 }}>
-                      Dashboard ({user.fullName})
+                      Dashboard ({user.name})
                     </Link>
                   </li>
                   <li>

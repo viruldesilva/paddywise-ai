@@ -1,6 +1,7 @@
 import React, { type ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { tokenStorage } from '../services/tokenStorage';
 import type { UserRole } from '../types/auth';
 
 interface ProtectedRouteProps {
@@ -17,18 +18,26 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   if (isLoading) {
     return (
-      <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <p style={{ color: 'var(--ink-soft)' }}>Loading session...</p>
+      <div
+        style={{
+          minHeight: '60vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <p style={{ color: 'var(--ink-soft)' }}>Verifying authentication session...</p>
       </div>
     );
   }
 
-  if (!isAuthenticated || !user) {
+  const hasAccessToken = !!tokenStorage.getAccessToken();
+
+  if (!isAuthenticated || !user || !hasAccessToken) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (allowedRoles && !allowedRoles.includes(user.role)) {
-    // If not authorized for this specific sub-view, bounce to main dashboard
+  if (allowedRoles && allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
     return <Navigate to="/dashboard" replace />;
   }
 
