@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { useReveal } from './hooks/useReveal';
 import { getRoleDashboardRoute } from './utils/roleRoutes';
 import { ActivityDashboard } from './features/crop-resource/pages/ActivityDashboard';
+import DashboardPage from './pages/DashboardPage';
 
 function RoleRedirect() {
   const { user } = useAuth();
@@ -34,15 +35,47 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+        
+        {/* Role-specific dashboard routes */}
+        <Route
+          path="/dashboard/farmer"
+          element={
+            <ProtectedRoute>
+              <DashboardPage roleView="Farmer" />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/officer"
+          element={
+            <ProtectedRoute>
+              <DashboardPage roleView="AgriculturalOfficer" />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/admin"
+          element={
+            <ProtectedRoute>
+              <DashboardPage roleView="Admin" />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/field-officer"
+          element={
+            <ProtectedRoute>
+              <DashboardPage roleView="FieldOfficer" />
+            </ProtectedRoute>
+          }
+        />
+
         <Route
           path="/activities"
           element={
-          <>
-          <ProtectedRoute>
-                  <ActivityDashboard />
-
-          </ProtectedRoute>
-          </>
+            <ProtectedRoute>
+              <ActivityDashboard />
+            </ProtectedRoute>
           }
         />
       </Routes>
