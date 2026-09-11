@@ -1,5 +1,7 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { Sidebar } from '../components/Sidebar';
 import type { UserRole } from '../types/auth';
 import { 
   Sprout, 
@@ -11,7 +13,8 @@ import {
   Compass,
   Radio,
   Server,
-  KeyRound
+  KeyRound,
+  Menu
 } from 'lucide-react';
 import '../styles/Dashboard.css';
 
@@ -22,6 +25,7 @@ interface DashboardPageProps {
 export default function DashboardPage({ roleView }: DashboardPageProps) {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   if (!user) return null;
 
@@ -58,30 +62,23 @@ export default function DashboardPage({ roleView }: DashboardPageProps) {
   };
 
   return (
-    <div className="dashboard-container">
-      {/* Top Bar */}
-      <header className="dashboard-header">
-        <div className="container dashboard-header-inner">
-          <Link to="/" className="dashboard-brand">
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M12 22v-8" />
-              <path d="M12 14c-3-2-6-3-6-6 0-3 3-4 6-4" />
-              <path d="M12 14c3-2 6-3 6-6 0-3-3-4-6-4" />
-              <path d="M12 4v10" />
-            </svg>
-            Kumburu
-          </Link>
+    <div className="dashboard-layout">
+      <Sidebar role={activeRole} isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+      <div className="dashboard-main-wrapper">
+        {/* Top Bar */}
+        <header className="dashboard-header">
+          <div className="container dashboard-header-inner">
+            <div className="dashboard-header-title">
+              <button 
+                className="mobile-menu-btn" 
+                onClick={() => setIsSidebarOpen(true)}
+                aria-label="Open menu"
+              >
+                <Menu size={24} />
+              </button>
+            </div>
 
-          <div className="dashboard-user-meta">
+            <div className="dashboard-user-meta">
             <div className="dashboard-user-greeting">
               <span className="dashboard-user-name">{user.name}</span>
               <span className="dashboard-user-sub">
@@ -430,6 +427,7 @@ export default function DashboardPage({ roleView }: DashboardPageProps) {
           </div>
         )}
       </main>
+      </div>
     </div>
   );
 }
