@@ -1,5 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import type { UserRole } from '../types/auth';
+import './Navbar.css';
+import logoImage from '../assets/logo2.png';
 import {
   LayoutDashboard,
   User,
@@ -50,8 +52,8 @@ export function Sidebar({ role, isOpen, onClose }: SidebarProps) {
   ];
 
   const adminLinks = [
-    { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-    { name: 'Manage Users', path: '#users', icon: Users },
+    { name: 'Dashboard', path: '/dashboard/admin', icon: LayoutDashboard },
+    { name: 'Manage Users', path: '/admin/users', icon: Users },
     { name: 'Manage Knowledge Base', path: '#knowledge', icon: Database },
     { name: 'System Settings & Audit Logs', path: '#settings', icon: Settings },
   ];
@@ -74,60 +76,48 @@ export function Sidebar({ role, isOpen, onClose }: SidebarProps) {
       {isOpen && (
         <div className="sidebar-backdrop" onClick={onClose}></div>
       )}
-      
+
       <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
         <div className="sidebar-brand">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <svg
-              width="28"
-              height="28"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="var(--gold)"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M12 22v-8" />
-              <path d="M12 14c-3-2-6-3-6-6 0-3 3-4 6-4" />
-              <path d="M12 14c3-2 6-3 6-6 0-3-3-4-6-4" />
-              <path d="M12 4v10" />
-            </svg>
-            <span>Kumburu</span>
+          <div className="navbar-left">
+            <Link to="/" className="navbar-brand">
+              <img src={logoImage} alt="Kumburu Logo" className="navbar-logo-img" />
+            </Link>
           </div>
+
           <button className="sidebar-close-btn" onClick={onClose} aria-label="Close menu">
             <X size={24} />
           </button>
         </div>
-      
-      <nav className="sidebar-nav">
-        <ul>
-          {links.map((link, index) => {
-            const Icon = link.icon;
-            const isActive = location.pathname === link.path;
-            
-            return (
-              <li key={index}>
-                <Link
-                  to={link.path}
-                  className={`sidebar-link ${isActive ? 'active' : ''}`}
-                >
-                  <Icon size={20} className="sidebar-icon" />
-                  <span>{link.name}</span>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      </nav>
-      
-      <div className="sidebar-footer">
-        <div className="sidebar-help">
-          <h4>Need Help?</h4>
-          <p>Contact support for assistance.</p>
+
+        <nav className="sidebar-nav">
+          <ul>
+            {links.map((link, index) => {
+              const Icon = link.icon;
+              const isActive = location.pathname === link.path;
+
+              return (
+                <li key={index}>
+                  <Link
+                    to={link.path}
+                    className={`sidebar-link ${isActive ? 'active' : ''}`}
+                  >
+                    <Icon size={20} className="sidebar-icon" />
+                    <span>{link.name}</span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
+
+        <div className="sidebar-footer">
+          <div className="sidebar-help">
+            <h4>Need Help?</h4>
+            <p>Contact support for assistance.</p>
+          </div>
         </div>
-      </div>
-    </aside>
+      </aside>
     </>
   );
 }
