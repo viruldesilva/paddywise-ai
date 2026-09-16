@@ -9,6 +9,7 @@ import { getRoleDashboardRoute } from './utils/roleRoutes';
 import { ActivityDashboard } from './features/crop-resource/pages/ActivityDashboard';
 import DashboardPage from './pages/DashboardPage';
 import UserManagementPage from './pages/UserManagementPage';
+import FieldsPage from './features/field-cultivation/pages/FieldsPage';
 
 function RoleRedirect() {
   const { user } = useAuth();
@@ -75,6 +76,15 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <DashboardPage roleView="FieldOfficer" />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/fields"
+          element={
+            <ProtectedRoute allowedRoles={['Farmer']}>
+              <FieldsPage />
             </ProtectedRoute>
           }
         />
