@@ -19,16 +19,24 @@ public class CyclesController : ControllerBase
         _cycleService = cycleService;
     }
 
-    [Authorize(Roles = "Farmer")]
+    [Authorize]
     [HttpGet]
-    public async Task<IActionResult> GetMyCycles([FromQuery] int? fieldId)
+    public async Task<IActionResult> GetCycles([FromQuery] int? fieldId)
     {
-        var farmerId = GetCallerId();
-        if (farmerId == null)
+        var callerId = GetCallerId();
+        var callerRole = GetCallerRole();
+        if (callerId == null || callerRole == null)
             return Unauthorized(new { message = "Invalid access token. Please log in again." });
 
-        var result = await _cycleService.GetMyCyclesAsync(farmerId.Value, fieldId);
-        return Ok(result);
+        try
+        {
+            var result = await _cycleService.GetCyclesAsync(callerId.Value, callerRole.Value, fieldId);
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     [Authorize]

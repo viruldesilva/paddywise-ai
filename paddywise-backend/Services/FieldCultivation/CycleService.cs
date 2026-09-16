@@ -93,13 +93,23 @@ public class CycleService : ICycleService
         return MapToResponse(cycle, new List<GrowthStageLog>());
     }
 
-    public async Task<List<CycleResponseDto>> GetMyCyclesAsync(int farmerId, int? fieldId = null)
+    /// <summary>
+    /// A farmer's own cycles, or — for an officer or admin — every cycle on one field.
+    /// Officers and admins must name the field: browsing all cycles is not a use case here.
+    /// </summary>
+    public async Task<List<CycleResponseDto>> GetCyclesAsync(int callerId, UserRole callerRole, int? fieldId = null)
     {
+        if (callerRole != UserRole.Farmer && !fieldId.HasValue)
+            throw new InvalidOperationException("fieldId is required.");
+
         var query = _context.CultivationCycles
             .AsNoTracking()
             .Include(c => c.Field)
             .Include(c => c.Variety)
-            .Where(c => c.Field.FarmerId == farmerId);
+            .AsQueryable();
+
+        if (callerRole == UserRole.Farmer)
+            query = query.Where(c => c.Field.FarmerId == callerId);
 
         if (fieldId.HasValue)
             query = query.Where(c => c.FieldId == fieldId.Value);

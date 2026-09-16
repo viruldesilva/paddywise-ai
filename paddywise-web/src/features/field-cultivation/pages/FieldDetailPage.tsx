@@ -76,12 +76,9 @@ export default function FieldDetailPage() {
 
     let isMounted = true;
 
-    // GET /api/cycles is farmer-scoped on the backend, so an officer would only
-    // get a 403 out of it. The field itself is readable by either. The rejection
-    // is carried through as a value so one failing list cannot sink the field.
-    const cyclesRequest = isFarmer ? getMyCycles(fieldId) : Promise.resolve<CultivationCycle[]>([]);
-
-    Promise.all([getFieldById(fieldId), cyclesRequest.catch((err: unknown) => err)])
+    // The rejection is carried through as a value so one failing list cannot
+    // sink the field, which stays readable on its own.
+    Promise.all([getFieldById(fieldId), getMyCycles(fieldId).catch((err: unknown) => err)])
       .then(([loadedField, loadedCycles]) => {
         if (!isMounted) return;
 
@@ -113,7 +110,7 @@ export default function FieldDetailPage() {
     return () => {
       isMounted = false;
     };
-  }, [fieldId, isValidId, isFarmer, reloadToken]);
+  }, [fieldId, isValidId, reloadToken]);
 
   const handleRetry = useCallback(() => {
     setLoaded(null);
@@ -281,28 +278,24 @@ export default function FieldDetailPage() {
                   </p>
                 )}
 
-                {!isFarmer && (
-                  <p className="fc-note">
-                    The cycle list is farmer-scoped on the API today, so it is not shown here.
-                    Open a cycle directly at <code>/cycles/&lt;id&gt;</code> to review its
-                    timeline.
-                  </p>
-                )}
-
-                {isFarmer && !cyclesError && cycles.length === 0 && (
+                {!cyclesError && cycles.length === 0 && (
                   <div className="fc-state">
                     <Sprout size={28} className="fc-state-icon" />
                     <h3 className="fc-state-title">No cycles on this field yet</h3>
                     <p className="fc-state-text">
-                      Start a cultivation cycle to get a stage-by-stage plan from the sowing date.
+                      {isFarmer
+                        ? 'Start a cultivation cycle to get a stage-by-stage plan from the sowing date.'
+                        : 'Cycles appear here once the farmer starts one.'}
                     </p>
-                    <button
-                      className="fc-btn fc-btn-primary"
-                      onClick={() => setIsCycleFormOpen(true)}
-                    >
-                      <Plus size={18} />
-                      Start the first cycle
-                    </button>
+                    {isFarmer && (
+                      <button
+                        className="fc-btn fc-btn-primary"
+                        onClick={() => setIsCycleFormOpen(true)}
+                      >
+                        <Plus size={18} />
+                        Start the first cycle
+                      </button>
+                    )}
                   </div>
                 )}
 
