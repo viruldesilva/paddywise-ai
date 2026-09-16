@@ -18,4 +18,14 @@ public interface ICultivationPlanService
 
     /// <summary>Every plan for one cycle, newest first. Null when the cycle does not exist.</summary>
     Task<List<CultivationPlanResponseDto>?> GetForCycleAsync(int cycleId, int callerId, UserRole callerRole);
+
+    /// <summary>
+    /// Records an officer's verdict on a plan. Null means the plan does not exist. A plan that
+    /// is not waiting for approval, an unparseable decision, and a rejection or revision request
+    /// without a comment all throw InvalidOperationException.
+    /// </summary>
+    Task<CultivationPlanResponseDto?> ReviewAsync(int planId, int officerId, ReviewPlanDto request);
+
+    /// <summary>The officer approval queue, newest first, optionally narrowed to one division.</summary>
+    Task<List<PendingPlanSummaryDto>> GetPendingAsync(int? divisionId);
 }

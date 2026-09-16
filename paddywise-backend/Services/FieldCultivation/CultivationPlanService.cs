@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using PaddyWise.Api.Agents.FieldCultivation;
 using PaddyWise.Api.Agents.Shared;
 using PaddyWise.Api.Data;
@@ -14,15 +15,21 @@ public class CultivationPlanService : ICultivationPlanService
 {
     private readonly ApplicationDbContext _context;
     private readonly IAgent<PlanAgentInput, CultivationPlanOutput> _agent;
+
+    // The delegate agents are registered under a DI key, so they are resolved by name at
+    // dispatch time rather than injected — the plan decides which of them it needs.
+    private readonly IServiceProvider _services;
     private readonly ILogger<CultivationPlanService> _logger;
 
     public CultivationPlanService(
         ApplicationDbContext context,
         IAgent<PlanAgentInput, CultivationPlanOutput> agent,
+        IServiceProvider services,
         ILogger<CultivationPlanService> logger)
     {
         _context = context;
         _agent = agent;
+        _services = services;
         _logger = logger;
     }
 
@@ -116,10 +123,21 @@ public class CultivationPlanService : ICultivationPlanService
         {
             plan.PlanJson = rawOutput;
 
-            // TODO(next task): run the deterministic plan validator here. When it reports
-            // failures, write them to ValidationErrorsJson and set Status = ValidationFailed
-            // instead of PendingOfficerApproval.
-            plan.Status = PlanStatus.PendingOfficerApproval;
+            var validation = Validate(result.Output, cycle);
+
+            if (validation.IsValid)
+            {
+                plan.Status = PlanStatus.PendingOfficerApproval;
+                plan.ValidationErrorsJson = null;
+
+                // Only a plan that passed the gate hands work to the other components.
+                await DispatchDelegationsAsync(plan, result.Output, context);
+            }
+            else
+            {
+                plan.Status = PlanStatus.ValidationFailed;
+                plan.ValidationErrorsJson = JsonSerializer.Serialize(validation.Errors);
+            }
         }
         else
         {
@@ -132,6 +150,219 @@ public class CultivationPlanService : ICultivationPlanService
         await _context.SaveChangesAsync();
 
         return await MapToResponseAsync(plan);
+    }
+
+    /// <summary>
+    /// Runs the deterministic validator against the cycle's own stored dates — the variety's
+    /// current duration must not move the timeline a running cycle was planned against.
+    /// </summary>
+    private static ValidationResult Validate(CultivationPlanOutput output, CultivationCycle cycle)
+    {
+        var durationDays = cycle.ExpectedHarvestDate.DayNumber - cycle.SowingDate.DayNumber;
+
+        if (durationDays < 1)
+        {
+            return new ValidationResult
+            {
+                IsValid = false,
+                Errors = new List<string>
+                {
+                    "This cycle's expected harvest date is not after its sowing date, " +
+                    "so the plan cannot be checked against a stage timeline."
+                }
+            };
+        }
+
+        return CultivationPlanValidator.Validate(
+            output,
+            StageTimelineCalculator.Build(cycle.SowingDate, durationDays),
+            cycle.SowingDate,
+            cycle.ExpectedHarvestDate,
+            DateOnly.FromDateTime(DateTime.UtcNow));
+    }
+
+    /// <summary>
+    /// Hands every delegation in the plan to the agent it names, one dispatch at a time. Each
+    /// gets its own AgentRunLog row under the same correlation id, and a delegate agent that
+    /// fails is recorded as a failed run without disturbing the plan's own status — the plan
+    /// itself passed validation, so it still belongs in the officer's queue.
+    /// </summary>
+    private async Task DispatchDelegationsAsync(
+        CultivationPlan plan,
+        CultivationPlanOutput output,
+        AgentContext context)
+    {
+        foreach (var delegation in output.Delegations)
+        {
+            // PayloadJson stays opaque: the receiving component owns the shape it expects.
+            var task = new DelegatedTask
+            {
+                TaskType = delegation.Instruction,
+                CultivationCycleId = plan.CultivationCycleId,
+                CultivationPlanId = plan.Id,
+                PayloadJson = JsonSerializer.Serialize(delegation.Payload, CultivationPlanJson.Options)
+            };
+
+            var stopwatch = Stopwatch.StartNew();
+            var toolCalls = new List<ToolCallRecord>();
+            bool success;
+            string? error;
+            var rawOutput = string.Empty;
+
+            var agent = _services.GetKeyedService<IAgent<DelegatedTask, DelegatedTaskResult>>(
+                delegation.TargetAgent);
+
+            if (agent == null)
+            {
+                // Validation rules this out, so reaching here means a missing registration.
+                success = false;
+                error = $"No agent is registered under '{delegation.TargetAgent}'.";
+                _logger.LogWarning(
+                    "Plan {PlanId} delegates to {TargetAgent}, which is not registered.",
+                    plan.Id,
+                    delegation.TargetAgent);
+            }
+            else
+            {
+                try
+                {
+                    var dispatch = await agent.RunAsync(task, context, CancellationToken.None);
+
+                    success = dispatch.Success;
+                    error = dispatch.Success ? null : dispatch.Error;
+                    toolCalls = dispatch.ToolCalls;
+                    rawOutput = dispatch.Output == null
+                        ? error ?? string.Empty
+                        : JsonSerializer.Serialize(dispatch.Output, CultivationPlanJson.Options);
+                }
+                catch (Exception ex)
+                {
+                    // A delegate agent is another component's code; whatever it throws is its
+                    // run failing, not this request failing.
+                    _logger.LogWarning(
+                        ex,
+                        "Delegation from plan {PlanId} to {TargetAgent} (correlation {CorrelationId}) threw.",
+                        plan.Id,
+                        delegation.TargetAgent,
+                        context.CorrelationId);
+
+                    success = false;
+                    error = ex.Message;
+                }
+            }
+
+            stopwatch.Stop();
+
+            _context.AgentRunLogs.Add(new AgentRunLog
+            {
+                CultivationPlanId = plan.Id,
+                AgentName = delegation.TargetAgent,
+                CorrelationId = context.CorrelationId,
+                InputJson = JsonSerializer.Serialize(task, CultivationPlanJson.Options),
+                ToolCallsJson = JsonSerializer.Serialize(toolCalls, CultivationPlanJson.Options),
+                RawOutput = rawOutput,
+                Success = success,
+                Error = error,
+                DurationMs = (int)stopwatch.Elapsed.TotalMilliseconds
+            });
+        }
+    }
+
+    public async Task<CultivationPlanResponseDto?> ReviewAsync(int planId, int officerId, ReviewPlanDto request)
+    {
+        var decision = ParseDecision(request.Decision);
+
+        var plan = await _context.CultivationPlans
+            .Include(p => p.CultivationCycle)
+            .FirstOrDefaultAsync(p => p.Id == planId);
+
+        if (plan == null)
+            return null;
+
+        if (plan.Status != PlanStatus.PendingOfficerApproval)
+        {
+            throw new InvalidOperationException(
+                $"This plan is {plan.Status} — only a plan awaiting officer approval can be reviewed.");
+        }
+
+        var comment = string.IsNullOrWhiteSpace(request.Comment) ? null : request.Comment.Trim();
+
+        if (decision != PlanReviewDecision.Approve && comment == null)
+        {
+            throw new InvalidOperationException(
+                decision == PlanReviewDecision.Reject
+                    ? "A comment is required when rejecting a plan."
+                    : "A comment is required when asking for a revision.");
+        }
+
+        plan.Status = decision switch
+        {
+            PlanReviewDecision.Approve => PlanStatus.Approved,
+            PlanReviewDecision.Reject => PlanStatus.Rejected,
+            _ => PlanStatus.RevisionRequested
+        };
+
+        plan.OfficerId = officerId;
+        plan.OfficerComment = comment;
+        plan.ReviewedAt = DateTime.UtcNow;
+        plan.UpdatedAt = DateTime.UtcNow;
+
+        if (decision == PlanReviewDecision.Approve)
+        {
+            // Approving is what starts the season: the plan and the cycle move together or
+            // not at all, so neither can be left describing a state the other contradicts.
+            await using var transaction = await _context.Database.BeginTransactionAsync();
+
+            if (plan.CultivationCycle.Status == CycleStatus.Planned)
+            {
+                plan.CultivationCycle.Status = CycleStatus.Active;
+                plan.CultivationCycle.UpdatedAt = DateTime.UtcNow;
+            }
+
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+        }
+        else
+        {
+            // Rejection and revision leave the cycle alone; the farmer may ask for a new plan.
+            await _context.SaveChangesAsync();
+        }
+
+        return await MapToResponseAsync(plan);
+    }
+
+    public async Task<List<PendingPlanSummaryDto>> GetPendingAsync(int? divisionId)
+    {
+        // Projected, not Included: the queue needs four names, not four entity graphs.
+        var query = _context.CultivationPlans
+            .AsNoTracking()
+            .Where(p => p.Status == PlanStatus.PendingOfficerApproval);
+
+        if (divisionId != null)
+            query = query.Where(p => p.CultivationCycle.Field.DivisionId == divisionId.Value);
+
+        return await query
+            .OrderByDescending(p => p.CreatedAt)
+            .ThenByDescending(p => p.Id)
+            .Select(p => new PendingPlanSummaryDto
+            {
+                PlanId = p.Id,
+                CycleId = p.CultivationCycleId,
+                FarmerName = p.CultivationCycle.Field.Farmer.Name,
+                FieldName = p.CultivationCycle.Field.Name,
+                DivisionName = p.CultivationCycle.Field.Division.Name,
+                Objective = p.Objective,
+                CreatedAt = p.CreatedAt
+            })
+            .ToListAsync();
+    }
+
+    private static PlanReviewDecision ParseDecision(string value)
+    {
+        if (!Enum.TryParse<PlanReviewDecision>(value, true, out var decision) || !Enum.IsDefined(decision))
+            throw new InvalidOperationException("Decision must be Approve, Reject or RequestRevision.");
+
+        return decision;
     }
 
     public async Task<CultivationPlanResponseDto?> GetByIdAsync(int planId, int callerId, UserRole callerRole)

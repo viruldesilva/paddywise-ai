@@ -94,6 +94,38 @@ public class PlansController : ControllerBase
         }
     }
 
+    /// <summary>The officer's approval queue, newest first. ?divisionId= narrows it to one division.</summary>
+    [Authorize(Roles = "AgriculturalOfficer")]
+    [HttpGet("pending")]
+    public async Task<IActionResult> GetPending([FromQuery] int? divisionId)
+    {
+        var result = await _planService.GetPendingAsync(divisionId);
+        return Ok(result);
+    }
+
+    /// <summary>Approve, reject or send back a plan that is waiting for approval.</summary>
+    [Authorize(Roles = "AgriculturalOfficer")]
+    [HttpPost("{id:int}/review")]
+    public async Task<IActionResult> Review(int id, ReviewPlanDto request)
+    {
+        var officerId = GetCallerId();
+        if (officerId == null)
+            return Unauthorized(new { message = "Invalid access token. Please log in again." });
+
+        try
+        {
+            var result = await _planService.ReviewAsync(id, officerId.Value, request);
+            if (result == null)
+                return NotFound(new { message = "Cultivation plan not found." });
+
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
     private int? GetCallerId()
     {
         var value = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
