@@ -12,6 +12,7 @@ import UserManagementPage from './pages/UserManagementPage';
 import FieldsPage from './features/field-cultivation/pages/FieldsPage';
 import FieldDetailPage from './features/field-cultivation/pages/FieldDetailPage';
 import CycleDetailPage from './features/field-cultivation/pages/CycleDetailPage';
+import PlanApprovalPage from './features/field-cultivation/pages/PlanApprovalPage';
 
 function RoleRedirect() {
   const { user } = useAuth();
@@ -105,6 +106,15 @@ function AppContent() {
           element={
             <ProtectedRoute allowedRoles={['Farmer', 'AgriculturalOfficer', 'FieldOfficer']}>
               <CycleDetailPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/plans/pending"
+          element={
+            <ProtectedRoute allowedRoles={['AgriculturalOfficer']}>
+              <PlanApprovalPage />
             </ProtectedRoute>
           }
         />

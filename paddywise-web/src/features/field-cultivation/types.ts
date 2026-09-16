@@ -376,3 +376,59 @@ export function growthStageLabel(stage: GrowthStage): string {
 export function planStepCategoryLabel(category: PlanStepCategory): string {
   return PLAN_STEP_CATEGORY_LABELS[category] ?? String(category);
 }
+
+/* --------------------------------------------------- officer approval queue */
+
+/** DTOs/FieldCultivation/PendingPlanSummaryDto.cs — one row of the queue. */
+export interface PendingPlanSummary {
+  planId: number;
+  cycleId: number;
+  farmerName: string;
+  fieldName: string;
+  divisionName: string;
+  season: Season;
+  year: number;
+  objective: string;
+  createdAt: string;
+}
+
+/** DTOs/FieldCultivation/ReviewPlanDto.cs — PlanReviewDecision, by member name. */
+export type PlanReviewDecision = 'Approve' | 'Reject' | 'RequestRevision';
+
+export const PLAN_REVIEW_DECISIONS: readonly PlanReviewDecision[] = [
+  'Approve',
+  'Reject',
+  'RequestRevision',
+];
+
+export const PLAN_REVIEW_DECISION_LABELS: Record<PlanReviewDecision, string> = {
+  Approve: 'Approve',
+  Reject: 'Reject',
+  RequestRevision: 'Request revision',
+};
+
+/** The status a plan lands in once each decision is taken. */
+export const PLAN_REVIEW_OUTCOME: Record<PlanReviewDecision, PlanStatus> = {
+  Approve: 'Approved',
+  Reject: 'Rejected',
+  RequestRevision: 'RevisionRequested',
+};
+
+/** DTOs/FieldCultivation/ReviewPlanDto.cs */
+export interface ReviewPlanRequest {
+  decision: PlanReviewDecision;
+  comment: string | null;
+}
+
+/**
+ * ReviewPlanDto's Comment [MaxLength(1000)], and the rule CultivationPlanService
+ * enforces: everything but Approve needs the farmer told why.
+ */
+export const PLAN_REVIEW_RULES = {
+  commentMaxLength: 1000,
+} as const;
+
+/** True when the server would refuse this decision without a comment. */
+export function reviewNeedsComment(decision: PlanReviewDecision): boolean {
+  return decision !== 'Approve';
+}

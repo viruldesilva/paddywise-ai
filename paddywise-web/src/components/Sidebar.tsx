@@ -46,7 +46,7 @@ export function Sidebar({ role, isOpen, onClose }: SidebarProps) {
   const agriculturalOfficerLinks = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { name: 'View Farmer Fields & Reports', path: '#fields', icon: FileText },
-    { name: 'Review AI Recommendations', path: '#ai-review', icon: CheckSquare },
+    { name: 'Review AI Recommendations', path: '/plans/pending', icon: CheckSquare },
     { name: 'Add Expert Recommendations', path: '#expert', icon: MessageSquare },
     { name: 'Monitor Disease & Statistics', path: '#stats', icon: BarChart2 },
   ];

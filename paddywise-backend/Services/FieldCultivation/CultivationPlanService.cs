@@ -341,20 +341,39 @@ public class CultivationPlanService : ICultivationPlanService
         if (divisionId != null)
             query = query.Where(p => p.CultivationCycle.Field.DivisionId == divisionId.Value);
 
-        return await query
+        // Season stays an enum until the rows are in memory: the wire form is the
+        // member name, and translating that into SQL buys nothing on a queue read.
+        var rows = await query
             .OrderByDescending(p => p.CreatedAt)
             .ThenByDescending(p => p.Id)
-            .Select(p => new PendingPlanSummaryDto
+            .Select(p => new
             {
                 PlanId = p.Id,
                 CycleId = p.CultivationCycleId,
                 FarmerName = p.CultivationCycle.Field.Farmer.Name,
                 FieldName = p.CultivationCycle.Field.Name,
                 DivisionName = p.CultivationCycle.Field.Division.Name,
-                Objective = p.Objective,
-                CreatedAt = p.CreatedAt
+                p.CultivationCycle.Season,
+                p.CultivationCycle.Year,
+                p.Objective,
+                p.CreatedAt
             })
             .ToListAsync();
+
+        return rows
+            .Select(r => new PendingPlanSummaryDto
+            {
+                PlanId = r.PlanId,
+                CycleId = r.CycleId,
+                FarmerName = r.FarmerName,
+                FieldName = r.FieldName,
+                DivisionName = r.DivisionName,
+                Season = r.Season.ToString(),
+                Year = r.Year,
+                Objective = r.Objective,
+                CreatedAt = r.CreatedAt
+            })
+            .ToList();
     }
 
     private static PlanReviewDecision ParseDecision(string value)

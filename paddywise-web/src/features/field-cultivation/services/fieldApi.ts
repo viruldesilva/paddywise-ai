@@ -13,7 +13,9 @@ import type {
   Division,
   Field,
   LogStageRequest,
+  PendingPlanSummary,
   RequestPlanRequest,
+  ReviewPlanRequest,
   UpdateCycleStatusRequest,
   UpdateFieldRequest,
   Variety,
@@ -159,6 +161,31 @@ export async function getPlansForCycle(cycleId: number): Promise<CultivationPlan
   return response.data;
 }
 
+/**
+ * GET /api/plans/pending — the officer's approval queue, newest first.
+ * AgriculturalOfficer only. A divisionId narrows it to one division; omitting it
+ * returns every division's plans.
+ */
+export async function getPendingPlans(divisionId?: number): Promise<PendingPlanSummary[]> {
+  const response = await axiosInstance.get<PendingPlanSummary[]>('/plans/pending', {
+    params: divisionId === undefined ? undefined : { divisionId },
+  });
+  return response.data;
+}
+
+/**
+ * POST /api/plans/{id}/review — approve, reject or send a plan back.
+ * AgriculturalOfficer only. 400 when the plan is no longer awaiting approval, or
+ * when a reject / revision carries no comment.
+ */
+export async function reviewPlan(
+  id: number,
+  request: ReviewPlanRequest
+): Promise<CultivationPlan> {
+  const response = await axiosInstance.post<CultivationPlan>(`/plans/${id}/review`, request);
+  return response.data;
+}
+
 export const fieldApi = {
   getMyFields,
   getFieldsByDivision,
@@ -176,4 +203,6 @@ export const fieldApi = {
   requestPlan,
   getPlan,
   getPlansForCycle,
+  getPendingPlans,
+  reviewPlan,
 };

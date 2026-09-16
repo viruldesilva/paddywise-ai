@@ -8,6 +8,11 @@ public class PendingPlanSummaryDto
     public string FarmerName { get; set; } = string.Empty;
     public string FieldName { get; set; } = string.Empty;
     public string DivisionName { get; set; } = string.Empty;
+
+    /// <summary>The cycle's season, as its enum member name — "Yala" or "Maha".</summary>
+    public string Season { get; set; } = string.Empty;
+
+    public int Year { get; set; }
     public string Objective { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
 }
