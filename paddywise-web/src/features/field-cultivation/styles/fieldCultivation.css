@@ -392,3 +392,430 @@
   background-color: var(--cream-deep);
   color: var(--ink);
 }
+
+/* ------------------------------------------------------------ detail pages */
+
+.fc-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  margin-bottom: 1.25rem;
+  transition: color 0.2s;
+}
+
+.fc-back:hover {
+  color: var(--forest);
+}
+
+.fc-summary {
+  background-color: var(--cream-deep);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.fc-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: 1.25rem;
+}
+
+.fc-summary-item dt {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin-bottom: 0.3rem;
+}
+
+.fc-summary-item dd {
+  font-family: var(--font-body);
+  font-size: 0.98rem;
+  color: var(--ink);
+}
+
+.fc-note {
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  color: var(--ink-soft);
+  background-color: var(--cream);
+  border-left: 3px solid var(--shoot);
+  border-radius: 0 10px 10px 0;
+  padding: 0.7rem 0.9rem;
+  margin-top: 1.1rem;
+}
+
+.fc-note code {
+  font-size: 0.85em;
+  color: var(--forest);
+}
+
+/* ---------------------------------------------------------------- sections */
+
+.fc-section {
+  margin-bottom: 2.5rem;
+}
+
+.fc-section-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+}
+
+.fc-section-title {
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  color: var(--ink);
+}
+
+.fc-section-sub {
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  margin-top: 0.25rem;
+}
+
+.fc-subsection-title {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-family: var(--font-heading);
+  font-size: 1.1rem;
+  color: var(--ink);
+  margin-bottom: 0.9rem;
+}
+
+/* ----------------------------------------------------------- status badges */
+
+.fc-badge {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  border-radius: 9999px;
+  padding: 0.25rem 0.7rem;
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  background-color: var(--cream-deep);
+  color: var(--ink-soft);
+}
+
+.fc-badge-planned {
+  background-color: rgba(225, 166, 59, 0.18);
+  color: var(--gold-deep);
+}
+
+.fc-badge-active {
+  background-color: rgba(127, 166, 108, 0.22);
+  color: var(--forest);
+}
+
+.fc-badge-harvested {
+  background-color: var(--forest);
+  color: var(--cream);
+}
+
+.fc-badge-abandoned {
+  background-color: rgba(166, 105, 63, 0.14);
+  color: var(--clay);
+}
+
+/* ------------------------------------------------------------- cycle rows */
+
+.fc-cycle-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.fc-cycle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  background-color: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 1.1rem 1.35rem;
+  color: var(--ink);
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+}
+
+.fc-cycle-row:hover {
+  border-color: var(--shoot);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(33, 45, 30, 0.08);
+}
+
+.fc-cycle-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 10rem;
+}
+
+.fc-cycle-season {
+  font-family: var(--font-heading);
+  font-size: 1.15rem;
+  color: var(--ink);
+}
+
+.fc-cycle-variety {
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
+.fc-cycle-meta {
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.fc-cycle-meta dt {
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin-bottom: 0.2rem;
+}
+
+.fc-cycle-meta dd {
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  color: var(--ink);
+}
+
+.fc-cycle-end {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--ink-soft);
+}
+
+@media (max-width: 640px) {
+  .fc-cycle-meta {
+    gap: 1rem;
+  }
+}
+
+/* ----------------------------------------------------------- stage timeline */
+
+.fc-timeline {
+  margin-bottom: 1.75rem;
+}
+
+.fc-timeline-bar {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 3rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+  background-color: var(--cream-deep);
+  margin-bottom: 2rem;
+}
+
+.fc-timeline-seg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  overflow: hidden;
+  padding: 0 0.3rem;
+  background-color: var(--shoot-light);
+  border-right: 1px solid var(--cream);
+}
+
+.fc-timeline-seg:last-child {
+  border-right: none;
+}
+
+.fc-timeline-seg-label {
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--forest-deep);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fc-timeline-seg-current {
+  background-color: var(--shoot);
+}
+
+.fc-timeline-seg-current .fc-timeline-seg-label {
+  color: var(--cream);
+  font-weight: 600;
+}
+
+.fc-timeline-today {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background-color: var(--clay);
+  transform: translateX(-1px);
+}
+
+.fc-timeline-today-flag {
+  position: absolute;
+  top: calc(100% + 0.3rem);
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-body);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--cream);
+  background-color: var(--clay);
+  border-radius: 9999px;
+  padding: 0.1rem 0.45rem;
+  white-space: nowrap;
+}
+
+.fc-timeline-legend {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 0.65rem;
+  list-style: none;
+}
+
+.fc-legend-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  border-left: 3px solid var(--shoot-light);
+  padding-left: 0.6rem;
+}
+
+.fc-legend-current {
+  border-left-color: var(--shoot);
+}
+
+.fc-legend-stage {
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.fc-legend-dates {
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+
+/* ------------------------------------------------------------- stage logs */
+
+.fc-logs {
+  border-top: 1px solid var(--line);
+  padding-top: 1.35rem;
+}
+
+.fc-log-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.fc-log-item {
+  background-color: var(--cream-deep);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0.9rem 1.1rem;
+}
+
+.fc-log-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.fc-log-stage {
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.fc-log-date {
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+}
+
+.fc-log-notes {
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  color: var(--ink-soft);
+  margin-top: 0.4rem;
+}
+
+.fc-log-by {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  color: var(--ink-soft);
+  margin-top: 0.4rem;
+}
+
+/* ------------------------------------------------------- inline form extras */
+
+.fc-inline-form {
+  background-color: var(--cream-deep);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 1.25rem;
+  margin-bottom: 1.75rem;
+}
+
+.fc-textarea {
+  resize: vertical;
+  min-height: 3.5rem;
+}
+
+.fc-projection {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  color: var(--forest);
+  background-color: rgba(127, 166, 108, 0.14);
+  border: 1px solid var(--shoot);
+  border-radius: 10px;
+  padding: 0.7rem 0.9rem;
+}
+
+.fc-projection strong {
+  font-weight: 600;
+  color: var(--forest-deep);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fc-cycle-row:hover {
+    transform: none;
+  }
+}

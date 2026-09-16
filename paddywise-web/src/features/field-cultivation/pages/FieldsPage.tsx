@@ -61,7 +61,7 @@ export default function FieldsPage() {
     setReloadToken((previous) => previous + 1);
   };
 
-  const handleCreated = (created: Field) => {
+  const handleSaved = (created: Field) => {
     setIsFormOpen(false);
     // Keep the grid in the server's order — by name.
     setFields((previous) =>
@@ -208,7 +208,7 @@ export default function FieldsPage() {
               </button>
             </header>
 
-            <FieldForm onCreated={handleCreated} onCancel={() => setIsFormOpen(false)} />
+            <FieldForm onSaved={handleSaved} onCancel={() => setIsFormOpen(false)} />
           </div>
         </div>
       )}

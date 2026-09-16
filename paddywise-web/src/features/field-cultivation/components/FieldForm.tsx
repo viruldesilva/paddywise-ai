@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { AlertCircle, Crosshair, Loader2 } from 'lucide-react';
 import { extractApiErrorMessage } from '../../../services/authService';
-import { createField, getDivisions } from '../services/fieldApi';
+import { createField, getDivisions, updateField } from '../services/fieldApi';
 import { FIELD_RULES } from '../types';
 import type { CreateFieldRequest, Division, Field } from '../types';
 
@@ -29,8 +29,23 @@ const EMPTY_VALUES: FieldFormValues = {
   longitude: '',
 };
 
+/** The form is in edit mode when it is handed a field, create mode otherwise. */
+function toValues(field: Field): FieldFormValues {
+  return {
+    name: field.name,
+    area: String(field.area),
+    soilType: field.soilType,
+    irrigationType: field.irrigationType,
+    divisionId: String(field.divisionId),
+    latitude: field.latitude === null ? '' : String(field.latitude),
+    longitude: field.longitude === null ? '' : String(field.longitude),
+  };
+}
+
 interface FieldFormProps {
-  onCreated: (field: Field) => void;
+  /** Omit to register a new field; pass one to edit it in place. */
+  field?: Field;
+  onSaved: (field: Field) => void;
   onCancel: () => void;
 }
 
@@ -94,8 +109,12 @@ function validate(values: FieldFormValues): FieldFormErrors {
   return errors;
 }
 
-export function FieldForm({ onCreated, onCancel }: FieldFormProps) {
-  const [values, setValues] = useState<FieldFormValues>(EMPTY_VALUES);
+export function FieldForm({ field, onSaved, onCancel }: FieldFormProps) {
+  const isEditing = field !== undefined;
+
+  const [values, setValues] = useState<FieldFormValues>(
+    field === undefined ? EMPTY_VALUES : toValues(field)
+  );
   const [errors, setErrors] = useState<FieldFormErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -187,8 +206,11 @@ export function FieldForm({ onCreated, onCancel }: FieldFormProps) {
 
     setIsSubmitting(true);
     try {
-      const created = await createField(request);
-      onCreated(created);
+      // PUT is a full replace, so the same request body serves both modes.
+      const saved = field === undefined
+        ? await createField(request)
+        : await updateField(field.id, request);
+      onSaved(saved);
     } catch (err: unknown) {
       setSubmitError(extractApiErrorMessage(err, 'Could not save this field. Please try again.'));
     } finally {
@@ -354,7 +376,7 @@ export function FieldForm({ onCreated, onCancel }: FieldFormProps) {
           Cancel
         </button>
         <button type="submit" className="fc-btn fc-btn-primary" disabled={isSubmitting}>
-          {isSubmitting ? 'Saving…' : 'Save field'}
+          {isSubmitting ? 'Saving…' : isEditing ? 'Save changes' : 'Save field'}
         </button>
       </div>
     </form>

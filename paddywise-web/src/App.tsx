@@ -10,6 +10,8 @@ import { ActivityDashboard } from './features/crop-resource/pages/ActivityDashbo
 import DashboardPage from './pages/DashboardPage';
 import UserManagementPage from './pages/UserManagementPage';
 import FieldsPage from './features/field-cultivation/pages/FieldsPage';
+import FieldDetailPage from './features/field-cultivation/pages/FieldDetailPage';
+import CycleDetailPage from './features/field-cultivation/pages/CycleDetailPage';
 
 function RoleRedirect() {
   const { user } = useAuth();
@@ -85,6 +87,24 @@ function AppContent() {
           element={
             <ProtectedRoute allowedRoles={['Farmer']}>
               <FieldsPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/fields/:id"
+          element={
+            <ProtectedRoute allowedRoles={['Farmer', 'AgriculturalOfficer', 'FieldOfficer']}>
+              <FieldDetailPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/cycles/:id"
+          element={
+            <ProtectedRoute allowedRoles={['Farmer', 'AgriculturalOfficer', 'FieldOfficer']}>
+              <CycleDetailPage />
             </ProtectedRoute>
           }
         />

@@ -188,9 +188,35 @@ export const FIELD_RULES = {
   longitudeMax: 180,
 } as const;
 
-/** CreateCycleRequestDto's Year [Range(2000, 2100)]. */
+/**
+ * CreateCycleRequestDto's Year [Range(2000, 2100)] and the calendar window
+ * CycleService enforces around the sowing date.
+ */
 export const CYCLE_RULES = {
   yearMin: 2000,
   yearMax: 2100,
   notesMaxLength: 1000,
+  maxBackdateDays: 30,
+  maxLookaheadDays: 365,
 } as const;
+
+/** LogStageRequestDto's Notes [MaxLength(1000)]. */
+export const STAGE_LOG_RULES = {
+  notesMaxLength: 1000,
+} as const;
+
+/** Human labels for the enum member names the API sends. */
+export const GROWTH_STAGE_LABELS: Record<GrowthStage, string> = {
+  Nursery: 'Nursery',
+  Tillering: 'Tillering',
+  PanicleInitiation: 'Panicle initiation',
+  Flowering: 'Flowering',
+  GrainFilling: 'Grain filling',
+  Harvest: 'Harvest',
+};
+
+export const CULTIVATION_METHOD_LABELS: Record<CultivationMethod, string> = {
+  Broadcasting: 'Broadcasting',
+  Transplanting: 'Transplanting',
+  DirectSeeding: 'Direct seeding',
+};
