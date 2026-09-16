@@ -26,7 +26,28 @@
   gap: 1rem;
 }
 
+.mobile-menu-btn {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--ink);
+  cursor: pointer;
+  padding: 0.5rem;
+  margin-right: 1rem;
+}
 
+@media (max-width: 960px) {
+  .mobile-menu-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .dashboard-header-title {
+    display: flex;
+    align-items: center;
+  }
+}
 
 .dashboard-user-meta {
   display: flex;
