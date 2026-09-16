@@ -8,6 +8,7 @@ import { useReveal } from './hooks/useReveal';
 import { getRoleDashboardRoute } from './utils/roleRoutes';
 import { ActivityDashboard } from './features/crop-resource/pages/ActivityDashboard';
 import DashboardPage from './pages/DashboardPage';
+import UserManagementPage from './pages/UserManagementPage';
 
 function RoleRedirect() {
   const { user } = useAuth();
@@ -58,6 +59,14 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <DashboardPage roleView="Admin" />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/users"
+          element={
+            <ProtectedRoute>
+              <UserManagementPage />
             </ProtectedRoute>
           }
         />
