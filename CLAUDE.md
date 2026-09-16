@@ -110,3 +110,21 @@ despite what the Flutter app and `database/schema.sql` contain.
 - **Keep the `{ message }` error shape** on every 4xx response.
 - **Ask before touching `App.tsx`, `Sidebar.tsx`, `Program.cs`, or `ApplicationDbContext.cs`**
   beyond the single minimal line needed to register a route, service, or DbSet.
+
+## 7. Agents
+
+Agent code lives in `Agents/<Component>/`, with cross-cutting types in
+`Agents/Shared/`: `IAgent<TInput,TOutput>` (Name + RunAsync returning
+`AgentResult<T>` with ToolCalls and Duration), `AgentContext`, `ToolCallRecord`,
+`DelegatedTask`/`DelegatedTaskResult`, `AgentNames` (the DI keys), `ILlmClient`
++ `GeminiLlmClient`, and `LlmException`. Components 2-4 replace the stubs in
+`StubAgents.cs` with real `IAgent` implementations registered under the same
+`AgentNames` key.
+
+Rules: an agent's tools are read-only and scoped to the run's own records; no
+LLM output reaches a human or the database without passing a deterministic
+validator (see `Services/FieldCultivation/CultivationPlanValidator.cs` for the
+pattern); every run writes an `AgentRunLog` row whether it succeeds or fails;
+user text goes in the user prompt inside a delimited block, never in the system
+prompt. `ILlmClient` is the only place the provider is known - swapping vendors
+is one class.
