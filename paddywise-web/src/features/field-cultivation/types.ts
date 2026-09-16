@@ -220,3 +220,159 @@ export const CULTIVATION_METHOD_LABELS: Record<CultivationMethod, string> = {
   Transplanting: 'Transplanting',
   DirectSeeding: 'Direct seeding',
 };
+
+/* ------------------------------------------------- cultivation plan (agent) */
+
+/** Entities/FieldCultivation/PlanStatus.cs — serialised as its member name. */
+export type PlanStatus =
+  | 'Draft'
+  | 'ValidationFailed'
+  | 'PendingOfficerApproval'
+  | 'Approved'
+  | 'Rejected'
+  | 'RevisionRequested';
+
+export const PLAN_STATUSES: readonly PlanStatus[] = [
+  'Draft',
+  'ValidationFailed',
+  'PendingOfficerApproval',
+  'Approved',
+  'Rejected',
+  'RevisionRequested',
+];
+
+/** Agents/FieldCultivation/CultivationPlanModels.cs — PlanStepCategories.All. */
+export type PlanStepCategory =
+  | 'LandPrep'
+  | 'Water'
+  | 'Nutrient'
+  | 'Protection'
+  | 'Monitoring'
+  | 'Harvest';
+
+/** Agents/Shared/DelegatedTask.cs — AgentNames, minus this component's own agent. */
+export type DelegationTargetAgent =
+  | 'ResourceAnalysisAgent'
+  | 'PestDiseaseDiagnosisAgent'
+  | 'SchedulingValidationAgent';
+
+/**
+ * Agents/FieldCultivation/CultivationPlanModels.cs — PlanStep.
+ *
+ * `stage` and `category` are the closed sets above for any plan that passed
+ * validation. A ValidationFailed plan is stored verbatim as the model produced
+ * it, so a value outside the set can still arrive: read both through
+ * growthStageLabel / planStepCategoryLabel rather than indexing a Record.
+ */
+export interface PlanStep {
+  stage: GrowthStage;
+  windowStart: IsoDate;
+  windowEnd: IsoDate;
+  task: string;
+  rationale: string;
+  category: PlanStepCategory;
+}
+
+/** Agents/FieldCultivation/CultivationPlanModels.cs — PlanDelegation. */
+export interface PlanDelegation {
+  targetAgent: DelegationTargetAgent;
+  instruction: string;
+  /** Opaque: the receiving component owns the shape it expects. */
+  payload: Record<string, unknown>;
+}
+
+/**
+ * Agents/FieldCultivation/CultivationPlanModels.cs — CultivationPlanOutput,
+ * the model's own answer, stored verbatim and re-served as `plan`.
+ */
+export interface CultivationPlanOutput {
+  summary: string;
+  steps: PlanStep[];
+  delegations: PlanDelegation[];
+  assumptions: string[];
+}
+
+/** Agents/Shared/IAgent.cs — ToolCallRecord. Args and result are JSON strings. */
+export interface ToolCallRecord {
+  tool: string;
+  argsJson: string;
+  resultJson: string;
+  at: string;
+}
+
+/** DTOs/FieldCultivation/CultivationPlanResponseDto.cs — AgentRunSummaryDto. */
+export interface AgentRunSummary {
+  agentName: string;
+  success: boolean;
+  error: string | null;
+  durationMs: number;
+  toolCalls: ToolCallRecord[];
+  createdAt: string;
+}
+
+/** DTOs/FieldCultivation/CultivationPlanResponseDto.cs */
+export interface CultivationPlan {
+  id: number;
+  cycleId: number;
+  objective: string;
+  status: PlanStatus;
+  /** Null when the agent never produced a parseable plan. */
+  plan: CultivationPlanOutput | null;
+  /** Why the plan is not usable — empty while it still is. */
+  validationErrors: string[];
+  officerComment: string | null;
+  reviewedAt: string | null;
+  createdAt: string;
+  agentRuns: AgentRunSummary[];
+}
+
+/** DTOs/FieldCultivation/RequestPlanDto.cs */
+export interface RequestPlanRequest {
+  objective: string;
+}
+
+/** RequestPlanDto's Objective [Required] [MaxLength(1000)]. */
+export const PLAN_RULES = {
+  objectiveMaxLength: 1000,
+} as const;
+
+export const PLAN_STATUS_LABELS: Record<PlanStatus, string> = {
+  Draft: 'Draft',
+  ValidationFailed: 'Validation failed',
+  PendingOfficerApproval: 'Awaiting officer approval',
+  Approved: 'Approved',
+  Rejected: 'Rejected',
+  RevisionRequested: 'Revision requested',
+};
+
+export const PLAN_STEP_CATEGORY_LABELS: Record<PlanStepCategory, string> = {
+  LandPrep: 'Land prep',
+  Water: 'Water',
+  Nutrient: 'Nutrient',
+  Protection: 'Protection',
+  Monitoring: 'Monitoring',
+  Harvest: 'Harvest',
+};
+
+/** Every AgentNames constant, so a run log and a delegation both read plainly. */
+export const AGENT_LABELS: Record<string, string> = {
+  CultivationPlanningAgent: 'Cultivation Planning Agent',
+  ResourceAnalysisAgent: 'Resource Analysis & Action Agent',
+  PestDiseaseDiagnosisAgent: 'Pest & Disease Diagnosis Agent',
+  SchedulingValidationAgent: 'Scheduling, Validation & Approval Agent',
+};
+
+/** The agent's own name, falling back to the raw value for an unknown agent. */
+export function agentLabel(agentName: string): string {
+  return AGENT_LABELS[agentName] ?? agentName;
+}
+
+/** Safe for a stage a ValidationFailed plan invented. */
+export function growthStageLabel(stage: GrowthStage): string {
+  return GROWTH_STAGE_LABELS[stage] ?? String(stage);
+}
+
+/** Safe for a category a ValidationFailed plan invented. */
+export function planStepCategoryLabel(category: PlanStepCategory): string {
+  return PLAN_STEP_CATEGORY_LABELS[category] ?? String(category);
+}

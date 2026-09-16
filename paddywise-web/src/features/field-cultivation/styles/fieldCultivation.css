@@ -819,3 +819,573 @@
     transform: none;
   }
 }
+
+/* ------------------------------------------------------- plan request panel */
+
+.fc-plan-request {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  background-color: var(--cream-deep);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 1.35rem;
+}
+
+.fc-objective {
+  min-height: 6rem;
+}
+
+.fc-counter {
+  align-self: flex-end;
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  color: var(--ink-soft);
+}
+
+.fc-chips {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.fc-chips-label {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.fc-chip {
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  text-align: left;
+  color: var(--forest);
+  background-color: var(--cream);
+  border: 1px dashed var(--shoot);
+  border-radius: 9999px;
+  padding: 0.4rem 0.85rem;
+  max-width: 100%;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.fc-chip:not(:disabled):hover {
+  background-color: rgba(127, 166, 108, 0.16);
+  border-style: solid;
+}
+
+.fc-chip:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* The agent is one slow request; this narrates the wait, it does not measure it. */
+.fc-progress {
+  background-color: var(--cream);
+  border: 1px solid var(--shoot);
+  border-radius: 12px;
+  padding: 1rem 1.15rem;
+}
+
+.fc-progress-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  list-style: none;
+}
+
+.fc-progress-item {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  color: var(--ink-soft);
+}
+
+.fc-progress-item-active {
+  color: var(--forest);
+  font-weight: 600;
+}
+
+.fc-progress-dot {
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  margin: 0 0.25rem;
+  border-radius: 9999px;
+  background-color: var(--shoot-light);
+}
+
+.fc-progress-note {
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  margin-top: 0.75rem;
+}
+
+/* --------------------------------------------------------- plan status badges */
+
+.fc-badge-draft {
+  background-color: var(--cream-deep);
+  color: var(--ink-soft);
+}
+
+.fc-badge-failed {
+  background-color: rgba(166, 105, 63, 0.14);
+  color: var(--clay);
+}
+
+.fc-badge-pending {
+  background-color: rgba(225, 166, 59, 0.18);
+  color: var(--gold-deep);
+}
+
+.fc-badge-approved {
+  background-color: var(--forest);
+  color: var(--cream);
+}
+
+.fc-badge-rejected {
+  background-color: rgba(166, 105, 63, 0.2);
+  color: var(--clay);
+}
+
+.fc-badge-revision {
+  background-color: rgba(127, 166, 108, 0.22);
+  color: var(--forest);
+}
+
+/* ------------------------------------------------------------------- plan */
+
+.fc-plan {
+  background-color: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 1.5rem;
+}
+
+.fc-plan-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.1rem;
+}
+
+.fc-plan-objective {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-family: var(--font-body);
+  font-size: 0.92rem;
+  color: var(--ink);
+  background-color: var(--cream-deep);
+  border-radius: 10px;
+  padding: 0.8rem 1rem;
+}
+
+.fc-plan-objective-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.fc-plan-summary {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  color: var(--ink);
+  border-left: 3px solid var(--shoot);
+  padding-left: 0.9rem;
+  margin-top: 1.25rem;
+}
+
+.fc-plan-block {
+  margin-top: 1.75rem;
+}
+
+.fc-plan-stages {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  list-style: none;
+}
+
+.fc-plan-stage-name {
+  font-family: var(--font-heading);
+  font-size: 1.05rem;
+  color: var(--forest);
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 0.35rem;
+  margin-bottom: 0.7rem;
+}
+
+.fc-plan-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.fc-plan-step {
+  background-color: var(--cream-deep);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+}
+
+.fc-plan-step-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.4rem;
+}
+
+.fc-plan-step-dates {
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--ink-soft);
+}
+
+.fc-tag {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  padding: 0.15rem 0.6rem;
+  font-family: var(--font-body);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--forest);
+  background-color: rgba(127, 166, 108, 0.2);
+}
+
+.fc-plan-step-task {
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  color: var(--ink);
+}
+
+.fc-plan-step-rationale {
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  margin-top: 0.3rem;
+}
+
+.fc-delegation-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.fc-delegation {
+  border-left: 3px solid var(--gold);
+  background-color: var(--cream-deep);
+  border-radius: 0 12px 12px 0;
+  padding: 0.8rem 1rem;
+}
+
+.fc-delegation-agent {
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--gold-deep);
+}
+
+.fc-delegation-instruction {
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  color: var(--ink);
+  margin-top: 0.3rem;
+}
+
+.fc-assumption-list,
+.fc-validation-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  color: var(--ink-soft);
+  list-style: disc;
+  padding-left: 1.2rem;
+}
+
+.fc-validation {
+  background-color: rgba(166, 105, 63, 0.1);
+  border: 1px solid var(--clay);
+  border-radius: 12px;
+  padding: 1rem 1.15rem;
+  margin-top: 1.25rem;
+}
+
+.fc-validation .fc-subsection-title {
+  color: var(--clay);
+  margin-bottom: 0.7rem;
+}
+
+.fc-validation-list {
+  color: var(--clay);
+}
+
+.fc-officer-comment {
+  background-color: var(--forest);
+  border-radius: 12px;
+  padding: 1.1rem 1.25rem;
+  margin-top: 1.25rem;
+}
+
+.fc-officer-comment .fc-subsection-title {
+  color: var(--cream);
+  margin-bottom: 0.5rem;
+}
+
+.fc-officer-comment-text {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  color: var(--cream);
+}
+
+.fc-officer-comment-meta {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  color: var(--shoot-light);
+  margin-top: 0.5rem;
+}
+
+/* --------------------------------------------------------- plan history */
+
+.fc-plan-history {
+  margin-top: 2rem;
+}
+
+.fc-plan-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.fc-plan-history-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  background-color: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.6rem 0.9rem;
+}
+
+.fc-plan-history-date {
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+.fc-plan-history-objective {
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  color: var(--ink);
+  flex: 1;
+  min-width: 12rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------ agent activity */
+
+.fc-activity {
+  margin-top: 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.fc-activity-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  text-align: left;
+  font-family: var(--font-body);
+  color: var(--ink);
+  background-color: var(--cream-deep);
+  padding: 0.85rem 1.1rem;
+  transition: background-color 0.2s;
+}
+
+.fc-activity-toggle:hover {
+  background-color: var(--shoot-light);
+}
+
+.fc-activity-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.fc-activity-count {
+  margin-left: auto;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+
+.fc-activity-body {
+  padding: 1.1rem;
+  background-color: var(--cream);
+}
+
+.fc-run-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  list-style: none;
+}
+
+.fc-run {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.fc-run-head {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  width: 100%;
+  text-align: left;
+  font-family: var(--font-body);
+  color: var(--ink);
+  background-color: var(--cream);
+  padding: 0.7rem 0.9rem;
+  transition: background-color 0.2s;
+}
+
+.fc-run-head:hover {
+  background-color: var(--cream-deep);
+}
+
+.fc-run-agent {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.fc-run-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border-radius: 9999px;
+  padding: 0.12rem 0.55rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.fc-run-status-ok {
+  background-color: rgba(127, 166, 108, 0.22);
+  color: var(--forest);
+}
+
+.fc-run-status-bad {
+  background-color: rgba(166, 105, 63, 0.14);
+  color: var(--clay);
+}
+
+.fc-run-meta {
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+
+.fc-run-meta:last-child {
+  margin-left: auto;
+}
+
+.fc-run-body {
+  border-top: 1px solid var(--line);
+  background-color: var(--cream-deep);
+  padding: 0.9rem;
+}
+
+.fc-run-when {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  color: var(--ink-soft);
+  margin-bottom: 0.7rem;
+}
+
+.fc-tool-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  list-style: none;
+}
+
+.fc-tool {
+  background-color: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.75rem 0.9rem;
+}
+
+.fc-tool-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.fc-tool-name {
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--forest);
+}
+
+.fc-tool-when {
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+}
+
+.fc-tool-pane + .fc-tool-pane {
+  margin-top: 0.5rem;
+}
+
+.fc-tool-label {
+  display: block;
+  font-family: var(--font-body);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin-bottom: 0.25rem;
+}
+
+.fc-json {
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--cream);
+  background-color: var(--forest-deep);
+  border-radius: 8px;
+  padding: 0.65rem 0.8rem;
+  max-height: 16rem;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}

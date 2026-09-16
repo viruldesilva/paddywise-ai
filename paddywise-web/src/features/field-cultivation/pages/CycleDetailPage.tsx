@@ -1,15 +1,18 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { AlertCircle, ArrowLeft, Menu } from 'lucide-react';
+import { AlertCircle, ArrowLeft, History, Menu } from 'lucide-react';
 import { Sidebar } from '../../../components/Sidebar';
 import { useAuth } from '../../../hooks/useAuth';
 import { extractApiErrorMessage } from '../../../services/authService';
+import { AgentActivity } from '../components/AgentActivity';
 import { CycleStatusBadge } from '../components/CycleStatusBadge';
+import { PlanRequestPanel } from '../components/PlanRequestPanel';
+import { PlanStatusBadge, PlanView } from '../components/PlanView';
 import { StageTimeline } from '../components/StageTimeline';
-import { getCycleById } from '../services/fieldApi';
+import { getCycleById, getPlansForCycle } from '../services/fieldApi';
 import { CULTIVATION_METHOD_LABELS, GROWTH_STAGE_LABELS } from '../types';
-import type { CultivationCycle } from '../types';
-import { formatDate } from '../utils/dates';
+import type { CultivationCycle, CultivationPlan } from '../types';
+import { formatDate, formatDateTime } from '../utils/dates';
 import '../../../styles/Dashboard.css';
 import '../styles/fieldCultivation.css';
 
@@ -17,6 +20,16 @@ import '../styles/fieldCultivation.css';
 interface CycleLoad {
   id: number;
   cycle: CultivationCycle | null;
+  error: string | null;
+}
+
+/**
+ * The same for /api/cycles/{id}/plans, kept separate so a plan read that fails
+ * costs the page its plan section and not the cycle itself.
+ */
+interface PlanLoad {
+  id: number;
+  plans: CultivationPlan[];
   error: string | null;
 }
 
@@ -28,6 +41,7 @@ export default function CycleDetailPage() {
   const isValidId = Number.isInteger(cycleId) && cycleId > 0;
 
   const [loaded, setLoaded] = useState<CycleLoad | null>(null);
+  const [plansLoaded, setPlansLoaded] = useState<PlanLoad | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Bumped to ask the effect below for a fresh read after a failure.
@@ -41,6 +55,14 @@ export default function CycleDetailPage() {
   const idError = isValidId ? null : 'That cycle id is not a number.';
   const error = idError ?? current?.error ?? null;
   const isLoading = isValidId && current === null;
+
+  const currentPlans = plansLoaded !== null && plansLoaded.id === cycleId ? plansLoaded : null;
+  const arePlansLoading = isValidId && currentPlans === null;
+
+  // GetForCycleAsync orders by CreatedAt descending, so the newest plan leads.
+  const plans = currentPlans?.plans ?? [];
+  const latestPlan = plans.length > 0 ? plans[0] : null;
+  const earlierPlans = plans.slice(1);
 
   useEffect(() => {
     if (!isValidId) return;
@@ -69,10 +91,51 @@ export default function CycleDetailPage() {
     };
   }, [cycleId, isValidId, reloadToken]);
 
+  useEffect(() => {
+    if (!isValidId) return;
+
+    let isMounted = true;
+
+    getPlansForCycle(cycleId)
+      .then((result) => {
+        if (!isMounted) return;
+        setPlansLoaded({ id: cycleId, plans: result, error: null });
+      })
+      .catch((err: unknown) => {
+        if (!isMounted) return;
+        setPlansLoaded({
+          id: cycleId,
+          plans: [],
+          error: extractApiErrorMessage(
+            err,
+            'Could not load the plans for this cycle. Please try again.'
+          ),
+        });
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [cycleId, isValidId, reloadToken]);
+
   const handleRetry = useCallback(() => {
     setLoaded(null);
+    setPlansLoaded(null);
     setReloadToken((previous) => previous + 1);
   }, []);
+
+  /** A new plan is the newest one, so it goes to the front of the list. */
+  const handlePlanCreated = useCallback(
+    (plan: CultivationPlan) => {
+      setPlansLoaded((previous) => ({
+        id: cycleId,
+        plans:
+          previous !== null && previous.id === cycleId ? [plan, ...previous.plans] : [plan],
+        error: null,
+      }));
+    },
+    [cycleId]
+  );
 
   /** A stage log comes back as the whole refreshed cycle. */
   const handleLogged = useCallback(
@@ -199,6 +262,60 @@ export default function CycleDetailPage() {
               </section>
 
               <StageTimeline cycle={cycle} canLog={canLog} onLogged={handleLogged} />
+
+              {/* POST /api/cycles/{id}/plans is Farmer only, so only a farmer is
+                  offered the form; everyone who may read the cycle sees the plan. */}
+              {user.role === 'Farmer' && !arePlansLoading && (
+                <PlanRequestPanel
+                  cycleId={cycle.id}
+                  latestPlan={latestPlan}
+                  onPlanCreated={handlePlanCreated}
+                />
+              )}
+
+              <section className="fc-section">
+                {arePlansLoading && <p className="fc-state-text">Loading this cycle's plans…</p>}
+
+                {!arePlansLoading && currentPlans?.error && (
+                  <p className="fc-alert" role="alert">
+                    <AlertCircle size={18} />
+                    <span>{currentPlans.error}</span>
+                  </p>
+                )}
+
+                {!arePlansLoading && !currentPlans?.error && latestPlan === null && (
+                  <p className="fc-state-text">
+                    No plan has been generated for this cycle yet.
+                  </p>
+                )}
+
+                {!arePlansLoading && latestPlan !== null && (
+                  <>
+                    <PlanView plan={latestPlan} />
+                    <AgentActivity runs={latestPlan.agentRuns} />
+                  </>
+                )}
+
+                {earlierPlans.length > 0 && (
+                  <div className="fc-plan-history">
+                    <h3 className="fc-subsection-title">
+                      <History size={16} />
+                      Earlier plans
+                    </h3>
+                    <ul className="fc-plan-history-list">
+                      {earlierPlans.map((earlier) => (
+                        <li className="fc-plan-history-item" key={earlier.id}>
+                          <PlanStatusBadge status={earlier.status} />
+                          <span className="fc-plan-history-date">
+                            {formatDateTime(earlier.createdAt)}
+                          </span>
+                          <span className="fc-plan-history-objective">{earlier.objective}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </section>
             </>
           )}
         </main>

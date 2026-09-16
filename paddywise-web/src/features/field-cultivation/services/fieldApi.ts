@@ -8,10 +8,12 @@ import type {
   CreateCycleRequest,
   CreateFieldRequest,
   CultivationCycle,
+  CultivationPlan,
   CycleStatus,
   Division,
   Field,
   LogStageRequest,
+  RequestPlanRequest,
   UpdateCycleStatusRequest,
   UpdateFieldRequest,
   Variety,
@@ -129,6 +131,34 @@ export async function updateCycleStatus(
   return response.data;
 }
 
+/* ------------------------------------------------------------------- plans */
+
+/**
+ * POST /api/cycles/{cycleId}/plans — ask the Cultivation Planning Agent for a
+ * plan. Farmer only, and slow: the agent's tool loop plus the deterministic
+ * validator take 20–40 seconds, so the caller must keep its UI honest for that
+ * long. axiosInstance sets no timeout, which is what lets the request stand.
+ *
+ * 400 when the cycle already has a plan awaiting approval or approved.
+ */
+export async function requestPlan(cycleId: number, objective: string): Promise<CultivationPlan> {
+  const body: RequestPlanRequest = { objective };
+  const response = await axiosInstance.post<CultivationPlan>(`/cycles/${cycleId}/plans`, body);
+  return response.data;
+}
+
+/** GET /api/plans/{id} — the plan with its agent runs. A farmer reads only their own. */
+export async function getPlan(id: number): Promise<CultivationPlan> {
+  const response = await axiosInstance.get<CultivationPlan>(`/plans/${id}`);
+  return response.data;
+}
+
+/** GET /api/cycles/{cycleId}/plans — every plan for a cycle, newest first. */
+export async function getPlansForCycle(cycleId: number): Promise<CultivationPlan[]> {
+  const response = await axiosInstance.get<CultivationPlan[]>(`/cycles/${cycleId}/plans`);
+  return response.data;
+}
+
 export const fieldApi = {
   getMyFields,
   getFieldsByDivision,
@@ -143,4 +173,7 @@ export const fieldApi = {
   startCultivation,
   logStage,
   updateCycleStatus,
+  requestPlan,
+  getPlan,
+  getPlansForCycle,
 };
