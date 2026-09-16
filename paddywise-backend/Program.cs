@@ -55,6 +55,7 @@ if (string.IsNullOrWhiteSpace(jwtKey) || jwtKey.Length < 32)
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<PaddyWise.Api.Services.FieldCultivation.IFieldService, PaddyWise.Api.Services.FieldCultivation.FieldService>();
 builder.Services.AddScoped<PaddyWise.Api.Services.FieldCultivation.ICycleService, PaddyWise.Api.Services.FieldCultivation.CycleService>();
+builder.Services.AddScoped<PaddyWise.Api.Services.FieldCultivation.ICultivationPlanService, PaddyWise.Api.Services.FieldCultivation.CultivationPlanService>();
 
 // Gemini:ApiKey comes from user-secrets / the Gemini__ApiKey environment variable.
 builder.Services.AddHttpClient(GeminiLlmClient.HttpClientName, client =>
@@ -62,6 +63,9 @@ builder.Services.AddHttpClient(GeminiLlmClient.HttpClientName, client =>
     client.Timeout = TimeSpan.FromSeconds(60);
 });
 builder.Services.AddScoped<ILlmClient, GeminiLlmClient>();
+
+// Component 1's own agent: a unique closed generic, so it needs no DI key.
+builder.Services.AddScoped<IAgent<PaddyWise.Api.Agents.FieldCultivation.PlanAgentInput, PaddyWise.Api.Agents.FieldCultivation.CultivationPlanOutput>, PaddyWise.Api.Agents.FieldCultivation.CultivationPlanningAgent>();
 
 // Agents for components 2-4 are stubs today; their owners replace these registrations
 // with real implementations keyed by the same AgentNames constant.

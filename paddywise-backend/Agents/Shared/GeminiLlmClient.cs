@@ -16,7 +16,12 @@ public sealed class GeminiLlmClient : ILlmClient
     /// <summary>Name of the IHttpClientFactory client configured in Program.cs.</summary>
     public const string HttpClientName = "Gemini";
 
-    public const string DefaultModel = "gemini-2.5-flash";
+    /// <summary>
+    /// gemini-2.5-flash is no longer served to callers new to it ("no longer available to
+    /// new users"), which surfaces as a 404 from generateContent, so the default is the
+    /// model Google names as its replacement. Override with Gemini:Model.
+    /// </summary>
+    public const string DefaultModel = "gemini-3.6-flash";
 
     private const string BaseUrl = "https://generativelanguage.googleapis.com/v1beta";
 
@@ -58,11 +63,7 @@ public sealed class GeminiLlmClient : ILlmClient
                 "or the Gemini__ApiKey environment variable in deployment.");
         }
 
-        var model = _configuration["Gemini:Model"];
-        if (string.IsNullOrWhiteSpace(model))
-        {
-            model = DefaultModel;
-        }
+        var model = NormalizeModel(_configuration["Gemini:Model"]);
 
         var request = new GeminiRequest
         {
@@ -145,9 +146,14 @@ public sealed class GeminiLlmClient : ILlmClient
     {
         var client = _httpClientFactory.CreateClient(HttpClientName);
 
-        using var message = new HttpRequestMessage(
-            HttpMethod.Post,
-            $"{BaseUrl}/models/{model}:generateContent");
+        // The endpoint is {BaseUrl}/models/{model}:generateContent, where {model} carries no
+        // "models/" prefix of its own — NormalizeModel guarantees that.
+        var requestUrl = $"{BaseUrl}/models/{model}:generateContent";
+
+        // Safe to log: the key travels in a header, never in the URL.
+        _logger.LogInformation("Gemini request URL: {RequestUrl}", requestUrl);
+
+        using var message = new HttpRequestMessage(HttpMethod.Post, requestUrl);
 
         // Header only — never the query string, and never logged.
         message.Headers.Add("x-goog-api-key", apiKey);
@@ -163,9 +169,10 @@ public sealed class GeminiLlmClient : ILlmClient
         {
             // 429 lands here like any other failure: surfaced, not retried behind the caller's back.
             _logger.LogWarning(
-                "Gemini generateContent for model {Model} returned {StatusCode}.",
-                model,
-                (int)response.StatusCode);
+                "Gemini {RequestUrl} returned {StatusCode}: {Body}",
+                requestUrl,
+                (int)response.StatusCode,
+                body);
 
             throw new LlmException(response.StatusCode, body);
         }
@@ -174,6 +181,25 @@ public sealed class GeminiLlmClient : ILlmClient
             ?? throw new LlmException(response.StatusCode, body);
 
         return parsed.Candidates?.FirstOrDefault()?.Content?.Parts ?? new List<GeminiPart>();
+    }
+
+    /// <summary>
+    /// Turns whatever is configured into a bare model id. The models.list endpoint returns
+    /// names like "models/gemini-3.6-flash", and pasting one of those in verbatim would build
+    /// ".../models/models/gemini-3.6-flash:generateContent" — a 404.
+    /// </summary>
+    private static string NormalizeModel(string? configured)
+    {
+        var model = configured?.Trim();
+
+        if (string.IsNullOrEmpty(model))
+        {
+            return DefaultModel;
+        }
+
+        return model.StartsWith("models/", StringComparison.OrdinalIgnoreCase)
+            ? model["models/".Length..].Trim()
+            : model;
     }
 
     private static string ConcatenateText(IEnumerable<GeminiPart> parts) =>
@@ -267,6 +293,15 @@ public sealed class GeminiLlmClient : ILlmClient
 
         [JsonPropertyName("functionResponse")]
         public GeminiFunctionResponse? FunctionResponse { get; set; }
+
+        /// <summary>
+        /// Opaque signature Gemini 3.x attaches to a functionCall part. The model turn is
+        /// echoed back verbatim in the tool loop, so this must survive the round trip:
+        /// without it the next call fails with
+        /// "Function call is missing a thought_signature in functionCall parts".
+        /// </summary>
+        [JsonPropertyName("thoughtSignature")]
+        public string? ThoughtSignature { get; set; }
     }
 
     private sealed class GeminiFunctionCall

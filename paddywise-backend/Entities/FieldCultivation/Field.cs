@@ -6,6 +6,7 @@ public class Field
 {
     public int Id { get; set; }
     public string Name { get; set; } = string.Empty;
+    // Acres — the unit Sri Lankan paddy farmers state field size in.
     public decimal Area { get; set; }
     public string SoilType { get; set; } = string.Empty;
     public string IrrigationType { get; set; } = string.Empty;
