@@ -17,6 +17,8 @@ public class ApplicationDbContext : DbContext
     public DbSet<Variety> Varieties => Set<Variety>();//DOA paddy varieties
     public DbSet<CultivationCycle> CultivationCycles => Set<CultivationCycle>();//one season on one field
     public DbSet<GrowthStageLog> GrowthStageLogs => Set<GrowthStageLog>();//stage observations per cycle
+    public DbSet<CultivationPlan> CultivationPlans => Set<CultivationPlan>();//agent-generated plan per cycle
+    public DbSet<AgentRunLog> AgentRunLogs => Set<AgentRunLog>();//audit trail of agent runs
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -91,6 +93,48 @@ public class ApplicationDbContext : DbContext
                 .HasForeignKey(g => g.LoggedByUserId)
                 .IsRequired()
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<CultivationPlan>(entity =>
+        {
+            // jsonb, not text: the plan's shape will keep changing and Postgres can query it.
+            entity.Property(p => p.PlanJson).HasColumnType("jsonb");
+            entity.Property(p => p.ValidationErrorsJson).HasColumnType("jsonb");
+
+            entity.HasIndex(p => p.CultivationCycleId);
+            entity.HasIndex(p => p.Status);
+
+            entity.HasOne(p => p.CultivationCycle)
+                .WithMany()
+                .HasForeignKey(p => p.CultivationCycleId)
+                .IsRequired()
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(p => p.RequestedByUser)
+                .WithMany()
+                .HasForeignKey(p => p.RequestedByUserId)
+                .IsRequired()
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(p => p.Officer)
+                .WithMany()
+                .HasForeignKey(p => p.OfficerId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<AgentRunLog>(entity =>
+        {
+            entity.Property(l => l.InputJson).HasColumnType("jsonb");
+            entity.Property(l => l.ToolCallsJson).HasColumnType("jsonb");
+
+            entity.HasIndex(l => l.CultivationPlanId);
+            entity.HasIndex(l => l.CorrelationId);
+
+            // SetNull so deleting a plan cannot erase the record that an agent ran.
+            entity.HasOne(l => l.CultivationPlan)
+                .WithMany()
+                .HasForeignKey(l => l.CultivationPlanId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<Division>().HasData(

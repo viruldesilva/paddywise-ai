@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using PaddyWise.Api.Agents.Shared;
 using PaddyWise.Api.Data;
 using PaddyWise.Api.Services.Shared;
 using System.Text;
@@ -54,6 +55,19 @@ if (string.IsNullOrWhiteSpace(jwtKey) || jwtKey.Length < 32)
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<PaddyWise.Api.Services.FieldCultivation.IFieldService, PaddyWise.Api.Services.FieldCultivation.FieldService>();
 builder.Services.AddScoped<PaddyWise.Api.Services.FieldCultivation.ICycleService, PaddyWise.Api.Services.FieldCultivation.CycleService>();
+
+// Gemini:ApiKey comes from user-secrets / the Gemini__ApiKey environment variable.
+builder.Services.AddHttpClient(GeminiLlmClient.HttpClientName, client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(60);
+});
+builder.Services.AddScoped<ILlmClient, GeminiLlmClient>();
+
+// Agents for components 2-4 are stubs today; their owners replace these registrations
+// with real implementations keyed by the same AgentNames constant.
+builder.Services.AddKeyedScoped<IAgent<DelegatedTask, DelegatedTaskResult>, ResourceAnalysisAgentStub>(AgentNames.ResourceAnalysis);
+builder.Services.AddKeyedScoped<IAgent<DelegatedTask, DelegatedTaskResult>, PestDiseaseDiagnosisAgentStub>(AgentNames.PestDiseaseDiagnosis);
+builder.Services.AddKeyedScoped<IAgent<DelegatedTask, DelegatedTaskResult>, SchedulingValidationAgentStub>(AgentNames.SchedulingValidation);
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
