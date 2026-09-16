@@ -53,6 +53,7 @@ if (string.IsNullOrWhiteSpace(jwtKey) || jwtKey.Length < 32)
 
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<PaddyWise.Api.Services.FieldCultivation.IFieldService, PaddyWise.Api.Services.FieldCultivation.FieldService>();
+builder.Services.AddScoped<PaddyWise.Api.Services.FieldCultivation.ICycleService, PaddyWise.Api.Services.FieldCultivation.CycleService>();
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
