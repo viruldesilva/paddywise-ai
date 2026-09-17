@@ -1,162 +1,110 @@
+import axios, { type AxiosInstance } from 'axios';
+import { axiosInstance } from '../api/axiosInstance';
+import { tokenStorage, type ITokenStorage } from './tokenStorage';
 import type {
-  User,
-  StoredUser,
-  LoginCredentials,
-  RegisterCredentials,
-  AuthResponse
+  AuthResponseDto,
+  CurrentUserDto,
+  LoginRequestDto,
+  RefreshRequestDto,
+  RegisterRequestDto,
 } from '../types/auth';
 
-const STORAGE_KEY_USERS = 'kumburu_users';
-const STORAGE_KEY_SESSION = 'kumburu_session';
+export interface IAuthService {
+  login(dto: LoginRequestDto): Promise<AuthResponseDto>;
+  register(dto: RegisterRequestDto): Promise<AuthResponseDto>;
+  refreshToken(dto: RefreshRequestDto): Promise<AuthResponseDto>;
+  getCurrentUser(): Promise<CurrentUserDto>;
+  logout(): void;
+}
 
-// Pre-seeded demo accounts for each role
-const DEFAULT_USERS: StoredUser[] = [
-  {
-    id: 'usr_farmer_01',
-    fullName: 'Bandara Wanninayake',
-    email: 'farmer@kumburu.lk',
-    role: 'farmer',
-    phone: '+94 77 123 4567',
-    division: 'Polonnaruwa - Medirigiriya',
-    passwordHash: 'Password123!',
-    createdAt: new Date('2026-01-15').toISOString(),
-  },
-  {
-    id: 'usr_officer_01',
-    fullName: 'Dr. Nilmini Perera',
-    email: 'officer@kumburu.lk',
-    role: 'extension_officer',
-    phone: '+94 71 987 6543',
-    division: 'Anuradhapura - Nuwaragam Palatha',
-    passwordHash: 'Password123!',
-    createdAt: new Date('2026-01-10').toISOString(),
-  },
-  {
-    id: 'usr_buyer_01',
-    fullName: 'Roshan Fernando (Lanka Rice Mills)',
-    email: 'buyer@kumburu.lk',
-    role: 'buyer',
-    phone: '+94 76 345 6789',
-    division: 'Kurunegala',
-    passwordHash: 'Password123!',
-    createdAt: new Date('2026-01-20').toISOString(),
-  },
-  {
-    id: 'usr_admin_01',
-    fullName: 'System Administrator',
-    email: 'admin@kumburu.lk',
-    role: 'admin',
-    phone: '+94 11 234 5678',
-    division: 'Colombo HQ',
-    passwordHash: 'Password123!',
-    createdAt: new Date('2026-01-01').toISOString(),
-  },
-];
+export class AuthService implements IAuthService {
+  private readonly http: AxiosInstance;
+  private readonly storage: ITokenStorage;
 
-function getStoredUsers(): StoredUser[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY_USERS);
-    if (!raw) {
-      localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(DEFAULT_USERS));
-      return DEFAULT_USERS;
-    }
-    return JSON.parse(raw);
-  } catch {
-    return DEFAULT_USERS;
+  constructor(http: AxiosInstance = axiosInstance, storage: ITokenStorage = tokenStorage) {
+    this.http = http;
+    this.storage = storage;
+  }
+
+  async login(dto: LoginRequestDto): Promise<AuthResponseDto> {
+    const response = await this.http.post<AuthResponseDto>('/auth/login', dto);
+    const authData = response.data;
+    this.storage.saveSession(authData);
+    return authData;
+  }
+
+  async register(dto: RegisterRequestDto): Promise<AuthResponseDto> {
+    const response = await this.http.post<AuthResponseDto>('/auth/register', dto);
+    const authData = response.data;
+    this.storage.saveSession(authData);
+    return authData;
+  }
+
+  async refreshToken(dto: RefreshRequestDto): Promise<AuthResponseDto> {
+    const response = await this.http.post<AuthResponseDto>('/auth/refresh', dto);
+    const authData = response.data;
+    this.storage.saveSession(authData);
+    return authData;
+  }
+
+  async getCurrentUser(): Promise<CurrentUserDto> {
+    const response = await this.http.get<CurrentUserDto>('/auth/me');
+    return response.data;
+  }
+
+  logout(): void {
+    this.storage.clearSession();
   }
 }
 
-function saveStoredUsers(users: StoredUser[]): void {
-  localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(users));
+/**
+ * Extracts a human-readable error message from backend API responses.
+ * Handles ASP.NET Core exception payloads, custom JSON { message: ... },
+ * and ValidationProblemDetails { errors: { ... } }.
+ */
+export function extractApiErrorMessage(
+  error: unknown,
+  fallbackMessage: string = 'An unexpected error occurred. Please try again.'
+): string {
+  if (axios.isAxiosError(error)) {
+    const data = error.response?.data;
+
+    // Direct string message
+    if (typeof data === 'string' && data.trim().length > 0) {
+      return data;
+    }
+
+    if (data && typeof data === 'object') {
+      // Backend custom message: { message: "Invalid email or password." }
+      if ('message' in data && typeof data.message === 'string' && data.message.length > 0) {
+        return data.message;
+      }
+
+      // ASP.NET Core Validation Problem: { errors: { Field: ["error message"] } }
+      if ('errors' in data && data.errors && typeof data.errors === 'object') {
+        const errorsObj = data.errors as Record<string, string[]>;
+        const firstKey = Object.keys(errorsObj)[0];
+        if (firstKey && Array.isArray(errorsObj[firstKey]) && errorsObj[firstKey].length > 0) {
+          return errorsObj[firstKey][0];
+        }
+      }
+
+      // ProblemDetails title: { title: "One or more validation errors occurred." }
+      if ('title' in data && typeof data.title === 'string') {
+        return data.title;
+      }
+    }
+
+    if (error.message) {
+      return error.message;
+    }
+  }
+
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return fallbackMessage;
 }
 
-function sanitizeUser(stored: StoredUser): User {
-  const { passwordHash, ...user } = stored;
-  return user;
-}
-
-export const authService = {
-  // Initialize storage if needed
-  init(): void {
-    getStoredUsers();
-  },
-
-  async login(credentials: LoginCredentials): Promise<AuthResponse> {
-    // Artificial small delay to simulate network call
-    await new Promise((resolve) => setTimeout(resolve, 300));
-
-    const users = getStoredUsers();
-    const normalizedEmail = credentials.email.trim().toLowerCase();
-    
-    const user = users.find(
-      (u) => u.email.toLowerCase() === normalizedEmail
-    );
-
-    if (!user || user.passwordHash !== credentials.password) {
-      throw new Error('Invalid email or password. Please try again.');
-    }
-
-    const cleanUser = sanitizeUser(user);
-    const token = `mock_jwt_${user.id}_${Date.now()}`;
-
-    const session: AuthResponse = { user: cleanUser, token };
-    localStorage.setItem(STORAGE_KEY_SESSION, JSON.stringify(session));
-
-    return session;
-  },
-
-  async register(data: RegisterCredentials): Promise<AuthResponse> {
-    await new Promise((resolve) => setTimeout(resolve, 350));
-
-    const users = getStoredUsers();
-    const normalizedEmail = data.email.trim().toLowerCase();
-
-    if (users.some((u) => u.email.toLowerCase() === normalizedEmail)) {
-      throw new Error('An account with this email address already exists.');
-    }
-
-    const newUser: StoredUser = {
-      id: `usr_${Date.now().toString(36)}`,
-      fullName: data.fullName.trim(),
-      email: normalizedEmail,
-      role: data.role,
-      phone: data.phone?.trim() || undefined,
-      division: data.division?.trim() || undefined,
-      passwordHash: data.password,
-      createdAt: new Date().toISOString(),
-    };
-
-    users.push(newUser);
-    saveStoredUsers(users);
-
-    const cleanUser = sanitizeUser(newUser);
-    const token = `mock_jwt_${newUser.id}_${Date.now()}`;
-
-    const session: AuthResponse = { user: cleanUser, token };
-    localStorage.setItem(STORAGE_KEY_SESSION, JSON.stringify(session));
-
-    return session;
-  },
-
-  async logout(): Promise<void> {
-    localStorage.removeItem(STORAGE_KEY_SESSION);
-  },
-
-  getCurrentSession(): AuthResponse | null {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY_SESSION);
-      return raw ? JSON.parse(raw) : null;
-    } catch {
-      return null;
-    }
-  },
-
-  getAllUsers(): User[] {
-    return getStoredUsers().map(sanitizeUser);
-  },
-
-  // Reset local storage to initial seed state
-  resetToDefaults(): void {
-    localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(DEFAULT_USERS));
-  },
-};
+export const authService: IAuthService = new AuthService();

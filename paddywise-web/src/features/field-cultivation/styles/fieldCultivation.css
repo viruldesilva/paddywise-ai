@@ -1,0 +1,1681 @@
+/*
+ * Field & Cultivation Management — Component 1.
+ * Uses only the design tokens declared in styles/global.css.
+ */
+
+/* ---------------------------------------------------------------- page head */
+
+.fc-page-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 2rem;
+}
+
+.fc-page-title {
+  font-family: var(--font-heading);
+  font-size: 2.25rem;
+  color: var(--ink);
+  margin-bottom: 0.5rem;
+}
+
+.fc-page-sub {
+  font-family: var(--font-body);
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+  max-width: 38rem;
+}
+
+@media (max-width: 768px) {
+  .fc-page-title {
+    font-size: 1.75rem;
+  }
+}
+
+/* -------------------------------------------------------------------- cards */
+
+.fc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+  gap: 1.25rem;
+}
+
+.fc-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  background-color: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 1.35rem;
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+}
+
+.fc-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--shoot);
+  box-shadow: 0 10px 24px rgba(33, 45, 30, 0.08);
+}
+
+.fc-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.fc-card-title {
+  font-family: var(--font-heading);
+  font-size: 1.2rem;
+  color: var(--ink);
+  line-height: 1.25;
+}
+
+.fc-card-area {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-shrink: 0;
+  background-color: rgba(225, 166, 59, 0.18);
+  color: var(--gold-deep);
+  border-radius: 9999px;
+  padding: 0.25rem 0.65rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.fc-card-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  border-top: 1px solid var(--line);
+  padding-top: 0.9rem;
+}
+
+.fc-card-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.85rem;
+}
+
+.fc-card-meta-row dt {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--ink-soft);
+}
+
+.fc-card-meta-row dd {
+  color: var(--ink);
+  font-weight: 500;
+  text-align: right;
+}
+
+.fc-card-action {
+  margin-top: auto;
+  width: 100%;
+}
+
+/* ------------------------------------------------------------------ buttons */
+
+.fc-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 500;
+  padding: 0.6rem 1.25rem;
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  transition: background-color 0.2s, color 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+
+.fc-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.fc-btn-primary {
+  background-color: var(--gold);
+  color: var(--forest-deep);
+}
+
+.fc-btn-primary:not(:disabled):hover {
+  background-color: var(--gold-deep);
+  box-shadow: 0 4px 12px rgba(225, 166, 59, 0.3);
+}
+
+.fc-btn-outline {
+  background-color: transparent;
+  color: var(--forest);
+  border-color: var(--line);
+}
+
+.fc-btn-outline:not(:disabled):hover {
+  background-color: var(--forest);
+  color: var(--cream);
+  border-color: var(--forest);
+}
+
+.fc-btn-quiet {
+  background-color: var(--cream-deep);
+  color: var(--ink);
+}
+
+.fc-btn-quiet:not(:disabled):hover {
+  background-color: var(--shoot-light);
+}
+
+.fc-btn-ghost {
+  background-color: transparent;
+  color: var(--forest);
+  border-color: var(--shoot);
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+}
+
+.fc-btn-ghost:not(:disabled):hover {
+  background-color: rgba(127, 166, 108, 0.16);
+}
+
+/* ------------------------------------------- loading / error / empty states */
+
+.fc-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  text-align: center;
+  background-color: var(--cream-deep);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 3rem 1.5rem;
+}
+
+.fc-state-icon {
+  color: var(--shoot);
+}
+
+.fc-state-title {
+  font-family: var(--font-heading);
+  font-size: 1.35rem;
+  color: var(--ink);
+}
+
+.fc-state-text {
+  font-family: var(--font-body);
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+  max-width: 30rem;
+}
+
+.fc-state-error {
+  background-color: rgba(166, 105, 63, 0.1);
+  border-color: var(--clay);
+  color: var(--clay);
+}
+
+.fc-state-error .fc-state-text {
+  color: var(--clay);
+}
+
+/* --------------------------------------------------------------------- form */
+
+.fc-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.fc-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 640px) {
+  .fc-form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.fc-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.fc-form-group label {
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--ink-soft);
+}
+
+.fc-input {
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  color: var(--ink);
+  background-color: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.65rem 0.85rem;
+  width: 100%;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.fc-input:focus {
+  outline: none;
+  border-color: var(--shoot);
+  box-shadow: 0 0 0 3px rgba(127, 166, 108, 0.22);
+}
+
+.fc-input:disabled {
+  background-color: var(--cream-deep);
+  color: var(--ink-soft);
+  cursor: not-allowed;
+}
+
+.fc-field-error {
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  color: var(--clay);
+}
+
+.fc-locate {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.fc-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  border-top: 1px solid var(--line);
+  padding-top: 1.1rem;
+}
+
+.fc-alert {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  color: var(--clay);
+  background-color: rgba(166, 105, 63, 0.1);
+  border: 1px solid var(--clay);
+  border-radius: 10px;
+  padding: 0.7rem 0.9rem;
+}
+
+.fc-spin {
+  animation: fc-spin 1s linear infinite;
+}
+
+@keyframes fc-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fc-spin {
+    animation: none;
+  }
+
+  .fc-card:hover {
+    transform: none;
+  }
+}
+
+/* -------------------------------------------------------------------- modal */
+
+.fc-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background-color: rgba(24, 42, 30, 0.55);
+  overflow-y: auto;
+}
+
+.fc-modal {
+  width: 100%;
+  max-width: 40rem;
+  max-height: 90vh;
+  overflow-y: auto;
+  background-color: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 24px 48px rgba(24, 42, 30, 0.28);
+}
+
+.fc-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.fc-modal-title {
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  color: var(--ink);
+}
+
+.fc-modal-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-soft);
+  border-radius: 9999px;
+  padding: 0.35rem;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.fc-modal-close:hover {
+  background-color: var(--cream-deep);
+  color: var(--ink);
+}
+
+/* ------------------------------------------------------------ detail pages */
+
+.fc-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  margin-bottom: 1.25rem;
+  transition: color 0.2s;
+}
+
+.fc-back:hover {
+  color: var(--forest);
+}
+
+.fc-summary {
+  background-color: var(--cream-deep);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.fc-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: 1.25rem;
+}
+
+.fc-summary-item dt {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin-bottom: 0.3rem;
+}
+
+.fc-summary-item dd {
+  font-family: var(--font-body);
+  font-size: 0.98rem;
+  color: var(--ink);
+}
+
+.fc-note {
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  color: var(--ink-soft);
+  background-color: var(--cream);
+  border-left: 3px solid var(--shoot);
+  border-radius: 0 10px 10px 0;
+  padding: 0.7rem 0.9rem;
+  margin-top: 1.1rem;
+}
+
+.fc-note code {
+  font-size: 0.85em;
+  color: var(--forest);
+}
+
+/* ---------------------------------------------------------------- sections */
+
+.fc-section {
+  margin-bottom: 2.5rem;
+}
+
+.fc-section-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+}
+
+.fc-section-title {
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  color: var(--ink);
+}
+
+.fc-section-sub {
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  margin-top: 0.25rem;
+}
+
+.fc-subsection-title {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-family: var(--font-heading);
+  font-size: 1.1rem;
+  color: var(--ink);
+  margin-bottom: 0.9rem;
+}
+
+/* ----------------------------------------------------------- status badges */
+
+.fc-badge {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  border-radius: 9999px;
+  padding: 0.25rem 0.7rem;
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  background-color: var(--cream-deep);
+  color: var(--ink-soft);
+}
+
+.fc-badge-planned {
+  background-color: rgba(225, 166, 59, 0.18);
+  color: var(--gold-deep);
+}
+
+.fc-badge-active {
+  background-color: rgba(127, 166, 108, 0.22);
+  color: var(--forest);
+}
+
+.fc-badge-harvested {
+  background-color: var(--forest);
+  color: var(--cream);
+}
+
+.fc-badge-abandoned {
+  background-color: rgba(166, 105, 63, 0.14);
+  color: var(--clay);
+}
+
+/* ------------------------------------------------------------- cycle rows */
+
+.fc-cycle-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.fc-cycle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  background-color: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 1.1rem 1.35rem;
+  color: var(--ink);
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+}
+
+.fc-cycle-row:hover {
+  border-color: var(--shoot);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(33, 45, 30, 0.08);
+}
+
+.fc-cycle-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 10rem;
+}
+
+.fc-cycle-season {
+  font-family: var(--font-heading);
+  font-size: 1.15rem;
+  color: var(--ink);
+}
+
+.fc-cycle-variety {
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
+.fc-cycle-meta {
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.fc-cycle-meta dt {
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin-bottom: 0.2rem;
+}
+
+.fc-cycle-meta dd {
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  color: var(--ink);
+}
+
+.fc-cycle-end {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--ink-soft);
+}
+
+@media (max-width: 640px) {
+  .fc-cycle-meta {
+    gap: 1rem;
+  }
+}
+
+/* ----------------------------------------------------------- stage timeline */
+
+.fc-timeline {
+  margin-bottom: 1.75rem;
+}
+
+.fc-timeline-bar {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 3rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+  background-color: var(--cream-deep);
+  margin-bottom: 2rem;
+}
+
+.fc-timeline-seg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  overflow: hidden;
+  padding: 0 0.3rem;
+  background-color: var(--shoot-light);
+  border-right: 1px solid var(--cream);
+}
+
+.fc-timeline-seg:last-child {
+  border-right: none;
+}
+
+.fc-timeline-seg-label {
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--forest-deep);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fc-timeline-seg-current {
+  background-color: var(--shoot);
+}
+
+.fc-timeline-seg-current .fc-timeline-seg-label {
+  color: var(--cream);
+  font-weight: 600;
+}
+
+.fc-timeline-today {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background-color: var(--clay);
+  transform: translateX(-1px);
+}
+
+.fc-timeline-today-flag {
+  position: absolute;
+  top: calc(100% + 0.3rem);
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-body);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--cream);
+  background-color: var(--clay);
+  border-radius: 9999px;
+  padding: 0.1rem 0.45rem;
+  white-space: nowrap;
+}
+
+.fc-timeline-legend {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 0.65rem;
+  list-style: none;
+}
+
+.fc-legend-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  border-left: 3px solid var(--shoot-light);
+  padding-left: 0.6rem;
+}
+
+.fc-legend-current {
+  border-left-color: var(--shoot);
+}
+
+.fc-legend-stage {
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.fc-legend-dates {
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+
+/* ------------------------------------------------------------- stage logs */
+
+.fc-logs {
+  border-top: 1px solid var(--line);
+  padding-top: 1.35rem;
+}
+
+.fc-log-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.fc-log-item {
+  background-color: var(--cream-deep);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0.9rem 1.1rem;
+}
+
+.fc-log-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.fc-log-stage {
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.fc-log-date {
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+}
+
+.fc-log-notes {
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  color: var(--ink-soft);
+  margin-top: 0.4rem;
+}
+
+.fc-log-by {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  color: var(--ink-soft);
+  margin-top: 0.4rem;
+}
+
+/* ------------------------------------------------------- inline form extras */
+
+.fc-inline-form {
+  background-color: var(--cream-deep);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 1.25rem;
+  margin-bottom: 1.75rem;
+}
+
+.fc-textarea {
+  resize: vertical;
+  min-height: 3.5rem;
+}
+
+.fc-projection {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  color: var(--forest);
+  background-color: rgba(127, 166, 108, 0.14);
+  border: 1px solid var(--shoot);
+  border-radius: 10px;
+  padding: 0.7rem 0.9rem;
+}
+
+.fc-projection strong {
+  font-weight: 600;
+  color: var(--forest-deep);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fc-cycle-row:hover {
+    transform: none;
+  }
+}
+
+/* ------------------------------------------------------- plan request panel */
+
+.fc-plan-request {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  background-color: var(--cream-deep);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 1.35rem;
+}
+
+.fc-objective {
+  min-height: 6rem;
+}
+
+.fc-counter {
+  align-self: flex-end;
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  color: var(--ink-soft);
+}
+
+.fc-chips {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.fc-chips-label {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.fc-chip {
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  text-align: left;
+  color: var(--forest);
+  background-color: var(--cream);
+  border: 1px dashed var(--shoot);
+  border-radius: 9999px;
+  padding: 0.4rem 0.85rem;
+  max-width: 100%;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.fc-chip:not(:disabled):hover {
+  background-color: rgba(127, 166, 108, 0.16);
+  border-style: solid;
+}
+
+.fc-chip:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* The agent is one slow request; this narrates the wait, it does not measure it. */
+.fc-progress {
+  background-color: var(--cream);
+  border: 1px solid var(--shoot);
+  border-radius: 12px;
+  padding: 1rem 1.15rem;
+}
+
+.fc-progress-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  list-style: none;
+}
+
+.fc-progress-item {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  color: var(--ink-soft);
+}
+
+.fc-progress-item-active {
+  color: var(--forest);
+  font-weight: 600;
+}
+
+.fc-progress-dot {
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  margin: 0 0.25rem;
+  border-radius: 9999px;
+  background-color: var(--shoot-light);
+}
+
+.fc-progress-note {
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  margin-top: 0.75rem;
+}
+
+/* --------------------------------------------------------- plan status badges */
+
+.fc-badge-draft {
+  background-color: var(--cream-deep);
+  color: var(--ink-soft);
+}
+
+.fc-badge-failed {
+  background-color: rgba(166, 105, 63, 0.14);
+  color: var(--clay);
+}
+
+.fc-badge-pending {
+  background-color: rgba(225, 166, 59, 0.18);
+  color: var(--gold-deep);
+}
+
+.fc-badge-approved {
+  background-color: var(--forest);
+  color: var(--cream);
+}
+
+.fc-badge-rejected {
+  background-color: rgba(166, 105, 63, 0.2);
+  color: var(--clay);
+}
+
+.fc-badge-revision {
+  background-color: rgba(127, 166, 108, 0.22);
+  color: var(--forest);
+}
+
+/* ------------------------------------------------------------------- plan */
+
+.fc-plan {
+  background-color: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 1.5rem;
+}
+
+.fc-plan-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.1rem;
+}
+
+.fc-plan-objective {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-family: var(--font-body);
+  font-size: 0.92rem;
+  color: var(--ink);
+  background-color: var(--cream-deep);
+  border-radius: 10px;
+  padding: 0.8rem 1rem;
+}
+
+.fc-plan-objective-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.fc-plan-summary {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  color: var(--ink);
+  border-left: 3px solid var(--shoot);
+  padding-left: 0.9rem;
+  margin-top: 1.25rem;
+}
+
+.fc-plan-block {
+  margin-top: 1.75rem;
+}
+
+.fc-plan-stages {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  list-style: none;
+}
+
+.fc-plan-stage-name {
+  font-family: var(--font-heading);
+  font-size: 1.05rem;
+  color: var(--forest);
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 0.35rem;
+  margin-bottom: 0.7rem;
+}
+
+.fc-plan-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.fc-plan-step {
+  background-color: var(--cream-deep);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+}
+
+.fc-plan-step-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.4rem;
+}
+
+.fc-plan-step-dates {
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--ink-soft);
+}
+
+.fc-tag {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  padding: 0.15rem 0.6rem;
+  font-family: var(--font-body);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--forest);
+  background-color: rgba(127, 166, 108, 0.2);
+}
+
+.fc-plan-step-task {
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  color: var(--ink);
+}
+
+.fc-plan-step-rationale {
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  margin-top: 0.3rem;
+}
+
+.fc-delegation-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.fc-delegation {
+  border-left: 3px solid var(--gold);
+  background-color: var(--cream-deep);
+  border-radius: 0 12px 12px 0;
+  padding: 0.8rem 1rem;
+}
+
+.fc-delegation-agent {
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--gold-deep);
+}
+
+.fc-delegation-instruction {
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  color: var(--ink);
+  margin-top: 0.3rem;
+}
+
+.fc-assumption-list,
+.fc-validation-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  color: var(--ink-soft);
+  list-style: disc;
+  padding-left: 1.2rem;
+}
+
+.fc-validation {
+  background-color: rgba(166, 105, 63, 0.1);
+  border: 1px solid var(--clay);
+  border-radius: 12px;
+  padding: 1rem 1.15rem;
+  margin-top: 1.25rem;
+}
+
+.fc-validation .fc-subsection-title {
+  color: var(--clay);
+  margin-bottom: 0.7rem;
+}
+
+.fc-validation-list {
+  color: var(--clay);
+}
+
+.fc-officer-comment {
+  background-color: var(--forest);
+  border-radius: 12px;
+  padding: 1.1rem 1.25rem;
+  margin-top: 1.25rem;
+}
+
+.fc-officer-comment .fc-subsection-title {
+  color: var(--cream);
+  margin-bottom: 0.5rem;
+}
+
+.fc-officer-comment-text {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  color: var(--cream);
+}
+
+.fc-officer-comment-meta {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  color: var(--shoot-light);
+  margin-top: 0.5rem;
+}
+
+/* --------------------------------------------------------- plan history */
+
+.fc-plan-history {
+  margin-top: 2rem;
+}
+
+.fc-plan-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.fc-plan-history-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  background-color: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.6rem 0.9rem;
+}
+
+.fc-plan-history-date {
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+.fc-plan-history-objective {
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  color: var(--ink);
+  flex: 1;
+  min-width: 12rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------ agent activity */
+
+.fc-activity {
+  margin-top: 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.fc-activity-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  text-align: left;
+  font-family: var(--font-body);
+  color: var(--ink);
+  background-color: var(--cream-deep);
+  padding: 0.85rem 1.1rem;
+  transition: background-color 0.2s;
+}
+
+.fc-activity-toggle:hover {
+  background-color: var(--shoot-light);
+}
+
+.fc-activity-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.fc-activity-count {
+  margin-left: auto;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+
+.fc-activity-body {
+  padding: 1.1rem;
+  background-color: var(--cream);
+}
+
+.fc-run-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  list-style: none;
+}
+
+.fc-run {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.fc-run-head {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  width: 100%;
+  text-align: left;
+  font-family: var(--font-body);
+  color: var(--ink);
+  background-color: var(--cream);
+  padding: 0.7rem 0.9rem;
+  transition: background-color 0.2s;
+}
+
+.fc-run-head:hover {
+  background-color: var(--cream-deep);
+}
+
+.fc-run-agent {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.fc-run-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border-radius: 9999px;
+  padding: 0.12rem 0.55rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.fc-run-status-ok {
+  background-color: rgba(127, 166, 108, 0.22);
+  color: var(--forest);
+}
+
+.fc-run-status-bad {
+  background-color: rgba(166, 105, 63, 0.14);
+  color: var(--clay);
+}
+
+.fc-run-meta {
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+
+.fc-run-meta:last-child {
+  margin-left: auto;
+}
+
+.fc-run-body {
+  border-top: 1px solid var(--line);
+  background-color: var(--cream-deep);
+  padding: 0.9rem;
+}
+
+.fc-run-when {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  color: var(--ink-soft);
+  margin-bottom: 0.7rem;
+}
+
+.fc-tool-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  list-style: none;
+}
+
+.fc-tool {
+  background-color: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.75rem 0.9rem;
+}
+
+.fc-tool-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.fc-tool-name {
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--forest);
+}
+
+.fc-tool-when {
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+}
+
+.fc-tool-pane + .fc-tool-pane {
+  margin-top: 0.5rem;
+}
+
+.fc-tool-label {
+  display: block;
+  font-family: var(--font-body);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin-bottom: 0.25rem;
+}
+
+.fc-json {
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--cream);
+  background-color: var(--forest-deep);
+  border-radius: 8px;
+  padding: 0.65rem 0.8rem;
+  max-height: 16rem;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* ------------------------------------------------- officer approval queue */
+
+.fc-queue-controls {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+}
+
+.fc-queue-filter {
+  min-width: 16rem;
+  max-width: 24rem;
+  flex: 1 1 16rem;
+}
+
+.fc-queue-count {
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
+/* -------------------------------------------------------------------- table */
+
+.fc-table-wrap {
+  overflow-x: auto;
+  background-color: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+
+.fc-table {
+  width: 100%;
+  min-width: 46rem;
+  border-collapse: collapse;
+  font-family: var(--font-body);
+}
+
+.fc-table-caption {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.fc-table thead th {
+  text-align: left;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  background-color: var(--cream-deep);
+  padding: 0.7rem 1rem;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+.fc-table tbody td {
+  font-size: 0.92rem;
+  color: var(--ink);
+  vertical-align: top;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.fc-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.fc-table tbody tr:hover td {
+  background-color: var(--cream-deep);
+}
+
+.fc-table-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: var(--forest);
+}
+
+.fc-table-sort:hover {
+  color: var(--forest-deep);
+}
+
+.fc-table-strong {
+  display: block;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.fc-table-sub {
+  display: block;
+  max-width: 22rem;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--ink-soft);
+  margin-top: 0.2rem;
+}
+
+.fc-table-action {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.fc-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------------- drawer */
+
+.fc-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  justify-content: flex-end;
+  background-color: rgba(24, 42, 30, 0.55);
+}
+
+.fc-drawer {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 44rem;
+  height: 100%;
+  background-color: var(--cream);
+  border-left: 1px solid var(--line);
+  box-shadow: -24px 0 48px rgba(24, 42, 30, 0.28);
+}
+
+.fc-drawer-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.fc-drawer-title {
+  font-family: var(--font-heading);
+  font-size: 1.4rem;
+  color: var(--ink);
+}
+
+.fc-drawer-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 1.5rem;
+}
+
+/* -------------------------------------------------------------- review form */
+
+.fc-review-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  background-color: var(--cream-deep);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 1.25rem;
+  margin-top: 1.5rem;
+}
+
+.fc-review-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  border: none;
+}
+
+.fc-review-legend {
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--ink-soft);
+  margin-bottom: 0.6rem;
+}
+
+.fc-review-choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  background-color: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0.8rem 0.9rem;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.fc-review-choice:hover {
+  border-color: var(--shoot);
+}
+
+.fc-review-choice-on {
+  border-color: var(--shoot);
+  box-shadow: 0 0 0 3px rgba(127, 166, 108, 0.22);
+}
+
+.fc-review-choice input {
+  margin-top: 0.2rem;
+  accent-color: var(--forest);
+}
+
+.fc-review-choices:disabled .fc-review-choice {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.fc-review-choice-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.fc-review-choice-name {
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.fc-review-choice-hint {
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--ink-soft);
+}
+
+/* -------------------------------------------------------------------- toast */
+
+.fc-toast {
+  position: fixed;
+  z-index: 80;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  max-width: calc(100vw - 3rem);
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  color: var(--cream);
+  background-color: var(--forest);
+  border-radius: 9999px;
+  padding: 0.7rem 1.1rem;
+  box-shadow: 0 12px 28px rgba(24, 42, 30, 0.32);
+}
+
+.fc-toast-close {
+  display: inline-flex;
+  color: var(--shoot-light);
+  transition: color 0.2s;
+}
+
+.fc-toast-close:hover {
+  color: var(--cream);
+}
+
+@media (max-width: 640px) {
+  .fc-queue-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .fc-queue-filter {
+    max-width: none;
+  }
+
+  .fc-drawer-head,
+  .fc-drawer-body {
+    padding: 1.1rem;
+  }
+}

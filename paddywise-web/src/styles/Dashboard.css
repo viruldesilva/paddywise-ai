@@ -1,15 +1,21 @@
-.dashboard-container {
+.dashboard-layout {
+  display: flex;
   min-height: 100vh;
   background-color: var(--cream);
+}
+
+.dashboard-main-wrapper {
+  flex: 1;
   display: flex;
   flex-direction: column;
+  min-width: 0; /* Prevents flex items from overflowing */
 }
 
 .dashboard-header {
-  background-color: var(--forest);
-  color: var(--cream);
-  padding: 1.5rem 0;
-  border-bottom: 1px solid rgba(246, 241, 227, 0.1);
+  background-color: var(--cream);
+  color: var(--ink);
+  padding: 1.25rem 0;
+  border-bottom: 1px solid var(--line);
 }
 
 .dashboard-header-inner {
@@ -20,14 +26,27 @@
   gap: 1rem;
 }
 
-.dashboard-brand {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  color: var(--cream);
-  font-family: var(--font-heading);
-  font-size: 1.5rem;
-  font-weight: 600;
+.mobile-menu-btn {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--ink);
+  cursor: pointer;
+  padding: 0.5rem;
+  margin-right: 1rem;
+}
+
+@media (max-width: 960px) {
+  .mobile-menu-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .dashboard-header-title {
+    display: flex;
+    align-items: center;
+  }
 }
 
 .dashboard-user-meta {
@@ -45,7 +64,7 @@
 
 .dashboard-user-name {
   font-weight: 600;
-  color: var(--cream);
+  color: var(--ink);
 }
 
 .dashboard-user-sub {

@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Mail, Lock, AlertCircle, Sparkles } from 'lucide-react';
+import { Mail, Lock, AlertCircle } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { extractApiErrorMessage } from '../services/authService';
+import { getRoleDashboardRoute } from '../utils/roleRoutes';
 import '../styles/Auth.css';
 
 export default function LoginPage() {
@@ -14,9 +16,6 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Redirect destination after login
-  const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/dashboard';
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -28,31 +27,19 @@ export default function LoginPage() {
 
     setIsSubmitting(true);
     try {
-      await login({ email, password });
-      navigate(from, { replace: true });
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError('Failed to sign in. Please check your credentials.');
-      }
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+      const response = await login({ email, password });
+      
+      // Determine destination: user's previous intended route or role dashboard
+      const stateFrom = (location.state as { from?: { pathname: string } })?.from?.pathname;
+      const targetDestination =
+        stateFrom && stateFrom !== '/dashboard' && stateFrom !== '/login'
+          ? stateFrom
+          : getRoleDashboardRoute(response.role);
 
-  const handleDemoLogin = async (demoEmail: string) => {
-    setEmail(demoEmail);
-    setPassword('Password123!');
-    setError(null);
-    setIsSubmitting(true);
-    try {
-      await login({ email: demoEmail, password: 'Password123!' });
-      navigate('/dashboard', { replace: true });
+      navigate(targetDestination, { replace: true });
     } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message);
-      }
+      const serverMessage = extractApiErrorMessage(err, 'Failed to sign in. Please check your credentials.');
+      setError(serverMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -80,14 +67,23 @@ export default function LoginPage() {
           </svg>
           Kumburu
         </Link>
-        
+
         <div className="auth-visual-content">
           <h2 className="auth-quote">
             Welcome back to the <br />
             <span className="auth-quote-highlight">connected field.</span>
           </h2>
-          <p style={{ color: 'var(--cream-deep)', fontSize: '0.95rem', maxWidth: '24rem', opacity: 0.85, marginTop: '1rem' }}>
-            A coordinated decision support workflow for farmers, officers, buyers, and administrators.
+          <p
+            style={{
+              color: 'var(--cream-deep)',
+              fontSize: '0.95rem',
+              maxWidth: '24rem',
+              opacity: 0.85,
+              marginTop: '1rem',
+            }}
+          >
+            A coordinated decision support workflow for farmers, officers, buyers, and
+            administrators.
           </p>
         </div>
       </div>
@@ -115,68 +111,22 @@ export default function LoginPage() {
           </Link>
 
           <h1 className="auth-title">Sign in</h1>
-          <p className="auth-subtitle">Access your Kumburu dashboard.</p>
-
-          {/* Quick Demo Logins Pill Box */}
-          <div style={{
-            background: 'var(--cream-deep)',
-            borderRadius: '8px',
-            padding: '0.875rem 1rem',
-            marginBottom: '1.5rem',
-            fontSize: '0.85rem'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 600, color: 'var(--ink)', marginBottom: '0.5rem' }}>
-              <Sparkles size={14} color="var(--gold-deep)" />
-              <span>1-Click Demo Accounts (Test Each Role):</span>
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
-              <button 
-                type="button" 
-                onClick={() => handleDemoLogin('farmer@kumburu.lk')} 
-                className="btn btn-secondary btn-sm"
-                style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem', background: '#fff' }}
-              >
-                🌾 Farmer
-              </button>
-              <button 
-                type="button" 
-                onClick={() => handleDemoLogin('officer@kumburu.lk')} 
-                className="btn btn-secondary btn-sm"
-                style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem', background: '#fff' }}
-              >
-                🛡️ Officer
-              </button>
-              <button 
-                type="button" 
-                onClick={() => handleDemoLogin('buyer@kumburu.lk')} 
-                className="btn btn-secondary btn-sm"
-                style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem', background: '#fff' }}
-              >
-                🏪 Buyer
-              </button>
-              <button 
-                type="button" 
-                onClick={() => handleDemoLogin('admin@kumburu.lk')} 
-                className="btn btn-secondary btn-sm"
-                style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem', background: '#fff' }}
-              >
-                ⚙️ Admin
-              </button>
-            </div>
-          </div>
+          <p className="auth-subtitle">Access your PaddyWise dashboard.</p>
 
           {error && (
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              backgroundColor: '#fee2e2',
-              color: '#991b1b',
-              padding: '0.75rem 1rem',
-              borderRadius: '8px',
-              fontSize: '0.875rem',
-              marginBottom: '1.25rem'
-            }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                backgroundColor: '#fee2e2',
+                color: '#991b1b',
+                padding: '0.75rem 1rem',
+                borderRadius: '8px',
+                fontSize: '0.875rem',
+                marginBottom: '1.25rem',
+              }}
+            >
               <AlertCircle size={18} />
               <span>{error}</span>
             </div>
@@ -187,10 +137,10 @@ export default function LoginPage() {
               <label htmlFor="email">Email Address</label>
               <div className="auth-input-wrapper">
                 <Mail className="auth-input-icon" size={20} />
-                <input 
-                  type="email" 
-                  id="email" 
-                  className="auth-input-with-icon" 
+                <input
+                  type="email"
+                  id="email"
+                  className="auth-input-with-icon"
                   placeholder="name@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -204,11 +154,11 @@ export default function LoginPage() {
               <label htmlFor="password">Password</label>
               <div className="auth-input-wrapper">
                 <Lock className="auth-input-icon" size={20} />
-                <input 
-                  type="password" 
-                  id="password" 
-                  className="auth-input-with-icon" 
-                  placeholder="••••••••" 
+                <input
+                  type="password"
+                  id="password"
+                  className="auth-input-with-icon"
+                  placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={isSubmitting}
@@ -217,8 +167,8 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               className="btn btn-primary auth-submit-btn"
               disabled={isSubmitting}
             >
@@ -227,7 +177,10 @@ export default function LoginPage() {
           </form>
 
           <p className="auth-footer">
-            Don't have an account? <Link to="/register" className="auth-link">Request access</Link>
+            Don't have an account?{' '}
+            <Link to="/register" className="auth-link">
+              Request access
+            </Link>
           </p>
         </div>
       </div>

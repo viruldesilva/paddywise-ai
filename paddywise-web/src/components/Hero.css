@@ -120,4 +120,14 @@
 .hero-visual {
   width: 100%;
   position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.hero-visual img {
+  width: 100%;
+  max-width: 600px;
+  height: auto;
+  object-fit: contain;
 }

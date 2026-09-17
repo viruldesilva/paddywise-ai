@@ -1,0 +1,171 @@
+.sidebar {
+  width: 280px;
+  height: 100vh;
+  background-color: var(--forest);
+  color: var(--cream);
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+  left: 0;
+  border-right: 1px solid rgba(246, 241, 227, 0.1);
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+.sidebar-brand {
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-family: var(--font-heading);
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--cream);
+  border-bottom: 1px solid rgba(246, 241, 227, 0.1);
+}
+
+.sidebar-nav {
+  padding: 1.5rem 1rem;
+  flex: 1;
+}
+
+.sidebar-nav ul {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  padding: 0.875rem 1rem;
+  border-radius: 8px;
+  color: rgba(246, 241, 227, 0.8);
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.sidebar-icon {
+  color: rgba(246, 241, 227, 0.6);
+  transition: color 0.2s ease;
+}
+
+.sidebar-link:hover {
+  background-color: rgba(246, 241, 227, 0.05);
+  color: var(--cream);
+}
+
+.sidebar-link:hover .sidebar-icon {
+  color: var(--gold);
+}
+
+.sidebar-link.active {
+  background-color: rgba(225, 166, 59, 0.1);
+  color: var(--gold);
+  border-left: 3px solid var(--gold);
+  border-radius: 0 8px 8px 0;
+}
+
+.sidebar-link.active .sidebar-icon {
+  color: var(--gold);
+}
+
+.sidebar-footer {
+  padding: 1.5rem;
+  border-top: 1px solid rgba(246, 241, 227, 0.1);
+}
+
+.sidebar-help {
+  background-color: rgba(246, 241, 227, 0.05);
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid rgba(246, 241, 227, 0.1);
+}
+
+.sidebar-help h4 {
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--cream);
+  margin-bottom: 0.25rem;
+}
+
+.sidebar-help p {
+  font-size: 0.8125rem;
+  color: rgba(246, 241, 227, 0.6);
+}
+
+/* Custom Scrollbar for Sidebar */
+.sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: rgba(246, 241, 227, 0.2);
+  border-radius: 10px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: rgba(246, 241, 227, 0.3);
+}
+
+.sidebar-close-btn {
+  display: none;
+  color: var(--cream);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  transition: color 0.2s ease;
+}
+
+.sidebar-close-btn:hover {
+  color: var(--gold);
+}
+
+.sidebar-backdrop {
+  display: none;
+}
+
+@media (max-width: 960px) {
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease-in-out;
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .sidebar-brand {
+    justify-content: space-between;
+  }
+
+  .sidebar-close-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .sidebar-backdrop {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+  }
+}

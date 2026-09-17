@@ -1,84 +1,94 @@
-import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { authService } from '../services/authService';
-import type { User } from '../types/auth';
+import { Sidebar } from '../components/Sidebar';
+import { PendingPlansCard } from '../features/field-cultivation/components/PendingPlansCard';
+import type { UserRole } from '../types/auth';
 import { 
   Sprout, 
   ShieldCheck, 
-  ShoppingBag, 
-  Users, 
   LogOut, 
   CheckCircle, 
-  RefreshCw, 
-  Database,
   Calendar,
-  FileCheck
+  FileCheck,
+  Compass,
+  Radio,
+  Server,
+  KeyRound,
+  Menu
 } from 'lucide-react';
 import '../styles/Dashboard.css';
 
-export default function DashboardPage() {
-  const { user, logout } = useAuth();
+interface DashboardPageProps {
+  roleView?: UserRole;
+}
+
+export default function DashboardPage({ roleView }: DashboardPageProps) {
   const navigate = useNavigate();
-  const [usersList, setUsersList] = useState<User[]>([]);
-  const [notification, setNotification] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (user?.role === 'admin') {
-      setUsersList(authService.getAllUsers());
-    }
-  }, [user]);
-
-  const handleLogout = async () => {
-    await logout();
-    navigate('/');
-  };
-
-  const handleResetDefaults = () => {
-    if (window.confirm('Reset local storage users to default seed accounts?')) {
-      authService.resetToDefaults();
-      setUsersList(authService.getAllUsers());
-      setNotification('Users reset to initial seed accounts.');
-      setTimeout(() => setNotification(null), 3000);
-    }
-  };
+  const { user, logout } = useAuth();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   if (!user) return null;
 
-  return (
-    <div className="dashboard-container">
-      {/* Top Bar */}
-      <header className="dashboard-header">
-        <div className="container dashboard-header-inner">
-          <Link to="/" className="dashboard-brand">
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M12 22v-8" />
-              <path d="M12 14c-3-2-6-3-6-6 0-3 3-4 6-4" />
-              <path d="M12 14c3-2 6-3 6-6 0-3 3-4 6-4" />
-              <path d="M12 4v10" />
-            </svg>
-            Kumburu
-          </Link>
+  // Active role is either the route-specified roleView or the logged-in user's role
+  const activeRole: UserRole = roleView || user.role;
 
-          <div className="dashboard-user-meta">
+  const handleLogout = () => {
+    logout();
+  };
+
+  const getRoleDisplayName = (role: UserRole) => {
+    switch (role) {
+      case 'AgriculturalOfficer':
+        return 'Agricultural Officer';
+      case 'FieldOfficer':
+        return 'Field Officer';
+      default:
+        return role;
+    }
+  };
+
+  const getRoleBadgeClass = (role: UserRole) => {
+    switch (role) {
+      case 'Farmer':
+        return 'badge-farmer';
+      case 'AgriculturalOfficer':
+      case 'FieldOfficer':
+        return 'badge-officer';
+      case 'Admin':
+        return 'badge-admin';
+      default:
+        return 'badge-farmer';
+    }
+  };
+
+  return (
+    <div className="dashboard-layout">
+      <Sidebar role={activeRole} isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+      <div className="dashboard-main-wrapper">
+        {/* Top Bar */}
+        <header className="dashboard-header">
+          <div className="container dashboard-header-inner">
+            <div className="dashboard-header-title">
+              <button 
+                className="mobile-menu-btn" 
+                onClick={() => setIsSidebarOpen(true)}
+                aria-label="Open menu"
+              >
+                <Menu size={24} />
+              </button>
+            </div>
+
+            <div className="dashboard-user-meta">
             <div className="dashboard-user-greeting">
-              <span className="dashboard-user-name">{user.fullName}</span>
+              <span className="dashboard-user-name">{user.name}</span>
               <span className="dashboard-user-sub">
-                {user.division ? `${user.division} • ` : ''}{user.email}
+                {user.email}
               </span>
             </div>
 
-            <span className={`role-badge-tag badge-${user.role === 'extension_officer' ? 'officer' : user.role}`}>
-              {user.role.replace('_', ' ')}
+            <span className={`role-badge-tag ${getRoleBadgeClass(activeRole)}`}>
+              {getRoleDisplayName(activeRole)}
             </span>
 
             <button 
@@ -96,36 +106,29 @@ export default function DashboardPage() {
 
       {/* Main Content Area */}
       <main className="dashboard-content container">
-        {notification && (
-          <div className="info-notice" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem' }}>
-            <CheckCircle size={18} color="var(--shoot)" />
-            <span>{notification}</span>
-          </div>
-        )}
-
         <div className="dashboard-welcome-banner">
           <span className="eyebrow">
-            {user.role === 'farmer' && 'FIELD DECISION WORKSPACE'}
-            {user.role === 'extension_officer' && 'AGRICULTURAL SERVICE DIVISION'}
-            {user.role === 'buyer' && 'HARVEST PROCUREMENT PORTAL'}
-            {user.role === 'admin' && 'SYSTEM ADMINISTRATION & USERS'}
+            {activeRole === 'Farmer' && 'FIELD DECISION WORKSPACE'}
+            {activeRole === 'AgriculturalOfficer' && 'AGRICULTURAL EXTENSION DIVISION'}
+            {activeRole === 'FieldOfficer' && 'FIELD TECHNICAL & EXTENSION MONITORING'}
+            {activeRole === 'Admin' && 'SYSTEM ADMINISTRATION & PLATFORM CONSOLE'}
           </span>
           <h1 className="dashboard-welcome-title">
-            {user.role === 'farmer' && `Ayubowan, ${user.fullName.split(' ')[0]}!`}
-            {user.role === 'extension_officer' && `Officer Workspace: ${user.fullName}`}
-            {user.role === 'buyer' && `Procurement Hub: ${user.fullName}`}
-            {user.role === 'admin' && `System Administration Console`}
+            {activeRole === 'Farmer' && `Ayubowan, ${user.name.split(' ')[0]}!`}
+            {activeRole === 'AgriculturalOfficer' && `Officer Workspace: ${user.name}`}
+            {activeRole === 'FieldOfficer' && `Field Officer Hub: ${user.name}`}
+            {activeRole === 'Admin' && `System Administration Console`}
           </h1>
           <p className="dashboard-welcome-desc">
-            {user.role === 'farmer' && 'Monitor your crop cycle, diagnose leaf issues, and receive extension-approved treatment.'}
-            {user.role === 'extension_officer' && 'Review AI-flagged pest & disease symptoms and approve safe pesticide recommendations.'}
-            {user.role === 'buyer' && 'Discover upcoming paddy harvests across divisions and connect with local farmers.'}
-            {user.role === 'admin' && 'Manage registered accounts in local storage, review audit logs, and prepare for PostgreSQL connection.'}
+            {activeRole === 'Farmer' && 'Monitor your crop cycle, diagnose leaf issues, and receive extension-approved treatment.'}
+            {activeRole === 'AgriculturalOfficer' && 'Review AI-flagged pest & disease symptoms and approve safe pesticide recommendations.'}
+            {activeRole === 'FieldOfficer' && 'Coordinate on-site field visits, inspect agrarian tracts, and dispatch instant diagnostic telemetry.'}
+            {activeRole === 'Admin' && 'Manage authenticated accounts, monitor JWT security rotation, and observe backend system health.'}
           </p>
         </div>
 
         {/* 1. FARMER ROLE VIEW */}
-        {user.role === 'farmer' && (
+        {activeRole === 'Farmer' && (
           <div>
             <div className="metrics-grid">
               <div className="metric-card">
@@ -159,7 +162,7 @@ export default function DashboardPage() {
                   </h3>
                 </div>
                 <div className="info-notice">
-                  Notice yellowing, spots, or stunted tillers? Submit photos for AI analysis. An Extension Officer will review and verify the treatment recommendation.
+                  Notice yellowing, spots, or stunted tillers? Submit photos for AI analysis. An Agricultural Officer will review and verify the treatment recommendation.
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1rem' }}>
                   <div style={{ border: '2px dashed var(--line)', padding: '2rem', textAlign: 'center', borderRadius: '8px' }}>
@@ -167,7 +170,7 @@ export default function DashboardPage() {
                     <p style={{ fontSize: '0.875rem', color: 'var(--ink-soft)', marginTop: '0.25rem' }}>
                       Supports JPEG, PNG from field mobile camera
                     </p>
-                    <button className="btn btn-primary btn-sm" style={{ marginTop: '1rem' }} onClick={() => alert('Photo diagnosis is connected to the 4-agent pipeline in the mobile Flutter app and backend API.')}>
+                    <button className="btn btn-primary btn-sm" style={{ marginTop: '1rem' }} onClick={() => alert('Photo diagnosis is connected to the backend API & AI agent pipeline.')}>
                       Simulate Symptom Scan
                     </button>
                   </div>
@@ -197,25 +200,26 @@ export default function DashboardPage() {
                     </div>
                   </li>
                 </ul>
+                <div style={{ marginTop: '1.5rem', display: 'flex', gap: '1rem' }}>
+                  <button className="btn btn-primary" onClick={() => navigate('/activities')}>
+                    Manage Crop Activities
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* 2. EXTENSION OFFICER ROLE VIEW */}
-        {user.role === 'extension_officer' && (
+        {/* 2. AGRICULTURAL OFFICER ROLE VIEW */}
+        {activeRole === 'AgriculturalOfficer' && (
           <div>
             <div className="metrics-grid">
               <div className="metric-card">
                 <span className="metric-label">Assigned Division</span>
-                <span className="metric-value" style={{ fontSize: '1.25rem' }}>{user.division || 'North Central'}</span>
+                <span className="metric-value" style={{ fontSize: '1.25rem' }}>Polonnaruwa Central</span>
                 <span className="metric-sub">Agrarian Services Centre</span>
               </div>
-              <div className="metric-card">
-                <span className="metric-label">Pending Reviews</span>
-                <span className="metric-value" style={{ color: '#d97706' }}>3</span>
-                <span className="metric-sub">Requires officer sign-off</span>
-              </div>
+              <PendingPlansCard />
               <div className="metric-card">
                 <span className="metric-label">Approved Treatments</span>
                 <span className="metric-value">42</span>
@@ -278,106 +282,29 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* 3. BUYER / MILLER ROLE VIEW */}
-        {user.role === 'buyer' && (
+        {/* 3. FIELD OFFICER ROLE VIEW */}
+        {activeRole === 'FieldOfficer' && (
           <div>
             <div className="metrics-grid">
               <div className="metric-card">
-                <span className="metric-label">Live Field Listings</span>
-                <span className="metric-value">12 Lots</span>
-                <span className="metric-sub">Polonnaruwa & Anuradhapura</span>
+                <span className="metric-label">Field Station</span>
+                <span className="metric-value" style={{ fontSize: '1.25rem' }}>District Sector 4</span>
+                <span className="metric-sub">Mobile Response Unit</span>
               </div>
               <div className="metric-card">
-                <span className="metric-label">Active Purchase Offers</span>
-                <span className="metric-value">3</span>
-                <span className="metric-sub">Pending farmer confirmation</span>
+                <span className="metric-label">Scheduled Visits</span>
+                <span className="metric-value" style={{ color: '#0284c7' }}>5 Today</span>
+                <span className="metric-sub">Field inspections</span>
               </div>
               <div className="metric-card">
-                <span className="metric-label">Total Procured</span>
-                <span className="metric-value">85 MT</span>
-                <span className="metric-sub">Current season</span>
+                <span className="metric-label">Scans Completed</span>
+                <span className="metric-value">89</span>
+                <span className="metric-sub">Geo-tagged submissions</span>
               </div>
               <div className="metric-card">
-                <span className="metric-label">Avg Buying Rate</span>
-                <span className="metric-value">LKR 115/kg</span>
-                <span className="metric-sub">Samba & Nadu paddy</span>
-              </div>
-            </div>
-
-            <div className="dashboard-panel">
-              <div className="panel-header">
-                <h3 className="panel-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <ShoppingBag size={20} color="var(--gold-deep)" />
-                  Available Harvest Listings Nearby
-                </h3>
-              </div>
-              <div className="user-table-wrapper">
-                <table className="user-table">
-                  <thead>
-                    <tr>
-                      <th>Farmer</th>
-                      <th>Variety</th>
-                      <th>Estimated Quantity</th>
-                      <th>Location</th>
-                      <th>Harvest Date</th>
-                      <th>Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td>Bandara Wanninayake</td>
-                      <td>Bg 352 (Nadu)</td>
-                      <td>14 Metric Tons</td>
-                      <td>Medirigiriya</td>
-                      <td>Aug 20, 2026</td>
-                      <td>
-                        <button className="btn btn-primary btn-sm" onClick={() => alert('Offer modal will open in integrated procurement module.')}>
-                          Place Offer
-                        </button>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>Sunil Jayasuriya</td>
-                      <td>At 362 (Red Samba)</td>
-                      <td>9.5 Metric Tons</td>
-                      <td>Tambuttegama</td>
-                      <td>Aug 28, 2026</td>
-                      <td>
-                        <button className="btn btn-primary btn-sm" onClick={() => alert('Offer modal will open in integrated procurement module.')}>
-                          Place Offer
-                        </button>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* 4. ADMIN ROLE VIEW */}
-        {user.role === 'admin' && (
-          <div>
-            <div className="metrics-grid">
-              <div className="metric-card">
-                <span className="metric-label">Registered Accounts</span>
-                <span className="metric-value">{usersList.length}</span>
-                <span className="metric-sub">Saved in LocalStorage</span>
-              </div>
-              <div className="metric-card">
-                <span className="metric-label">Target Database</span>
-                <span className="metric-value" style={{ fontSize: '1.25rem' }}>PostgreSQL</span>
-                <span className="metric-sub">Schema ready in database/</span>
-              </div>
-              <div className="metric-card">
-                <span className="metric-label">Backend Target</span>
-                <span className="metric-value" style={{ fontSize: '1.25rem' }}>ASP.NET Core</span>
-                <span className="metric-sub">PaddyWise.Api ready</span>
-              </div>
-              <div className="metric-card">
-                <span className="metric-label">System Health</span>
-                <span className="metric-value" style={{ color: '#2e7d32' }}>Online</span>
-                <span className="metric-sub">Mock Auth active</span>
+                <span className="metric-label">Active Outbreak Flags</span>
+                <span className="metric-value" style={{ color: '#d97706' }}>1 Zone</span>
+                <span className="metric-sub">Brown Plant Hopper</span>
               </div>
             </div>
 
@@ -385,66 +312,119 @@ export default function DashboardPage() {
               <div className="dashboard-panel">
                 <div className="panel-header">
                   <h3 className="panel-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <Users size={20} color="var(--forest)" />
-                    Current User Accounts in Storage ({usersList.length})
+                    <Compass size={20} color="var(--forest)" />
+                    Today's Field Route & Verification Queue
                   </h3>
-                  <button onClick={handleResetDefaults} className="btn btn-secondary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                    <RefreshCw size={14} /> Reset Seed Users
-                  </button>
                 </div>
-
-                <div className="user-table-wrapper">
-                  <table className="user-table">
-                    <thead>
-                      <tr>
-                        <th>Name</th>
-                        <th>Email</th>
-                        <th>Role</th>
-                        <th>Division</th>
-                        <th>Registered</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {usersList.map((u) => (
-                        <tr key={u.id}>
-                          <td style={{ fontWeight: 600, color: 'var(--ink)' }}>{u.fullName}</td>
-                          <td>{u.email}</td>
-                          <td>
-                            <span className={`badge-outline badge-${u.role === 'extension_officer' ? 'officer' : u.role}`}>
-                              {u.role.replace('_', ' ')}
-                            </span>
-                          </td>
-                          <td>{u.division || '—'}</td>
-                          <td style={{ fontSize: '0.8rem' }}>
-                            {new Date(u.createdAt).toLocaleDateString()}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  <div style={{ padding: '0.875rem 1rem', border: '1px solid var(--line)', borderRadius: '8px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <strong>Paddy Tract #14 - Jayanthipura</strong>
+                      <span className="badge-outline badge-officer">In Progress</span>
+                    </div>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--ink-soft)', marginTop: '0.25rem' }}>
+                      Farmer: K. Dharmasena • Verification of Leaf Scald symptoms.
+                    </p>
+                  </div>
+                  <div style={{ padding: '0.875rem 1rem', border: '1px solid var(--line)', borderRadius: '8px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <strong>Paddy Tract #22 - Hingurakgoda</strong>
+                      <span className="badge-outline">Upcoming (2:00 PM)</span>
+                    </div>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--ink-soft)', marginTop: '0.25rem' }}>
+                      Farmer: S. Wickramasinghe • Soil salinity spot check.
+                    </p>
+                  </div>
                 </div>
               </div>
 
               <div className="dashboard-panel">
                 <div className="panel-header">
                   <h3 className="panel-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <Database size={18} />
-                    PostgreSQL Migration Ready
+                    <Radio size={18} color="var(--shoot)" />
+                    Field Telemetry Connection
                   </h3>
                 </div>
                 <div className="info-notice">
-                  <strong>Backend Status:</strong> When you start PostgreSQL and ASP.NET Core:
+                  GPS location and offline sensor packets automatically sync with the ASP.NET Core API server once within cellular range.
                 </div>
-                <ol style={{ fontSize: '0.875rem', color: 'var(--ink-soft)', lineHeight: 1.8, paddingLeft: '1.25rem' }}>
-                  <li>Run <code>database/schema.sql</code> in PostgreSQL.</li>
-                  <li>Configure your connection string in <code>paddywise-backend/appsettings.json</code>.</li>
-                  <li>In <code>paddywise-web</code>, the <code>authService</code> endpoints will swap directly to <code>/api/auth/*</code> without rewriting frontend components.</li>
-                </ol>
+                <p style={{ fontSize: '0.85rem', color: 'var(--ink-soft)', marginTop: '0.75rem' }}>
+                  Connected to backend gateway: <code>http://localhost:5164/api</code>
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 4. ADMIN ROLE VIEW */}
+        {activeRole === 'Admin' && (
+          <div>
+            <div className="metrics-grid">
+              <div className="metric-card">
+                <span className="metric-label">Backend Environment</span>
+                <span className="metric-value" style={{ fontSize: '1.25rem' }}>ASP.NET Core</span>
+                <span className="metric-sub">PaddyWise.Api active</span>
+              </div>
+              <div className="metric-card">
+                <span className="metric-label">Target Database</span>
+                <span className="metric-value" style={{ fontSize: '1.25rem' }}>PostgreSQL</span>
+                <span className="metric-sub">Neon DB / Local</span>
+              </div>
+              <div className="metric-card">
+                <span className="metric-label">Auth Architecture</span>
+                <span className="metric-value" style={{ fontSize: '1.25rem' }}>JWT Bearer</span>
+                <span className="metric-sub">Rotated Refresh Tokens</span>
+              </div>
+              <div className="metric-card">
+                <span className="metric-label">Backend Status</span>
+                <span className="metric-value" style={{ color: '#2e7d32' }}>Ready</span>
+                <span className="metric-sub">http://localhost:5164/api</span>
+              </div>
+            </div>
+
+            <div className="dashboard-panels-grid">
+              <div className="dashboard-panel">
+                <div className="panel-header">
+                  <h3 className="panel-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <Server size={20} color="var(--forest)" />
+                    ASP.NET Core Backend Auth Configuration
+                  </h3>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.875rem' }}>
+                  <div style={{ padding: '0.75rem 1rem', background: 'var(--cream-deep)', borderRadius: '6px' }}>
+                    <strong>API Base URL:</strong> <code>http://localhost:5164/api</code>
+                  </div>
+                  <div style={{ padding: '0.75rem 1rem', background: 'var(--cream-deep)', borderRadius: '6px' }}>
+                    <strong>Authentication Endpoints:</strong>
+                    <ul style={{ paddingLeft: '1.2rem', marginTop: '0.25rem', lineHeight: '1.6' }}>
+                      <li><code>POST /api/auth/register</code> (JWT & Refresh token issue)</li>
+                      <li><code>POST /api/auth/login</code> (Credentials validation & token issue)</li>
+                      <li><code>POST /api/auth/refresh</code> (Sliding token pair rotation)</li>
+                      <li><code>GET /api/auth/me</code> (Bearer token verification)</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <div className="dashboard-panel">
+                <div className="panel-header">
+                  <h3 className="panel-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <KeyRound size={18} color="var(--gold-deep)" />
+                    Active Session Security
+                  </h3>
+                </div>
+                <div className="info-notice">
+                  Authenticated as <strong>{user.name}</strong> ({user.email}) with role <strong>{user.role}</strong>.
+                </div>
+                <p style={{ fontSize: '0.875rem', color: 'var(--ink-soft)', lineHeight: 1.6, marginTop: '0.75rem' }}>
+                  All outgoing Axios HTTP requests are intercepted to dynamically attach the Authorization Bearer header. If an access token expires, the Axios interceptor transparently exchanges the refresh token and re-executes pending requests without interrupting user workflow.
+                </p>
               </div>
             </div>
           </div>
         )}
       </main>
+      </div>
     </div>
   );
 }

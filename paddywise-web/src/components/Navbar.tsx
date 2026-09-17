@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Menu, X, LogOut, LayoutDashboard } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import './Navbar.css';
+import logoImage from '../assets/logo2.png';
 
 export default function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -22,24 +23,7 @@ export default function Navbar() {
       <div className="container navbar-container">
         <div className="navbar-left">
           <Link to="/" className="navbar-brand">
-            <svg
-              className="navbar-logo"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M12 22v-8" />
-              <path d="M12 14c-3-2-6-3-6-6 0-3 3-4 6-4" />
-              <path d="M12 14c3-2 6-3 6-6 0-3-3-4-6-4" />
-              <path d="M12 4v10" />
-            </svg>
-            <div className="navbar-title-group">
-              <span className="navbar-title">Kumburu</span>
-              <span className="navbar-subtitle">Paddy field, connected</span>
-            </div>
+            <img src={logoImage} alt="Kumburu Logo" className="navbar-logo-img" />
           </Link>
         </div>
 
@@ -55,16 +39,16 @@ export default function Navbar() {
         <div className="navbar-right">
           {isAuthenticated && user ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <Link 
-                to="/dashboard" 
+              <Link
+                to="/dashboard"
                 className="btn btn-primary"
                 style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 1rem', fontSize: '0.875rem' }}
               >
                 <LayoutDashboard size={16} />
-                Dashboard ({user.fullName.split(' ')[0]})
+                Dashboard ({user.name.split(' ')[0]})
               </Link>
-              <button 
-                onClick={handleLogout} 
+              <button
+                onClick={handleLogout}
                 className="navbar-link-btn"
                 style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer' }}
                 title="Sign Out"
@@ -81,8 +65,8 @@ export default function Navbar() {
           )}
         </div>
 
-        <button 
-          className="mobile-menu-btn" 
+        <button
+          className="mobile-menu-btn"
           onClick={toggleMenu}
           aria-expanded={isMobileMenuOpen}
           aria-label="Toggle menu"
@@ -103,7 +87,7 @@ export default function Navbar() {
                 <>
                   <li>
                     <Link to="/dashboard" onClick={toggleMenu} style={{ fontWeight: 600 }}>
-                      Dashboard ({user.fullName})
+                      Dashboard ({user.name})
                     </Link>
                   </li>
                   <li>

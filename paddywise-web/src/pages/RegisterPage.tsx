@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, User, Briefcase, MapPin, Phone, AlertCircle, CheckCircle } from 'lucide-react';
+import { Mail, Lock, User, Briefcase, Phone, AlertCircle, CheckCircle } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { extractApiErrorMessage } from '../services/authService';
+import { getRoleDashboardRoute } from '../utils/roleRoutes';
 import type { UserRole } from '../types/auth';
 import '../styles/Auth.css';
 
 export default function RegisterPage() {
-  const [fullName, setFullName] = useState('');
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<UserRole | ''>('');
-  const [division, setDivision] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -25,7 +26,7 @@ export default function RegisterPage() {
     setError(null);
     setSuccess(null);
 
-    if (!fullName || !email || !role || !password) {
+    if (!name || !email || !role || !password) {
       setError('Please fill in all required fields (Name, Email, Role, Password).');
       return;
     }
@@ -42,25 +43,22 @@ export default function RegisterPage() {
 
     setIsSubmitting(true);
     try {
-      await register({
-        fullName,
-        email,
-        role: role as UserRole,
-        division,
-        phone,
+      const response = await register({
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
         password,
+        role: role as UserRole,
+        phone: phone.trim() ? phone.trim() : undefined,
       });
 
       setSuccess('Account created successfully! Redirecting to your dashboard...');
+      const targetRoute = getRoleDashboardRoute(response.role);
       setTimeout(() => {
-        navigate('/dashboard', { replace: true });
-      }, 1200);
+        navigate(targetRoute, { replace: true });
+      }, 1000);
     } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError('Failed to create account. Please try again.');
-      }
+      const serverMessage = extractApiErrorMessage(err, 'Failed to create account. Please try again.');
+      setError(serverMessage);
       setIsSubmitting(false);
     }
   };
@@ -87,14 +85,22 @@ export default function RegisterPage() {
           </svg>
           Kumburu
         </Link>
-        
+
         <div className="auth-visual-content">
           <h2 className="auth-quote">
             Ready to see a <br />
             <span className="auth-quote-highlight">season end differently?</span>
           </h2>
-          <p style={{ color: 'var(--cream-deep)', fontSize: '0.95rem', maxWidth: '24rem', opacity: 0.85, marginTop: '1rem' }}>
-            Join hundreds of farmers, extension officers, and buyers collaborating on Sri Lanka's paddy ecosystem.
+          <p
+            style={{
+              color: 'var(--cream-deep)',
+              fontSize: '0.95rem',
+              maxWidth: '24rem',
+              opacity: 0.85,
+              marginTop: '1rem',
+            }}
+          >
+            Join farmers, extension officers, and field specialists collaborating on Sri Lanka's paddy ecosystem.
           </p>
         </div>
       </div>
@@ -125,34 +131,38 @@ export default function RegisterPage() {
           <p className="auth-subtitle">Join the connected paddy ecosystem.</p>
 
           {error && (
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              backgroundColor: '#fee2e2',
-              color: '#991b1b',
-              padding: '0.75rem 1rem',
-              borderRadius: '8px',
-              fontSize: '0.875rem',
-              marginBottom: '1.25rem'
-            }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                backgroundColor: '#fee2e2',
+                color: '#991b1b',
+                padding: '0.75rem 1rem',
+                borderRadius: '8px',
+                fontSize: '0.875rem',
+                marginBottom: '1.25rem',
+              }}
+            >
               <AlertCircle size={18} />
               <span>{error}</span>
             </div>
           )}
 
           {success && (
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              backgroundColor: '#dcfce7',
-              color: '#166534',
-              padding: '0.75rem 1rem',
-              borderRadius: '8px',
-              fontSize: '0.875rem',
-              marginBottom: '1.25rem'
-            }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                backgroundColor: '#dcfce7',
+                color: '#166534',
+                padding: '0.75rem 1rem',
+                borderRadius: '8px',
+                fontSize: '0.875rem',
+                marginBottom: '1.25rem',
+              }}
+            >
               <CheckCircle size={18} />
               <span>{success}</span>
             </div>
@@ -163,13 +173,13 @@ export default function RegisterPage() {
               <label htmlFor="name">Full Name *</label>
               <div className="auth-input-wrapper">
                 <User className="auth-input-icon" size={20} />
-                <input 
-                  type="text" 
-                  id="name" 
-                  className="auth-input-with-icon" 
+                <input
+                  type="text"
+                  id="name"
+                  className="auth-input-with-icon"
                   placeholder="Amara Silva"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
                   disabled={isSubmitting}
                   required
                 />
@@ -180,10 +190,10 @@ export default function RegisterPage() {
               <label htmlFor="email">Email Address *</label>
               <div className="auth-input-wrapper">
                 <Mail className="auth-input-icon" size={20} />
-                <input 
-                  type="email" 
-                  id="email" 
-                  className="auth-input-with-icon" 
+                <input
+                  type="email"
+                  id="email"
+                  className="auth-input-with-icon"
                   placeholder="name@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -197,8 +207,8 @@ export default function RegisterPage() {
               <label htmlFor="role">Your Role *</label>
               <div className="auth-input-wrapper">
                 <Briefcase className="auth-input-icon" size={20} />
-                <select 
-                  id="role" 
+                <select
+                  id="role"
                   className="auth-input-with-icon"
                   value={role}
                   onChange={(e) => setRole(e.target.value as UserRole)}
@@ -206,27 +216,11 @@ export default function RegisterPage() {
                   required
                 >
                   <option value="">Select your role</option>
-                  <option value="farmer">Farmer</option>
-                  <option value="extension_officer">Extension Officer</option>
-                  <option value="buyer">Buyer / Miller</option>
-                  <option value="admin">System Admin</option>
+                  <option value="Farmer">Farmer</option>
+                  <option value="AgriculturalOfficer">Agricultural Officer</option>
+                  <option value="FieldOfficer">Field Officer</option>
+                  <option value="Admin">System Admin</option>
                 </select>
-              </div>
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="division">Agrarian Division / District (Optional)</label>
-              <div className="auth-input-wrapper">
-                <MapPin className="auth-input-icon" size={20} />
-                <input 
-                  type="text" 
-                  id="division" 
-                  className="auth-input-with-icon" 
-                  placeholder="e.g. Polonnaruwa - Medirigiriya"
-                  value={division}
-                  onChange={(e) => setDivision(e.target.value)}
-                  disabled={isSubmitting}
-                />
               </div>
             </div>
 
@@ -234,10 +228,10 @@ export default function RegisterPage() {
               <label htmlFor="phone">Phone Number (Optional)</label>
               <div className="auth-input-wrapper">
                 <Phone className="auth-input-icon" size={20} />
-                <input 
-                  type="tel" 
-                  id="phone" 
-                  className="auth-input-with-icon" 
+                <input
+                  type="tel"
+                  id="phone"
+                  className="auth-input-with-icon"
                   placeholder="+94 77 123 4567"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
@@ -250,10 +244,10 @@ export default function RegisterPage() {
               <label htmlFor="password">Password *</label>
               <div className="auth-input-wrapper">
                 <Lock className="auth-input-icon" size={20} />
-                <input 
-                  type="password" 
-                  id="password" 
-                  className="auth-input-with-icon" 
+                <input
+                  type="password"
+                  id="password"
+                  className="auth-input-with-icon"
                   placeholder="•••••••• (min 6 characters)"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -267,10 +261,10 @@ export default function RegisterPage() {
               <label htmlFor="confirmPassword">Confirm Password *</label>
               <div className="auth-input-wrapper">
                 <Lock className="auth-input-icon" size={20} />
-                <input 
-                  type="password" 
-                  id="confirmPassword" 
-                  className="auth-input-with-icon" 
+                <input
+                  type="password"
+                  id="confirmPassword"
+                  className="auth-input-with-icon"
                   placeholder="••••••••"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
@@ -280,8 +274,8 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               className="btn btn-primary auth-submit-btn"
               disabled={isSubmitting}
             >
@@ -290,7 +284,10 @@ export default function RegisterPage() {
           </form>
 
           <p className="auth-footer">
-            Already have an account? <Link to="/login" className="auth-link">Sign in</Link>
+            Already have an account?{' '}
+            <Link to="/login" className="auth-link">
+              Sign in
+            </Link>
           </p>
         </div>
       </div>
