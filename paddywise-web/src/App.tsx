@@ -9,6 +9,10 @@ import { getRoleDashboardRoute } from './utils/roleRoutes';
 import { ActivityDashboard } from './features/crop-resource/pages/ActivityDashboard';
 import DashboardPage from './pages/DashboardPage';
 import UserManagementPage from './pages/UserManagementPage';
+import FieldsPage from './features/field-cultivation/pages/FieldsPage';
+import FieldDetailPage from './features/field-cultivation/pages/FieldDetailPage';
+import CycleDetailPage from './features/field-cultivation/pages/CycleDetailPage';
+import PlanApprovalPage from './features/field-cultivation/pages/PlanApprovalPage';
 
 function RoleRedirect() {
   const { user } = useAuth();
@@ -75,6 +79,42 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <DashboardPage roleView="FieldOfficer" />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/fields"
+          element={
+            <ProtectedRoute allowedRoles={['Farmer']}>
+              <FieldsPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/fields/:id"
+          element={
+            <ProtectedRoute allowedRoles={['Farmer', 'AgriculturalOfficer', 'FieldOfficer']}>
+              <FieldDetailPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/cycles/:id"
+          element={
+            <ProtectedRoute allowedRoles={['Farmer', 'AgriculturalOfficer', 'FieldOfficer']}>
+              <CycleDetailPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/plans/pending"
+          element={
+            <ProtectedRoute allowedRoles={['AgriculturalOfficer']}>
+              <PlanApprovalPage />
             </ProtectedRoute>
           }
         />

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { Sidebar } from '../components/Sidebar';
+import { PendingPlansCard } from '../features/field-cultivation/components/PendingPlansCard';
 import type { UserRole } from '../types/auth';
 import { 
   Sprout, 
@@ -218,11 +219,7 @@ export default function DashboardPage({ roleView }: DashboardPageProps) {
                 <span className="metric-value" style={{ fontSize: '1.25rem' }}>Polonnaruwa Central</span>
                 <span className="metric-sub">Agrarian Services Centre</span>
               </div>
-              <div className="metric-card">
-                <span className="metric-label">Pending Reviews</span>
-                <span className="metric-value" style={{ color: '#d97706' }}>3</span>
-                <span className="metric-sub">Requires officer sign-off</span>
-              </div>
+              <PendingPlansCard />
               <div className="metric-card">
                 <span className="metric-label">Approved Treatments</span>
                 <span className="metric-value">42</span>

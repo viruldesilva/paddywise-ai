@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using PaddyWise.Api.Data;
@@ -11,9 +12,11 @@ using PaddyWise.Api.Data;
 namespace PaddyWise.Api.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260916123714_AddCultivationCycles")]
+    partial class AddCultivationCycles
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,58 +24,6 @@ namespace PaddyWise.Api.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
-
-            modelBuilder.Entity("PaddyWise.Api.Entities.FieldCultivation.AgentRunLog", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("AgentName")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("CorrelationId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int?>("CultivationPlanId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("DurationMs")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Error")
-                        .HasColumnType("text");
-
-                    b.Property<string>("InputJson")
-                        .IsRequired()
-                        .HasColumnType("jsonb");
-
-                    b.Property<string>("RawOutput")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<bool>("Success")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("ToolCallsJson")
-                        .IsRequired()
-                        .HasColumnType("jsonb");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CorrelationId");
-
-                    b.HasIndex("CultivationPlanId");
-
-                    b.ToTable("AgentRunLogs");
-                });
 
             modelBuilder.Entity("PaddyWise.Api.Entities.FieldCultivation.CultivationCycle", b =>
                 {
@@ -131,62 +82,6 @@ namespace PaddyWise.Api.Migrations
                         .IsUnique();
 
                     b.ToTable("CultivationCycles");
-                });
-
-            modelBuilder.Entity("PaddyWise.Api.Entities.FieldCultivation.CultivationPlan", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("CultivationCycleId")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Objective")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("OfficerComment")
-                        .HasColumnType("text");
-
-                    b.Property<int?>("OfficerId")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("PlanJson")
-                        .IsRequired()
-                        .HasColumnType("jsonb");
-
-                    b.Property<int>("RequestedByUserId")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("ReviewedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("ValidationErrorsJson")
-                        .HasColumnType("jsonb");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CultivationCycleId");
-
-                    b.HasIndex("OfficerId");
-
-                    b.HasIndex("RequestedByUserId");
-
-                    b.HasIndex("Status");
-
-                    b.ToTable("CultivationPlans");
                 });
 
             modelBuilder.Entity("PaddyWise.Api.Entities.FieldCultivation.Division", b =>
@@ -505,16 +400,6 @@ namespace PaddyWise.Api.Migrations
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("PaddyWise.Api.Entities.FieldCultivation.AgentRunLog", b =>
-                {
-                    b.HasOne("PaddyWise.Api.Entities.FieldCultivation.CultivationPlan", "CultivationPlan")
-                        .WithMany()
-                        .HasForeignKey("CultivationPlanId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("CultivationPlan");
-                });
-
             modelBuilder.Entity("PaddyWise.Api.Entities.FieldCultivation.CultivationCycle", b =>
                 {
                     b.HasOne("PaddyWise.Api.Entities.FieldCultivation.Field", "Field")
@@ -532,32 +417,6 @@ namespace PaddyWise.Api.Migrations
                     b.Navigation("Field");
 
                     b.Navigation("Variety");
-                });
-
-            modelBuilder.Entity("PaddyWise.Api.Entities.FieldCultivation.CultivationPlan", b =>
-                {
-                    b.HasOne("PaddyWise.Api.Entities.FieldCultivation.CultivationCycle", "CultivationCycle")
-                        .WithMany()
-                        .HasForeignKey("CultivationCycleId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("PaddyWise.Api.Entities.Shared.User", "Officer")
-                        .WithMany()
-                        .HasForeignKey("OfficerId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("PaddyWise.Api.Entities.Shared.User", "RequestedByUser")
-                        .WithMany()
-                        .HasForeignKey("RequestedByUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("CultivationCycle");
-
-                    b.Navigation("Officer");
-
-                    b.Navigation("RequestedByUser");
                 });
 
             modelBuilder.Entity("PaddyWise.Api.Entities.FieldCultivation.Field", b =>
