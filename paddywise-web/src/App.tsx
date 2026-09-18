@@ -13,6 +13,7 @@ import FieldsPage from './features/field-cultivation/pages/FieldsPage';
 import FieldDetailPage from './features/field-cultivation/pages/FieldDetailPage';
 import CycleDetailPage from './features/field-cultivation/pages/CycleDetailPage';
 import PlanApprovalPage from './features/field-cultivation/pages/PlanApprovalPage';
+import { NewActivityPage } from './features/crop-resource/pages/NewActivityPage';
 
 function RoleRedirect() {
   const { user } = useAuth();
@@ -106,6 +107,15 @@ function AppContent() {
           element={
             <ProtectedRoute allowedRoles={['Farmer', 'AgriculturalOfficer', 'FieldOfficer']}>
               <CycleDetailPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/cycles/:id/activities/new"
+          element={
+            <ProtectedRoute allowedRoles={['Farmer']}>
+              <NewActivityPage />
             </ProtectedRoute>
           }
         />

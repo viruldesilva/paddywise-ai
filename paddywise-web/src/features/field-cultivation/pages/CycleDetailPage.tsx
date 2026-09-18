@@ -220,7 +220,16 @@ export default function CycleDetailPage() {
                   </p>
                 </div>
 
-                <CycleStatusBadge status={cycle.status} />
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.75rem' }}>
+                  <CycleStatusBadge status={cycle.status} />
+                  <Link 
+                    className="fc-btn" 
+                    to={`/cycles/${cycle.id}/activities/new`}
+                    style={{ textDecoration: 'none' }}
+                  >
+                    Add Crop Activity
+                  </Link>
+                </div>
               </div>
 
               <section className="fc-summary">

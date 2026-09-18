@@ -1,31 +1,42 @@
-import React, { useState } from 'react';
-//import { Link } from 'react-router-dom';
-import { ActivityForm } from '../components/ActivityForm';
-import { FertilizerValidationFlow, type FertilizerData } from '../components/FertilizerValidationFlow';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../../hooks/useAuth';
+import { fieldApi } from '../../field-cultivation/services/fieldApi';
+import type { CultivationCycle } from '../../field-cultivation/types';
+import { ActivityPanel } from '../components/ActivityPanel';
 import './ActivityDashboard.css';
 import Navbar from '../../../components/Navbar';
 
-type ActivityType = 'Irrigation' | 'Fertilizer' | 'Pesticide' | 'Other';
-
 export const ActivityDashboard: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<ActivityType>('Fertilizer');
-  const [validationData, setValidationData] = useState<FertilizerData | null>(null);
+  const { user } = useAuth();
+  
+  const [cycles, setCycles] = useState<CultivationCycle[]>([]);
+  const [selectedCycleId, setSelectedCycleId] = useState<number | ''>('');
+  const [isLoadingCycles, setIsLoadingCycles] = useState(true);
 
-  const handleActivitySubmit = (data: any) => {
-    console.log('Submitted Activity:', data);
-
-    if (data.activityType === 'Fertilizer') {
-      // Trigger validation flow
-      setValidationData(data as FertilizerData);
-    } else {
-      // For other activities, just show a success alert for now
-      alert(`${data.activityType} activity recorded successfully!`);
+  useEffect(() => {
+    async function loadCycles() {
+      if (user?.role === 'Farmer') {
+        try {
+          const myCycles = await fieldApi.getMyCycles();
+          // Filter to only show active or planned cycles
+          const activeOrPlanned = myCycles.filter(c => c.status === 'Active' || c.status === 'Planned');
+          setCycles(activeOrPlanned);
+          if (activeOrPlanned.length > 0) {
+            setSelectedCycleId(activeOrPlanned[0].id);
+          }
+        } catch (err) {
+          console.error("Failed to load cycles", err);
+        } finally {
+          setIsLoadingCycles(false);
+        }
+      } else {
+        setIsLoadingCycles(false);
+      }
     }
-  };
+    loadCycles();
+  }, [user]);
 
-  const handleCloseValidation = () => {
-    setValidationData(null);
-  };
+  const selectedCycle = cycles.find(c => c.id === selectedCycleId) || null;
 
   return (
     <>
@@ -37,52 +48,35 @@ export const ActivityDashboard: React.FC = () => {
         </div>
 
         <div className={`activity-grid ${validationData ? 'with-validation' : ''}`}>
-          <div className="glass-panel" style={{ opacity: validationData ? 0.7 : 1, transition: 'opacity 0.3s' }}>
-            <div className="activity-selector">
-              {['Irrigation', 'Fertilizer', 'Pesticide', 'Other'].map((type) => (
-                <div
-                  key={type}
-                  className={`activity-tab ${activeTab === type ? 'active' : ''}`}
-                  onClick={() => {
-                    if (!validationData) setActiveTab(type as ActivityType);
-                  }}
-                  style={{ cursor: validationData ? 'not-allowed' : 'pointer' }}
-                >
-                  {type}
-                </div>
-              ))}
-            </div>
+          <div className="activity-panel" style={{ opacity: validationData ? 0.7 : 1, transition: 'opacity 0.3s' }}>
+            
+            {user?.role === 'Farmer' && (
+              <div style={{ marginBottom: '2rem', padding: '1.5rem', background: 'var(--cream)', borderRadius: '12px', border: '1px solid var(--line)' }}>
+                <label className="form-label" style={{ marginBottom: '0.75rem', display: 'block' }}>Select Cultivation Cycle</label>
+                {isLoadingCycles ? (
+                  <p style={{ color: 'var(--ink-soft)', margin: 0 }}>Loading cycles...</p>
+                ) : cycles.length === 0 ? (
+                  <p style={{ color: 'var(--clay)', margin: 0 }}>No active or planned cycles found. Please create one in Field Management first.</p>
+                ) : (
+                  <select 
+                    className="form-input" 
+                    value={selectedCycleId} 
+                    onChange={e => setSelectedCycleId(Number(e.target.value))}
+                  >
+                    {cycles.map(c => (
+                      <option key={c.id} value={c.id}>
+                        {c.season} {c.year} - {c.fieldName} ({c.varietyName})
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            )}
 
-            <h2 style={{ marginBottom: '20px', color: 'var(--primary-dark)', fontSize: '1.5rem' }}>
-              Record {activeTab} Activity
-            </h2>
-
-            <ActivityForm
-              activityType={activeTab}
-              onSubmit={handleActivitySubmit}
-              isSubmitting={!!validationData}
-            />
+            <ActivityPanel selectedCycle={selectedCycle} />
           </div>
-
-          {validationData && (
-            <div className="glass-panel" style={{ animation: 'fadeInRight 0.5s ease-out' }}>
-              <FertilizerValidationFlow
-                data={validationData}
-                onClose={handleCloseValidation}
-              />
-            </div>
-          )}
         </div>
-
-        <style dangerouslySetInnerHTML={{
-          __html: `
-        @keyframes fadeInRight {
-          from { opacity: 0; transform: translateX(20px); }
-          to { opacity: 1; transform: translateX(0); }
-        }
-      `}} />
       </div>
-
     </>
   );
 };
