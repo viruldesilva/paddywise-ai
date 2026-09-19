@@ -57,6 +57,7 @@ builder.Services.AddScoped<PaddyWise.Api.Services.FieldCultivation.IFieldService
 builder.Services.AddScoped<PaddyWise.Api.Services.FieldCultivation.ICycleService, PaddyWise.Api.Services.FieldCultivation.CycleService>();
 builder.Services.AddScoped<PaddyWise.Api.Services.FieldCultivation.ICultivationPlanService, PaddyWise.Api.Services.FieldCultivation.CultivationPlanService>();
 builder.Services.AddScoped<PaddyWise.Api.Services.PestDisease.IObservationService, PaddyWise.Api.Services.PestDisease.ObservationService>();
+builder.Services.AddScoped<PaddyWise.Api.Services.PestDisease.IPestDiseaseReportService, PaddyWise.Api.Services.PestDisease.PestDiseaseReportService>();
 
 // Gemini:ApiKey comes from user-secrets / the Gemini__ApiKey environment variable.
 builder.Services.AddHttpClient(GeminiLlmClient.HttpClientName, client =>
