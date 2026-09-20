@@ -1,4 +1,8 @@
+using System.Diagnostics;
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using PaddyWise.Api.Agents.Shared;
 using PaddyWise.Api.Data;
 using PaddyWise.Api.DTOs.PestDisease;
 using PaddyWise.Api.Entities.PestDisease;
@@ -8,11 +12,20 @@ namespace PaddyWise.Api.Services.PestDisease;
 
 public class ObservationService : IObservationService
 {
-    private readonly ApplicationDbContext _context;
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
-    public ObservationService(ApplicationDbContext context)
+    private readonly ApplicationDbContext _context;
+    private readonly IAgent<DelegatedTask, DelegatedTaskResult> _diagnosisAgent;
+    private readonly ILogger<ObservationService> _logger;
+
+    public ObservationService(
+        ApplicationDbContext context,
+        [FromKeyedServices(AgentNames.PestDiseaseDiagnosis)] IAgent<DelegatedTask, DelegatedTaskResult> diagnosisAgent,
+        ILogger<ObservationService> logger)
     {
         _context = context;
+        _diagnosisAgent = diagnosisAgent;
+        _logger = logger;
     }
 
     public async Task<List<ObservationResponseDto>> GetObservationsAsync(
@@ -133,6 +146,131 @@ public class ObservationService : IObservationService
         observation.Severity = severity;
         observation.ImageUrl = request.ImageUrl;
         observation.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        return MapToResponse(observation);
+    }
+
+    public async Task<ObservationResponseDto?> RequestAnalysisAsync(int observationId, int farmerId)
+    {
+        var observation = await _context.CropObservations
+            .Include(o => o.CultivationCycle)
+                .ThenInclude(c => c.Field)
+            .Include(o => o.ReportedByUser)
+            .Include(o => o.Reports)
+            .FirstOrDefaultAsync(o => o.Id == observationId);
+
+        if (observation == null)
+            return null;
+
+        if (observation.ReportedByUserId != farmerId)
+            throw new UnauthorizedAccessException("You do not have access to this observation.");
+
+        if (observation.Reports.Count > 0)
+            throw new InvalidOperationException("This observation already has a diagnosis.");
+
+        var correlationId = Guid.NewGuid().ToString("N");
+        var agentInput = new CropAnalysisAgentInput
+        {
+            ObservationId = observation.Id,
+            CultivationId = observation.CultivationCycleId,
+            CropStage = observation.CropStage.ToString(),
+            Symptoms = observation.Symptoms,
+            Severity = observation.Severity.ToString(),
+            ImageUrl = observation.ImageUrl
+        };
+        var task = new DelegatedTask
+        {
+            TaskType = "DiagnoseObservation",
+            CultivationCycleId = observation.CultivationCycleId,
+            PayloadJson = JsonSerializer.Serialize(agentInput, JsonOptions)
+        };
+        var agentContext = new AgentContext { RequestedByUserId = farmerId, CorrelationId = correlationId };
+
+        var stopwatch = Stopwatch.StartNew();
+        AgentResult<DelegatedTaskResult> dispatch;
+
+        try
+        {
+            dispatch = await _diagnosisAgent.RunAsync(task, agentContext, CancellationToken.None);
+        }
+        catch (LlmException ex)
+        {
+            // The provider being down or rate-limiting is a failed run, not a crashed request.
+            _logger.LogWarning(
+                ex,
+                "Diagnosis agent for observation {ObservationId} (correlation {CorrelationId}) failed with status {StatusCode}.",
+                observationId,
+                correlationId,
+                (int)ex.StatusCode);
+
+            dispatch = new AgentResult<DelegatedTaskResult>
+            {
+                Success = false,
+                Error = $"The diagnosis assistant is unavailable right now ({(int)ex.StatusCode}). Please try again.",
+                Duration = stopwatch.Elapsed
+            };
+        }
+
+        stopwatch.Stop();
+
+        CropAnalysisAgentOutput? agentOutput = null;
+        var success = dispatch.Success;
+        var error = dispatch.Success ? null : dispatch.Error;
+        var rawOutput = dispatch.Output?.ResultJson ?? dispatch.Error ?? string.Empty;
+
+        if (success)
+        {
+            try
+            {
+                agentOutput = string.IsNullOrWhiteSpace(dispatch.Output?.ResultJson)
+                    ? null
+                    : JsonSerializer.Deserialize<CropAnalysisAgentOutput>(dispatch.Output!.ResultJson!, JsonOptions);
+            }
+            catch (JsonException)
+            {
+                agentOutput = null;
+            }
+
+            if (agentOutput == null || agentOutput.PossibleIssues.Count == 0)
+            {
+                success = false;
+                error = "The diagnosis agent did not return a valid result. Please try again shortly.";
+            }
+        }
+
+        var duration = dispatch.Duration > TimeSpan.Zero ? dispatch.Duration : stopwatch.Elapsed;
+
+        _context.DiagnosisRunLogs.Add(new DiagnosisRunLog
+        {
+            CropObservationId = observation.Id,
+            AgentName = _diagnosisAgent.Name,
+            CorrelationId = correlationId,
+            InputJson = JsonSerializer.Serialize(task, JsonOptions),
+            ToolCallsJson = JsonSerializer.Serialize(dispatch.ToolCalls, JsonOptions),
+            RawOutput = rawOutput,
+            Success = success,
+            Error = error,
+            DurationMs = (int)duration.TotalMilliseconds
+        });
+
+        if (!success)
+        {
+            await _context.SaveChangesAsync();
+            throw new InvalidOperationException(error ?? "The diagnosis agent run failed.");
+        }
+
+        foreach (var candidate in agentOutput!.PossibleIssues)
+        {
+            observation.Reports.Add(new PestDiseaseReport
+            {
+                CropObservationId = observation.Id,
+                PossibleIssue = candidate.Name,
+                Confidence = candidate.Confidence,
+                Status = PestDiseaseReportStatus.PendingOfficerReview
+            });
+        }
 
         await _context.SaveChangesAsync();
 
