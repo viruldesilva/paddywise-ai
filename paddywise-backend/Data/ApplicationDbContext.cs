@@ -23,6 +23,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<CropObservation> CropObservations => Set<CropObservation>();//farmer-submitted pest/disease report
     public DbSet<PestDiseaseReport> PestDiseaseReports => Set<PestDiseaseReport>();//agent diagnosis per observation
     public DbSet<PestDiseaseKnowledge> PestDiseaseKnowledgeEntries => Set<PestDiseaseKnowledge>();//DOA-sourced reference data
+    public DbSet<DiagnosisRunLog> DiagnosisRunLogs => Set<DiagnosisRunLog>();//audit trail of Crop Analysis agent runs
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -182,6 +183,21 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<PestDiseaseKnowledge>(entity =>
         {
             entity.HasIndex(k => k.Name).IsUnique();
+        });
+
+        modelBuilder.Entity<DiagnosisRunLog>(entity =>
+        {
+            entity.Property(l => l.InputJson).HasColumnType("jsonb");
+            entity.Property(l => l.ToolCallsJson).HasColumnType("jsonb");
+
+            entity.HasIndex(l => l.CropObservationId);
+            entity.HasIndex(l => l.CorrelationId);
+
+            // SetNull so deleting an observation cannot erase the record that an agent ran.
+            entity.HasOne(l => l.CropObservation)
+                .WithMany()
+                .HasForeignKey(l => l.CropObservationId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<Division>().HasData(
