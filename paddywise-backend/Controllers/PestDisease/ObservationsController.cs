@@ -107,6 +107,33 @@ public class ObservationsController : ControllerBase
         }
     }
 
+    /// <summary>Runs the diagnosis agent against an observation that has no report yet.</summary>
+    [Authorize(Roles = "Farmer")]
+    [HttpPost("{id:int}/request-analysis")]
+    public async Task<IActionResult> RequestAnalysis(int id)
+    {
+        var farmerId = GetCallerId();
+        if (farmerId == null)
+            return Unauthorized(new { message = "Invalid access token. Please log in again." });
+
+        try
+        {
+            var result = await _observationService.RequestAnalysisAsync(id, farmerId.Value);
+            if (result == null)
+                return NotFound(new { message = "Observation not found." });
+
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+        }
+    }
+
     private int? GetCallerId()
     {
         var value = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
