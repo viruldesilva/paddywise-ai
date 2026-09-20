@@ -8,6 +8,7 @@ export interface FertilizerData {
   cropStage: string;
   region: string;
   method: string;
+  cycleName?: string;
 }
 
 interface ValidationFlowProps {

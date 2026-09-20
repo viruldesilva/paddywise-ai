@@ -47,9 +47,8 @@ export const ActivityDashboard: React.FC = () => {
           <p>Record and monitor your agricultural operations</p>
         </div>
 
-        <div className={`activity-grid ${validationData ? 'with-validation' : ''}`}>
-          <div className="activity-panel" style={{ opacity: validationData ? 0.7 : 1, transition: 'opacity 0.3s' }}>
-            
+        <div className="activity-grid">
+          <div className="activity-panel">
             {user?.role === 'Farmer' && (
               <div style={{ marginBottom: '2rem', padding: '1.5rem', background: 'var(--cream)', borderRadius: '12px', border: '1px solid var(--line)' }}>
                 <label className="form-label" style={{ marginBottom: '0.75rem', display: 'block' }}>Select Cultivation Cycle</label>

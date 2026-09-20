@@ -3,6 +3,7 @@ import { ActivityForm, type ActivityType } from './ActivityForm';
 import { FertilizerValidationFlow, type FertilizerData } from './FertilizerValidationFlow';
 import type { CultivationCycle } from '../../field-cultivation/types';
 import '../pages/ActivityDashboard.css';
+import { activityApi } from '../services/activityApi';
 
 interface ActivityPanelProps {
   selectedCycle?: CultivationCycle | null;
@@ -12,16 +13,32 @@ export const ActivityPanel: React.FC<ActivityPanelProps> = ({ selectedCycle }) =
   const [activeTab, setActiveTab] = useState<ActivityType>('Fertilizer');
   const [validationData, setValidationData] = useState<FertilizerData | null>(null);
 
-  const handleActivitySubmit = (data: any) => {
-    console.log('Submitted Activity:', data);
+  const handleActivitySubmit = async (data: any) => {
+    if (!selectedCycle) {
+      alert("No cycle selected.");
+      return;
+    }
 
-    if (data.activityType === 'Fertilizer') {
-      setValidationData({
-        ...data,
-        cycleName: selectedCycle ? `${selectedCycle.season} ${selectedCycle.year} - ${selectedCycle.fieldName}` : undefined
-      } as FertilizerData);
-    } else {
-      alert(`${data.activityType} activity recorded successfully!`);
+    try {
+      const requestPayload = {
+        activityType: data.activityType,
+        date: data.date,
+        detailsJson: JSON.stringify(data)
+      };
+
+      await activityApi.createActivity(selectedCycle.id, requestPayload);
+
+      if (data.activityType === 'Fertilizer') {
+        setValidationData({
+          ...data,
+          cycleName: `${selectedCycle.season} ${selectedCycle.year} - ${selectedCycle.fieldName}`
+        } as FertilizerData);
+      } else {
+        alert(`${data.activityType} activity recorded successfully!`);
+      }
+    } catch (error) {
+      console.error("Failed to save activity", error);
+      alert("Failed to save activity. Please try again.");
     }
   };
 

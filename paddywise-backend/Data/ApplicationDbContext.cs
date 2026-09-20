@@ -19,6 +19,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<GrowthStageLog> GrowthStageLogs => Set<GrowthStageLog>();//stage observations per cycle
     public DbSet<CultivationPlan> CultivationPlans => Set<CultivationPlan>();//agent-generated plan per cycle
     public DbSet<AgentRunLog> AgentRunLogs => Set<AgentRunLog>();//audit trail of agent runs
+    public DbSet<PaddyWise.Api.Entities.CropResource.CropActivity> CropActivities => Set<PaddyWise.Api.Entities.CropResource.CropActivity>();//farmer crop activities
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -135,6 +136,26 @@ public class ApplicationDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(l => l.CultivationPlanId)
                 .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<PaddyWise.Api.Entities.CropResource.CropActivity>(entity =>
+        {
+            entity.Property(a => a.DetailsJson).HasColumnType("jsonb");
+
+            entity.HasIndex(a => a.CultivationCycleId);
+            entity.HasIndex(a => a.ActivityType);
+
+            entity.HasOne(a => a.CultivationCycle)
+                .WithMany()
+                .HasForeignKey(a => a.CultivationCycleId)
+                .IsRequired()
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(a => a.LoggedByUser)
+                .WithMany()
+                .HasForeignKey(a => a.LoggedByUserId)
+                .IsRequired()
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<Division>().HasData(

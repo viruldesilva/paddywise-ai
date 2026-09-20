@@ -44,7 +44,7 @@ interface ActivityFormProps {
 }
 
 export const ActivityForm: React.FC<ActivityFormProps> = ({ activityType, selectedCycle, onSubmit, isSubmitting }) => {
-  const [formData, setFormData] = useState<Partial<ActivityData>>({});
+  const [formData, setFormData] = useState<Partial<IrrigationData & FertilizerData & PesticideData & OtherData>>({});
 
   useEffect(() => {
     if (selectedCycle && activityType === 'Fertilizer') {
