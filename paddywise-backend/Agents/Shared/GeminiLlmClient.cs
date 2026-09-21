@@ -47,9 +47,27 @@ public sealed class GeminiLlmClient : ILlmClient
         _logger = logger;
     }
 
-    public async Task<string> CompleteJsonAsync(
+    public Task<string> CompleteJsonAsync(
         string systemPrompt,
         string userPrompt,
+        IReadOnlyList<LlmToolDefinition> tools,
+        Func<string, string, Task<string>> toolExecutor,
+        CancellationToken ct) =>
+        CompleteAsync(systemPrompt, userPrompt, Array.Empty<LlmImagePart>(), tools, toolExecutor, ct);
+
+    public Task<string> CompleteJsonWithImagesAsync(
+        string systemPrompt,
+        string userPrompt,
+        IReadOnlyList<LlmImagePart> images,
+        IReadOnlyList<LlmToolDefinition> tools,
+        Func<string, string, Task<string>> toolExecutor,
+        CancellationToken ct) =>
+        CompleteAsync(systemPrompt, userPrompt, images, tools, toolExecutor, ct);
+
+    private async Task<string> CompleteAsync(
+        string systemPrompt,
+        string userPrompt,
+        IReadOnlyList<LlmImagePart> images,
         IReadOnlyList<LlmToolDefinition> tools,
         Func<string, string, Task<string>> toolExecutor,
         CancellationToken ct)
@@ -65,6 +83,18 @@ public sealed class GeminiLlmClient : ILlmClient
 
         var model = NormalizeModel(_configuration["Gemini:Model"]);
 
+        // Images lead the user turn, followed by the text — Gemini reads either order, but
+        // this keeps the prompt referring to "the attached image" naturally after it.
+        var userParts = new List<GeminiPart>(images.Count + 1);
+        foreach (var image in images)
+        {
+            userParts.Add(new GeminiPart
+            {
+                InlineData = new GeminiInlineData { MimeType = image.MimeType, Data = image.Base64Data }
+            });
+        }
+        userParts.Add(new GeminiPart { Text = userPrompt });
+
         var request = new GeminiRequest
         {
             // system_instruction is a Content without a role.
@@ -77,7 +107,7 @@ public sealed class GeminiLlmClient : ILlmClient
                 new GeminiContent
                 {
                     Role = "user",
-                    Parts = { new GeminiPart { Text = userPrompt } }
+                    Parts = userParts
                 }
             }
         };
@@ -288,6 +318,9 @@ public sealed class GeminiLlmClient : ILlmClient
         [JsonPropertyName("text")]
         public string? Text { get; set; }
 
+        [JsonPropertyName("inlineData")]
+        public GeminiInlineData? InlineData { get; set; }
+
         [JsonPropertyName("functionCall")]
         public GeminiFunctionCall? FunctionCall { get; set; }
 
@@ -302,6 +335,15 @@ public sealed class GeminiLlmClient : ILlmClient
         /// </summary>
         [JsonPropertyName("thoughtSignature")]
         public string? ThoughtSignature { get; set; }
+    }
+
+    private sealed class GeminiInlineData
+    {
+        [JsonPropertyName("mimeType")]
+        public string MimeType { get; set; } = string.Empty;
+
+        [JsonPropertyName("data")]
+        public string Data { get; set; } = string.Empty;
     }
 
     private sealed class GeminiFunctionCall
