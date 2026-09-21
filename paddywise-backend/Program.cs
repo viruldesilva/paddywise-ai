@@ -69,10 +69,10 @@ builder.Services.AddScoped<ILlmClient, GeminiLlmClient>();
 // Component 1's own agent: a unique closed generic, so it needs no DI key.
 builder.Services.AddScoped<IAgent<PaddyWise.Api.Agents.FieldCultivation.PlanAgentInput, PaddyWise.Api.Agents.FieldCultivation.CultivationPlanOutput>, PaddyWise.Api.Agents.FieldCultivation.CultivationPlanningAgent>();
 
-// Agents for components 2-4 are stubs today; their owners replace these registrations
+// Agents for components 2 and 4 are stubs today; their owners replace these registrations
 // with real implementations keyed by the same AgentNames constant.
 builder.Services.AddKeyedScoped<IAgent<DelegatedTask, DelegatedTaskResult>, ResourceAnalysisAgentStub>(AgentNames.ResourceAnalysis);
-builder.Services.AddKeyedScoped<IAgent<DelegatedTask, DelegatedTaskResult>, PestDiseaseDiagnosisAgentStub>(AgentNames.PestDiseaseDiagnosis);
+builder.Services.AddKeyedScoped<IAgent<DelegatedTask, DelegatedTaskResult>, PaddyWise.Api.Agents.PestDisease.CropAnalysisAgent>(AgentNames.PestDiseaseDiagnosis);
 builder.Services.AddKeyedScoped<IAgent<DelegatedTask, DelegatedTaskResult>, SchedulingValidationAgentStub>(AgentNames.SchedulingValidation);
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
