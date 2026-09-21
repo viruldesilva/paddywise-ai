@@ -192,6 +192,16 @@ Agent rules that apply here same as every component:
   - `ILlmClient` grew a second method, `CompleteJsonWithImagesAsync` (plus the new
     `LlmImagePart` record), to carry inline image data — `CompleteJsonAsync` itself is
     unchanged, so Component 1's agent needed no edits.
+  - Uses its own Gemini key, separate from the shared one: `GeminiLlmClient` now takes an
+    `apiKeyConfigKey` constructor arg (default `Gemini:ApiKey`), and a second, keyed
+    `ILlmClient` registration in `Program.cs` (keyed `AgentNames.PestDiseaseDiagnosis`) points
+    it at `Gemini:PestDiseaseApiKey` instead. `CropAnalysisAgent` injects that keyed instance.
+    Set your own paid/dedicated key with:
+    ```bash
+    dotnet user-secrets set "Gemini:PestDiseaseApiKey" "<your key>"
+    ```
+    If unset, it falls back to the shared `Gemini:ApiKey` automatically — so teammates without
+    a dedicated key still work.
 - Known gap: `ObservationService.RequestAnalysisAsync` treats an empty `possibleIssues` list as
   a failed run ("did not return a valid result"), but the agent's system prompt tells the model
   to return an empty list when nothing plausibly matches. A genuine no-match diagnosis
