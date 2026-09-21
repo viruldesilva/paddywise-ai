@@ -66,6 +66,14 @@ builder.Services.AddHttpClient(GeminiLlmClient.HttpClientName, client =>
 });
 builder.Services.AddScoped<ILlmClient, GeminiLlmClient>();
 
+// Component 3's own Gemini key (Gemini:PestDiseaseApiKey), falling back to Gemini:ApiKey if unset.
+builder.Services.AddKeyedScoped<ILlmClient, GeminiLlmClient>(AgentNames.PestDiseaseDiagnosis, (sp, _) =>
+    new GeminiLlmClient(
+        sp.GetRequiredService<IHttpClientFactory>(),
+        sp.GetRequiredService<IConfiguration>(),
+        sp.GetRequiredService<ILogger<GeminiLlmClient>>(),
+        "Gemini:PestDiseaseApiKey"));
+
 // Component 1's own agent: a unique closed generic, so it needs no DI key.
 builder.Services.AddScoped<IAgent<PaddyWise.Api.Agents.FieldCultivation.PlanAgentInput, PaddyWise.Api.Agents.FieldCultivation.CultivationPlanOutput>, PaddyWise.Api.Agents.FieldCultivation.CultivationPlanningAgent>();
 

@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using PaddyWise.Api.Agents.Shared;
 using PaddyWise.Api.Data;
 using PaddyWise.Api.DTOs.PestDisease;
@@ -95,7 +96,7 @@ public sealed class CropAnalysisAgent : IAgent<DelegatedTask, DelegatedTaskResul
 
     public CropAnalysisAgent(
         ApplicationDbContext context,
-        ILlmClient llm,
+        [FromKeyedServices(AgentNames.PestDiseaseDiagnosis)] ILlmClient llm,
         IHttpClientFactory httpClientFactory,
         ILogger<CropAnalysisAgent> logger)
     {
