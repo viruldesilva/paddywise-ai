@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Menu } from 'lucide-react';
 import { ActivityPanel } from '../components/ActivityPanel';
 import { useAuth } from '../../../hooks/useAuth';
@@ -13,6 +13,7 @@ import './ActivityDashboard.css';
 export const NewActivityPage: React.FC = () => {
   const { user } = useAuth();
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   
   const [cycle, setCycle] = useState<CultivationCycle | null>(null);
   const [loading, setLoading] = useState(true);

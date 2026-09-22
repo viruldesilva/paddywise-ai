@@ -119,6 +119,31 @@ public class CropActivityService : ICropActivityService
         if (cycle.Field!.FarmerId != userId)
             throw new UnauthorizedAccessException("Only the farmer who owns the field can log activities for this cycle.");
 
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var oneWeekAgo = today.AddDays(-7);
+
+        if (request.Date > today)
+        {
+            throw new ArgumentException("Activity date cannot be in the future.");
+        }
+
+        if (request.Date < oneWeekAgo)
+        {
+            throw new ArgumentException($"Activity date ({request.Date:yyyy-MM-dd}) cannot be older than the past week ({oneWeekAgo:yyyy-MM-dd}). Activities can only be logged within the last 7 days.");
+        }
+
+        if (request.Date < cycle.SowingDate)
+        {
+            throw new ArgumentException($"Activity date ({request.Date:yyyy-MM-dd}) cannot be earlier than the cultivation cycle's sowing date ({cycle.SowingDate:yyyy-MM-dd}).");
+        }
+
+        if (cycle.ActualHarvestDate.HasValue && request.Date > cycle.ActualHarvestDate.Value)
+        {
+            throw new ArgumentException($"Activity date ({request.Date:yyyy-MM-dd}) cannot be after the harvest date ({cycle.ActualHarvestDate.Value:yyyy-MM-dd}).");
+        }
+
+        ValidateActivityDetails(request.ActivityType, request.DetailsJson);
+
         var user = await _context.Users.FindAsync(new object[] { userId }, cancellationToken);
         if (user == null)
             throw new InvalidOperationException("User not found.");
@@ -147,5 +172,74 @@ public class CropActivityService : ICropActivityService
             LoggedByUserName = user.Name,
             CreatedAt = activity.CreatedAt
         };
+    }
+
+    private static void ValidateActivityDetails(CropActivityType activityType, string detailsJson)
+    {
+        if (string.IsNullOrWhiteSpace(detailsJson))
+        {
+            throw new ArgumentException("Activity details cannot be empty.");
+        }
+
+        try
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(detailsJson);
+            var root = doc.RootElement;
+
+            switch (activityType)
+            {
+                case CropActivityType.Fertilizer:
+                    if (!root.TryGetProperty("type", out var fType) || string.IsNullOrWhiteSpace(fType.GetString()))
+                        throw new ArgumentException("Fertilizer type is required.");
+                    if (!root.TryGetProperty("quantity", out var fQty) || !TryGetDouble(fQty, out var fQtyVal) || fQtyVal <= 0)
+                        throw new ArgumentException("Fertilizer quantity must be a positive number greater than 0.");
+                    if (!root.TryGetProperty("cropStage", out var fStage) || string.IsNullOrWhiteSpace(fStage.GetString()))
+                        throw new ArgumentException("Crop stage is required.");
+                    if (!root.TryGetProperty("region", out var fRegion) || string.IsNullOrWhiteSpace(fRegion.GetString()))
+                        throw new ArgumentException("Climatic region/zone is required.");
+                    if (!root.TryGetProperty("method", out var fMethod) || string.IsNullOrWhiteSpace(fMethod.GetString()))
+                        throw new ArgumentException("Application method is required.");
+                    break;
+
+                case CropActivityType.Irrigation:
+                    if (!root.TryGetProperty("waterLevel", out var wLvl) || !TryGetDouble(wLvl, out var wLvlVal) || wLvlVal < 0)
+                        throw new ArgumentException("Water level must be a non-negative number.");
+                    if (!root.TryGetProperty("duration", out var dur) || !TryGetDouble(dur, out var durVal) || durVal <= 0)
+                        throw new ArgumentException("Duration must be a positive number greater than 0.");
+                    if (!root.TryGetProperty("source", out var src) || string.IsNullOrWhiteSpace(src.GetString()))
+                        throw new ArgumentException("Water source is required.");
+                    break;
+
+                case CropActivityType.Pesticide:
+                    if (!root.TryGetProperty("product", out var prod) || string.IsNullOrWhiteSpace(prod.GetString()))
+                        throw new ArgumentException("Product name is required.");
+                    if (!root.TryGetProperty("targetPest", out var pest) || string.IsNullOrWhiteSpace(pest.GetString()))
+                        throw new ArgumentException("Target pest/disease is required.");
+                    if (!root.TryGetProperty("quantity", out var pQty) || !TryGetDouble(pQty, out var pQtyVal) || pQtyVal <= 0)
+                        throw new ArgumentException("Pesticide quantity must be a positive number greater than 0.");
+                    if (!root.TryGetProperty("method", out var pMethod) || string.IsNullOrWhiteSpace(pMethod.GetString()))
+                        throw new ArgumentException("Application method is required.");
+                    break;
+
+                case CropActivityType.Other:
+                    if (!root.TryGetProperty("specificActivity", out var spec) || string.IsNullOrWhiteSpace(spec.GetString()))
+                        throw new ArgumentException("Specific activity type is required.");
+                    break;
+            }
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            throw new ArgumentException("Invalid JSON format for activity details.");
+        }
+    }
+
+    private static bool TryGetDouble(System.Text.Json.JsonElement element, out double val)
+    {
+        val = 0;
+        if (element.ValueKind == System.Text.Json.JsonValueKind.Number)
+            return element.TryGetDouble(out val);
+        if (element.ValueKind == System.Text.Json.JsonValueKind.String)
+            return double.TryParse(element.GetString(), out val);
+        return false;
     }
 }

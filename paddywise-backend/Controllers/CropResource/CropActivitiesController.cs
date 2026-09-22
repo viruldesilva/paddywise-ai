@@ -38,9 +38,23 @@ public class CropActivitiesController : ControllerBase
     {
         var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
-        var created = await _activityService.CreateActivityAsync(cycleId, request, userId);
-        
-        return CreatedAtAction(nameof(GetActivities), new { cycleId = created.CultivationCycleId }, created);
+        try
+        {
+            var created = await _activityService.CreateActivityAsync(cycleId, request, userId);
+            return CreatedAtAction(nameof(GetActivities), new { cycleId = created.CultivationCycleId }, created);
+        }
+        catch (System.ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (System.InvalidOperationException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (System.UnauthorizedAccessException ex)
+        {
+            return Forbid();
+        }
     }
 
     [HttpGet("/api/activities")]
