@@ -14,4 +14,16 @@ public interface ILlmClient
         IReadOnlyList<LlmToolDefinition> tools,
         Func<string, string, Task<string>> toolExecutor,
         CancellationToken ct);
+
+    /// <summary>
+    /// Same contract as <see cref="CompleteJsonAsync"/>, with inline images attached to the
+    /// user turn for a vision-capable model. Pass an empty list to run text-only.
+    /// </summary>
+    Task<string> CompleteJsonWithImagesAsync(
+        string systemPrompt,
+        string userPrompt,
+        IReadOnlyList<LlmImagePart> images,
+        IReadOnlyList<LlmToolDefinition> tools,
+        Func<string, string, Task<string>> toolExecutor,
+        CancellationToken ct);
 }

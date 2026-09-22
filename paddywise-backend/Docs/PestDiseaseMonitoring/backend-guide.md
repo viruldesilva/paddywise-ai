@@ -171,6 +171,45 @@ Agent rules that apply here same as every component:
 - `ILlmClient` (`Agents/Shared/ILlmClient.cs`, implemented by `GeminiLlmClient`) is the only
   place the LLM provider is known — call through it rather than any provider SDK directly.
 
+## Current implementation status
+
+- Entities, DTOs, migrations, `ObservationsController`, `PestDiseaseReportsController` — done.
+- `PestDiseaseKnowledge` seeded with all 7 required rows — done. Its own admin CRUD endpoints
+  (`GET/POST/PUT/DELETE /api/pest-disease-knowledge`) are **not built yet**.
+- `CropAnalysisAgent` (`Agents/PestDisease/CropAnalysisAgent.cs`) is implemented and wired into
+  DI under the `AgentNames.PestDiseaseDiagnosis` key in `Program.cs`, replacing
+  `PestDiseaseDiagnosisAgentStub`. It:
+  - downloads the observation's `ImageUrl` (if present) and sends it as inline image data
+    alongside the symptom text — a missing/unreachable/oversized image degrades to a
+    text-only run rather than failing it;
+  - calls `get_pest_knowledge(pestName)` (read-only, against `PestDiseaseKnowledgeEntries`)
+    for every candidate before naming it;
+  - retries once on a JSON parse failure;
+  - validates the result via `Services/PestDisease/CropAnalysisValidator.cs` (confidence range,
+    non-empty source, and — the "never invents them" rule — every candidate name must have been
+    confirmed found via `get_pest_knowledge` during that same run, or the whole result is
+    rejected) before returning `Success = true`.
+  - `ILlmClient` grew a second method, `CompleteJsonWithImagesAsync` (plus the new
+    `LlmImagePart` record), to carry inline image data — `CompleteJsonAsync` itself is
+    unchanged, so Component 1's agent needed no edits.
+  - Uses its own Gemini key, separate from the shared one: `GeminiLlmClient` now takes an
+    `apiKeyConfigKey` constructor arg (default `Gemini:ApiKey`), and a second, keyed
+    `ILlmClient` registration in `Program.cs` (keyed `AgentNames.PestDiseaseDiagnosis`) points
+    it at `Gemini:PestDiseaseApiKey` instead. `CropAnalysisAgent` injects that keyed instance.
+    Set your own paid/dedicated key with:
+    ```bash
+    dotnet user-secrets set "Gemini:PestDiseaseApiKey" "<your key>"
+    ```
+    If unset, it falls back to the shared `Gemini:ApiKey` automatically — so teammates without
+    a dedicated key still work.
+- Known gap: `ObservationService.RequestAnalysisAsync` treats an empty `possibleIssues` list as
+  a failed run ("did not return a valid result"), but the agent's system prompt tells the model
+  to return an empty list when nothing plausibly matches. A genuine no-match diagnosis
+  currently surfaces to the farmer as an error rather than a legitimate "no match found"
+  outcome — worth revisiting.
+- Not started: `PestDiseaseKnowledge` admin CRUD, golden test cases (no test project exists
+  yet), and the web frontend (no `paddywise-web/src/features/pest-disease` folder exists).
+
 ## Testing golden cases
 
 No test project exists in the solution yet — if adding one (xUnit/Moq, per the work plan), the

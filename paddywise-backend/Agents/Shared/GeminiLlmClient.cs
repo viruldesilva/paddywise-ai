@@ -23,6 +23,9 @@ public sealed class GeminiLlmClient : ILlmClient
     /// </summary>
     public const string DefaultModel = "gemini-3.6-flash";
 
+    /// <summary>The config key every caller falls back to when its own key is unset.</summary>
+    public const string DefaultApiKeyConfigKey = "Gemini:ApiKey";
+
     private const string BaseUrl = "https://generativelanguage.googleapis.com/v1beta";
 
     /// <summary>Tool rounds allowed before we stop feeding results back and take the text.</summary>
@@ -36,34 +39,81 @@ public sealed class GeminiLlmClient : ILlmClient
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IConfiguration _configuration;
     private readonly ILogger<GeminiLlmClient> _logger;
+    private readonly string _apiKeyConfigKey;
 
+    /// <param name="apiKeyConfigKey">
+    /// Which configuration key holds this instance's API key, e.g. "Gemini:ApiKey" (the
+    /// default) or a per-agent key such as "Gemini:PestDiseaseApiKey". If that key is unset,
+    /// this falls back to <see cref="DefaultApiKeyConfigKey"/> — so an agent that hasn't been
+    /// given its own key still works off the shared one.
+    /// </param>
     public GeminiLlmClient(
         IHttpClientFactory httpClientFactory,
         IConfiguration configuration,
-        ILogger<GeminiLlmClient> logger)
+        ILogger<GeminiLlmClient> logger,
+        string apiKeyConfigKey = DefaultApiKeyConfigKey)
     {
         _httpClientFactory = httpClientFactory;
         _configuration = configuration;
         _logger = logger;
+        _apiKeyConfigKey = apiKeyConfigKey;
     }
 
-    public async Task<string> CompleteJsonAsync(
+    public Task<string> CompleteJsonAsync(
         string systemPrompt,
         string userPrompt,
         IReadOnlyList<LlmToolDefinition> tools,
         Func<string, string, Task<string>> toolExecutor,
+        CancellationToken ct) =>
+        CompleteAsync(systemPrompt, userPrompt, Array.Empty<LlmImagePart>(), tools, toolExecutor, ct);
+
+    public Task<string> CompleteJsonWithImagesAsync(
+        string systemPrompt,
+        string userPrompt,
+        IReadOnlyList<LlmImagePart> images,
+        IReadOnlyList<LlmToolDefinition> tools,
+        Func<string, string, Task<string>> toolExecutor,
+        CancellationToken ct) =>
+        CompleteAsync(systemPrompt, userPrompt, images, tools, toolExecutor, ct);
+
+    private async Task<string> CompleteAsync(
+        string systemPrompt,
+        string userPrompt,
+        IReadOnlyList<LlmImagePart> images,
+        IReadOnlyList<LlmToolDefinition> tools,
+        Func<string, string, Task<string>> toolExecutor,
         CancellationToken ct)
     {
-        var apiKey = _configuration["Gemini:ApiKey"];
+        var apiKey = _configuration[_apiKeyConfigKey];
+        if (string.IsNullOrWhiteSpace(apiKey) && _apiKeyConfigKey != DefaultApiKeyConfigKey)
+        {
+            // No dedicated key configured for this instance — fall back to the shared one
+            // rather than failing every run that never opted into its own key.
+            apiKey = _configuration[DefaultApiKeyConfigKey];
+        }
+
         if (string.IsNullOrWhiteSpace(apiKey))
         {
             throw new InvalidOperationException(
-                "Gemini:ApiKey is missing. Set it with " +
-                "'dotnet user-secrets set \"Gemini:ApiKey\" \"<key>\"' for local development, " +
-                "or the Gemini__ApiKey environment variable in deployment.");
+                $"{_apiKeyConfigKey} (and {DefaultApiKeyConfigKey} as a fallback) is missing. " +
+                $"Set it with 'dotnet user-secrets set \"{_apiKeyConfigKey}\" \"<key>\"' for " +
+                "local development, or the matching double-underscore environment variable in " +
+                "deployment.");
         }
 
         var model = NormalizeModel(_configuration["Gemini:Model"]);
+
+        // Images lead the user turn, followed by the text — Gemini reads either order, but
+        // this keeps the prompt referring to "the attached image" naturally after it.
+        var userParts = new List<GeminiPart>(images.Count + 1);
+        foreach (var image in images)
+        {
+            userParts.Add(new GeminiPart
+            {
+                InlineData = new GeminiInlineData { MimeType = image.MimeType, Data = image.Base64Data }
+            });
+        }
+        userParts.Add(new GeminiPart { Text = userPrompt });
 
         var request = new GeminiRequest
         {
@@ -77,7 +127,7 @@ public sealed class GeminiLlmClient : ILlmClient
                 new GeminiContent
                 {
                     Role = "user",
-                    Parts = { new GeminiPart { Text = userPrompt } }
+                    Parts = userParts
                 }
             }
         };
@@ -288,6 +338,9 @@ public sealed class GeminiLlmClient : ILlmClient
         [JsonPropertyName("text")]
         public string? Text { get; set; }
 
+        [JsonPropertyName("inlineData")]
+        public GeminiInlineData? InlineData { get; set; }
+
         [JsonPropertyName("functionCall")]
         public GeminiFunctionCall? FunctionCall { get; set; }
 
@@ -302,6 +355,15 @@ public sealed class GeminiLlmClient : ILlmClient
         /// </summary>
         [JsonPropertyName("thoughtSignature")]
         public string? ThoughtSignature { get; set; }
+    }
+
+    private sealed class GeminiInlineData
+    {
+        [JsonPropertyName("mimeType")]
+        public string MimeType { get; set; } = string.Empty;
+
+        [JsonPropertyName("data")]
+        public string Data { get; set; } = string.Empty;
     }
 
     private sealed class GeminiFunctionCall

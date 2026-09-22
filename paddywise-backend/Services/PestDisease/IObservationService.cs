@@ -15,4 +15,9 @@ public interface IObservationService
     Task<ObservationResponseDto> CreateAsync(int farmerId, CreateObservationRequestDto request);
 
     Task<ObservationResponseDto?> UpdateAsync(int observationId, int farmerId, UpdateObservationRequestDto request);
+
+    /// <summary>Runs the Crop Analysis (Pest &amp; Disease Diagnosis) agent against an
+    /// observation that has none yet, and persists one PestDiseaseReport per candidate issue
+    /// it returns.</summary>
+    Task<ObservationResponseDto?> RequestAnalysisAsync(int observationId, int farmerId);
 }
