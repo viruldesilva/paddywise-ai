@@ -15,11 +15,20 @@ export interface CropActivityDto {
   loggedByUserId: number;
   loggedByUserName: string;
   createdAt: string;
+  fieldName?: string;
+  farmerName?: string;
+  farmerId?: number;
+  cycleName?: string;
 }
 
 export const activityApi = {
   getActivitiesForCycle: async (cycleId: number): Promise<CropActivityDto[]> => {
     const response = await axiosInstance.get(`/cycles/${cycleId}/activities`);
+    return response.data;
+  },
+
+  getAllActivities: async (params?: { farmerId?: number; cycleId?: number; activityType?: string }): Promise<CropActivityDto[]> => {
+    const response = await axiosInstance.get('/activities', { params });
     return response.data;
   },
 

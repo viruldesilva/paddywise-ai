@@ -42,4 +42,23 @@ public class CropActivitiesController : ControllerBase
         
         return CreatedAtAction(nameof(GetActivities), new { cycleId = created.CultivationCycleId }, created);
     }
+
+    [HttpGet("/api/activities")]
+    [Authorize]
+    public async Task<ActionResult<List<CropActivityDto>>> GetAllActivities(
+        [FromQuery] int? farmerId,
+        [FromQuery] int? cycleId,
+        [FromQuery] string? activityType)
+    {
+        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var role = User.FindFirstValue(ClaimTypes.Role)!;
+
+        if (role == "Farmer")
+        {
+            farmerId = userId;
+        }
+
+        var activities = await _activityService.GetAllActivitiesAsync(farmerId, cycleId, activityType);
+        return Ok(activities);
+    }
 }

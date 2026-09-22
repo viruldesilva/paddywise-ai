@@ -45,6 +45,7 @@ export function Sidebar({ role, isOpen, onClose }: SidebarProps) {
 
   const agriculturalOfficerLinks = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
+    { name: 'Past Crop Activities', path: '/activities', icon: Activity },
     { name: 'View Farmer Fields & Reports', path: '#fields', icon: FileText },
     { name: 'Review AI Recommendations', path: '/plans/pending', icon: CheckSquare },
     { name: 'Add Expert Recommendations', path: '#expert', icon: MessageSquare },
@@ -53,6 +54,7 @@ export function Sidebar({ role, isOpen, onClose }: SidebarProps) {
 
   const adminLinks = [
     { name: 'Dashboard', path: '/dashboard/admin', icon: LayoutDashboard },
+    { name: 'Past Crop Activities', path: '/activities', icon: Activity },
     { name: 'Manage Users', path: '/admin/users', icon: Users },
     { name: 'Manage Knowledge Base', path: '#knowledge', icon: Database },
     { name: 'System Settings & Audit Logs', path: '#settings', icon: Settings },
@@ -60,6 +62,7 @@ export function Sidebar({ role, isOpen, onClose }: SidebarProps) {
 
   const fieldOfficerLinks = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
+    { name: 'Past Crop Activities', path: '/activities', icon: Activity },
     { name: 'Visit Farms & Inspections', path: '#inspections', icon: MapPin },
     { name: 'Upload Field Images', path: '#upload', icon: Camera },
     { name: 'Verify Problems & Feedback', path: '#feedback', icon: CheckCircle },

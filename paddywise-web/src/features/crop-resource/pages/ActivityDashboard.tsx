@@ -38,6 +38,7 @@ export const ActivityDashboard: React.FC = () => {
     loadCycles();
   }, [user]);
 
+  const isOfficer = user?.role === 'AgriculturalOfficer' || user?.role === 'FieldOfficer' || user?.role === 'Admin';
   const selectedCycle = cycles.find(c => c.id === selectedCycleId) || null;
 
   if (!user) return null;
@@ -70,9 +71,15 @@ export const ActivityDashboard: React.FC = () => {
 
         <main className="dashboard-content container">
           <div className="activity-header-section" style={{ textAlign: 'left', marginBottom: '2rem' }}>
-            <span className="eyebrow" style={{ color: 'var(--ink-soft)', fontSize: '0.85rem', fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '0.5rem', display: 'block' }}>CROP MANAGEMENT</span>
-            <h1 className="fc-page-title" style={{ fontFamily: 'var(--font-heading)', fontSize: '2.5rem', color: 'var(--ink)', margin: 0 }}>Record Activities</h1>
-            <p className="fc-page-sub" style={{ color: 'var(--ink-soft)', fontSize: '1.1rem', marginTop: '0.5rem' }}>Record and monitor your agricultural operations</p>
+            <span className="eyebrow" style={{ color: 'var(--ink-soft)', fontSize: '0.85rem', fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '0.5rem', display: 'block' }}>
+              {isOfficer ? 'AGRICULTURAL EXTENSION & MONITORING' : 'CROP MANAGEMENT'}
+            </span>
+            <h1 className="fc-page-title" style={{ fontFamily: 'var(--font-heading)', fontSize: '2.5rem', color: 'var(--ink)', margin: 0 }}>
+              {isOfficer ? 'All Farmers Crop Activities' : 'Record Activities'}
+            </h1>
+            <p className="fc-page-sub" style={{ color: 'var(--ink-soft)', fontSize: '1.1rem', marginTop: '0.5rem' }}>
+              {isOfficer ? 'Monitor and review past agricultural operations logged by all farmers across cultivation cycles' : 'Record and monitor your agricultural operations'}
+            </p>
           </div>
 
           <div style={{ width: '100%' }}>
@@ -112,7 +119,12 @@ export const ActivityDashboard: React.FC = () => {
                 )}
               </div>
             )}
-            <ActivityHistory selectedCycleId={selectedCycleId} cycles={cycles} refreshTrigger={refreshTrigger} />
+            <ActivityHistory 
+              selectedCycleId={selectedCycleId} 
+              cycles={cycles} 
+              refreshTrigger={refreshTrigger} 
+              userRole={user.role} 
+            />
           </div>
         </main>
       </div>

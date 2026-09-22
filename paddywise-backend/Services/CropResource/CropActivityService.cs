@@ -24,6 +24,7 @@ public class CropActivityService : ICropActivityService
     {
         var cycle = await _context.CultivationCycles
             .Include(c => c.Field)
+                .ThenInclude(f => f!.Farmer)
             .FirstOrDefaultAsync(c => c.Id == cycleId, cancellationToken);
 
         if (cycle == null)
@@ -34,6 +35,9 @@ public class CropActivityService : ICropActivityService
 
         var activities = await _context.CropActivities
             .Include(a => a.LoggedByUser)
+            .Include(a => a.CultivationCycle)
+                .ThenInclude(c => c!.Field)
+                    .ThenInclude(f => f!.Farmer)
             .Where(a => a.CultivationCycleId == cycleId)
             .OrderByDescending(a => a.Date)
             .ThenByDescending(a => a.CreatedAt)
@@ -47,8 +51,59 @@ public class CropActivityService : ICropActivityService
             Date = a.Date,
             DetailsJson = a.DetailsJson,
             LoggedByUserId = a.LoggedByUserId,
-            LoggedByUserName = a.LoggedByUser!.Name,
-            CreatedAt = a.CreatedAt
+            LoggedByUserName = a.LoggedByUser?.Name ?? "Unknown",
+            CreatedAt = a.CreatedAt,
+            FieldName = a.CultivationCycle?.Field?.Name ?? cycle.Field?.Name,
+            FarmerName = a.CultivationCycle?.Field?.Farmer?.Name ?? cycle.Field?.Farmer?.Name ?? a.LoggedByUser?.Name,
+            FarmerId = a.CultivationCycle?.Field?.FarmerId ?? cycle.Field?.FarmerId,
+            CycleName = $"{cycle.Season} {cycle.Year}"
+        }).ToList();
+    }
+
+    public async Task<List<CropActivityDto>> GetAllActivitiesAsync(int? farmerId = null, int? cycleId = null, string? activityType = null, CancellationToken cancellationToken = default)
+    {
+        var query = _context.CropActivities
+            .AsNoTracking()
+            .Include(a => a.LoggedByUser)
+            .Include(a => a.CultivationCycle)
+                .ThenInclude(c => c!.Field)
+                    .ThenInclude(f => f!.Farmer)
+            .AsQueryable();
+
+        if (farmerId.HasValue)
+        {
+            query = query.Where(a => a.CultivationCycle != null && a.CultivationCycle.Field != null && a.CultivationCycle.Field.FarmerId == farmerId.Value);
+        }
+
+        if (cycleId.HasValue)
+        {
+            query = query.Where(a => a.CultivationCycleId == cycleId.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(activityType) && Enum.TryParse<CropActivityType>(activityType, true, out var typeEnum))
+        {
+            query = query.Where(a => a.ActivityType == typeEnum);
+        }
+
+        var activities = await query
+            .OrderByDescending(a => a.Date)
+            .ThenByDescending(a => a.CreatedAt)
+            .ToListAsync(cancellationToken);
+
+        return activities.Select(a => new CropActivityDto
+        {
+            Id = a.Id,
+            CultivationCycleId = a.CultivationCycleId,
+            ActivityType = a.ActivityType.ToString(),
+            Date = a.Date,
+            DetailsJson = a.DetailsJson,
+            LoggedByUserId = a.LoggedByUserId,
+            LoggedByUserName = a.LoggedByUser?.Name ?? "Unknown",
+            CreatedAt = a.CreatedAt,
+            FieldName = a.CultivationCycle?.Field?.Name ?? "Unknown Field",
+            FarmerName = a.CultivationCycle?.Field?.Farmer?.Name ?? a.LoggedByUser?.Name ?? "Unknown Farmer",
+            FarmerId = a.CultivationCycle?.Field?.FarmerId,
+            CycleName = a.CultivationCycle != null ? $"{a.CultivationCycle.Season} {a.CultivationCycle.Year}" : null
         }).ToList();
     }
 

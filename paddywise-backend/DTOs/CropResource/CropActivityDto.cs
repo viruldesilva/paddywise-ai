@@ -15,4 +15,9 @@ public class CropActivityDto
     public string LoggedByUserName { get; set; } = string.Empty;
     
     public DateTimeOffset CreatedAt { get; set; }
+
+    public string? FieldName { get; set; }
+    public string? FarmerName { get; set; }
+    public int? FarmerId { get; set; }
+    public string? CycleName { get; set; }
 }
