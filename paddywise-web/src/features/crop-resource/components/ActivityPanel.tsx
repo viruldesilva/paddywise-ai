@@ -7,9 +7,10 @@ import { activityApi } from '../services/activityApi';
 
 interface ActivityPanelProps {
   selectedCycle?: CultivationCycle | null;
+  onActivityRecorded?: () => void;
 }
 
-export const ActivityPanel: React.FC<ActivityPanelProps> = ({ selectedCycle }) => {
+export const ActivityPanel: React.FC<ActivityPanelProps> = ({ selectedCycle, onActivityRecorded }) => {
   const [activeTab, setActiveTab] = useState<ActivityType>('Fertilizer');
   const [validationData, setValidationData] = useState<FertilizerData | null>(null);
 
@@ -36,6 +37,7 @@ export const ActivityPanel: React.FC<ActivityPanelProps> = ({ selectedCycle }) =
       } else {
         alert(`${data.activityType} activity recorded successfully!`);
       }
+      if (onActivityRecorded) onActivityRecorded();
     } catch (error) {
       console.error("Failed to save activity", error);
       alert("Failed to save activity. Please try again.");

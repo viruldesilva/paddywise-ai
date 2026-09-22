@@ -22,8 +22,8 @@
 .activity-header-section p {
   color: var(--ink-soft);
   font-size: 1.125rem;
-  max-width: 600px;
-  margin: 0 auto;
+  max-width: 100%;
+  margin: 0;
 }
 
 .activity-grid {
@@ -183,4 +183,101 @@
   margin-top: 15px;
   color: var(--ink-soft);
   font-size: 0.9rem;
+}
+
+/* History Panel Styles */
+.history-panel {
+  border-top: 1px dashed var(--line);
+  padding-top: 2.5rem;
+}
+
+.activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  margin-top: 1.5rem;
+}
+
+.activity-card {
+  background: var(--cream-deep);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.activity-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(33, 45, 30, 0.05);
+}
+
+.activity-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.activity-card-title {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.activity-date {
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.activity-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 100px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badge-irrigation {
+  background: rgba(82, 137, 214, 0.1);
+  color: #2F69B8;
+}
+
+.badge-fertilizer {
+  background: rgba(127, 166, 108, 0.15);
+  color: var(--forest-deep);
+}
+
+.badge-pesticide {
+  background: rgba(225, 166, 59, 0.15);
+  color: var(--gold-deep);
+}
+
+.badge-other {
+  background: rgba(100, 100, 100, 0.1);
+  color: var(--ink-soft);
+}
+
+.activity-logger {
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  font-style: italic;
+}
+
+.activity-card-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 0.85rem 1.5rem;
+  font-size: 0.925rem;
+  color: var(--ink);
+  line-height: 1.5;
+}
+
+.activity-card-details strong {
+  font-weight: 600;
+  color: var(--forest-deep);
+  margin-right: 0.35rem;
 }

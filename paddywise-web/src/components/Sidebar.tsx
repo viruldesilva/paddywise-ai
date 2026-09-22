@@ -37,7 +37,7 @@ export function Sidebar({ role, isOpen, onClose }: SidebarProps) {
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { name: 'Manage Profile', path: '#profile', icon: User },
     { name: 'Fields & Cultivation Cycles', path: '/fields', icon: Map },
-    { name: 'Record Activities', path: '#activities', icon: Activity },
+    { name: 'Record Activities', path: '/activities', icon: Activity },
     { name: 'Report Pests/Diseases', path: '#report', icon: Bug },
     { name: 'Weather & History', path: '#weather', icon: Cloud },
     { name: 'AI Analysis & Recommendations', path: '#ai', icon: Brain },
