@@ -35,5 +35,14 @@ export const activityApi = {
   createActivity: async (cycleId: number, data: CreateCropActivityRequest): Promise<CropActivityDto> => {
     const response = await axiosInstance.post(`/cycles/${cycleId}/activities`, data);
     return response.data;
+  },
+
+  updateActivity: async (activityId: number, data: CreateCropActivityRequest): Promise<CropActivityDto> => {
+    const response = await axiosInstance.put(`/activities/${activityId}`, data);
+    return response.data;
+  },
+
+  deleteActivity: async (activityId: number): Promise<void> => {
+    await axiosInstance.delete(`/activities/${activityId}`);
   }
 };

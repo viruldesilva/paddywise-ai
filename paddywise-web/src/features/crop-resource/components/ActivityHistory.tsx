@@ -2,7 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { activityApi, type CropActivityDto } from '../services/activityApi';
 import type { CultivationCycle } from '../../field-cultivation/types';
 import { ActivityAnalytics } from './ActivityAnalytics';
-import { User, Search } from 'lucide-react';
+import { EditActivityModal } from './EditActivityModal';
+import { User, Search, Pencil, Trash2, CheckCircle2, AlertCircle, X } from 'lucide-react';
+import '../../field-cultivation/styles/fieldCultivation.css';
 
 interface ActivityHistoryProps {
   selectedCycleId?: number | 'all';
@@ -26,7 +28,13 @@ export const ActivityHistory: React.FC<ActivityHistoryProps> = ({
   const [endDate, setEndDate] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
+  const [editingActivity, setEditingActivity] = useState<CropActivityDto | null>(null);
+  const [deletingActivity, setDeletingActivity] = useState<CropActivityDto | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [statusModal, setStatusModal] = useState<{ isOpen: boolean; success: boolean; message: string } | null>(null);
+
   const isOfficer = userRole === 'AgriculturalOfficer' || userRole === 'FieldOfficer' || userRole === 'Admin';
+  const canModify = userRole === 'Farmer' || userRole === 'Admin';
 
   useEffect(() => {
     async function fetchActivities() {
@@ -62,14 +70,62 @@ export const ActivityHistory: React.FC<ActivityHistoryProps> = ({
     fetchActivities();
   }, [selectedCycleId, cycles, refreshTrigger, isOfficer]);
 
-  const renderDetails = (activity: CropActivityDto) => {
+  const handleUpdateSuccess = (updated: CropActivityDto) => {
+    setActivities(prev => prev.map(a => a.id === updated.id ? updated : a));
+    setEditingActivity(null);
+    setStatusModal({
+      isOpen: true,
+      success: true,
+      message: `${updated.activityType} activity updated successfully!`
+    });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deletingActivity) return;
+
     try {
-      const data = JSON.parse(activity.detailsJson || '{}');
-      const formattedDate = new Date(data.date || activity.date).toLocaleDateString('en-US', {
+      setIsDeleting(true);
+      await activityApi.deleteActivity(deletingActivity.id);
+      setActivities(prev => prev.filter(a => a.id !== deletingActivity.id));
+      const deletedType = deletingActivity.activityType;
+      setDeletingActivity(null);
+      setStatusModal({
+        isOpen: true,
+        success: true,
+        message: `${deletedType} activity deleted successfully!`
+      });
+    } catch (err: any) {
+      console.error('Failed to delete activity', err);
+      const msg = err?.response?.data?.message || err?.message || 'Failed to delete activity. Please try again.';
+      setStatusModal({
+        isOpen: true,
+        success: false,
+        message: msg
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const formatDisplayDate = (dateVal?: string) => {
+    if (!dateVal) return '—';
+    const clean = String(dateVal).split('T')[0];
+    const parts = clean.split('-');
+    if (parts.length === 3) {
+      const [y, m, d] = parts.map(Number);
+      return new Date(y, m - 1, d).toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'short',
         day: 'numeric'
       });
+    }
+    return dateVal;
+  };
+
+  const renderDetails = (activity: CropActivityDto) => {
+    try {
+      const data = JSON.parse(activity.detailsJson || '{}');
+      const formattedDate = formatDisplayDate(data.date || activity.date);
 
       switch (activity.activityType) {
         case 'Irrigation':
@@ -244,7 +300,30 @@ export const ActivityHistory: React.FC<ActivityHistoryProps> = ({
                             </span>
                           )}
                         </div>
-                        <div className="activity-logger">Logged by: {activity.loggedByUserName}</div>
+
+                        <div className="activity-card-actions">
+                          <div className="activity-logger">Logged by: {activity.loggedByUserName}</div>
+                          {canModify && (
+                            <>
+                              <button 
+                                type="button"
+                                className="activity-action-btn edit" 
+                                title="Edit Activity"
+                                onClick={() => setEditingActivity(activity)}
+                              >
+                                <Pencil size={13} /> Edit
+                              </button>
+                              <button 
+                                type="button"
+                                className="activity-action-btn delete" 
+                                title="Delete Activity"
+                                onClick={() => setDeletingActivity(activity)}
+                              >
+                                <Trash2 size={13} /> Delete
+                              </button>
+                            </>
+                          )}
+                        </div>
                       </div>
                       <div className="activity-card-details">
                         {renderDetails(activity)}
@@ -256,6 +335,143 @@ export const ActivityHistory: React.FC<ActivityHistoryProps> = ({
             )}
           </div>
         </>
+      )}
+
+      {/* Edit Activity Modal */}
+      {editingActivity && (
+        <EditActivityModal
+          activity={editingActivity}
+          cycle={cycles.find(c => c.id === editingActivity.cultivationCycleId)}
+          onClose={() => setEditingActivity(null)}
+          onSuccess={handleUpdateSuccess}
+        />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deletingActivity && (
+        <div 
+          className="fc-modal-backdrop" 
+          onClick={() => !isDeleting && setDeletingActivity(null)} 
+          role="dialog" 
+          aria-modal="true"
+        >
+          <div 
+            className="fc-modal" 
+            style={{ maxWidth: '30rem', textAlign: 'center', padding: '2rem 1.75rem' }} 
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.25rem' }}>
+              <button 
+                type="button" 
+                className="fc-modal-close" 
+                onClick={() => setDeletingActivity(null)} 
+                disabled={isDeleting} 
+                aria-label="Close"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div style={{
+              width: '64px',
+              height: '64px',
+              borderRadius: '50%',
+              margin: '-0.5rem auto 1.25rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: 'rgba(217, 83, 79, 0.15)',
+              color: '#d9534f'
+            }}>
+              <Trash2 size={36} />
+            </div>
+
+            <h2 className="fc-modal-title" style={{ fontSize: '1.4rem', marginBottom: '0.5rem' }}>
+              Delete Activity?
+            </h2>
+
+            <p style={{ color: 'var(--ink-soft)', marginBottom: '1.5rem', fontSize: '0.95rem', lineHeight: '1.5' }}>
+              Are you sure you want to delete this <strong>{deletingActivity.activityType}</strong> activity recorded on <strong>{formatDisplayDate(deletingActivity.date)}</strong>? This action cannot be undone.
+            </p>
+
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
+              <button 
+                type="button" 
+                className="fc-btn fc-btn-quiet" 
+                onClick={() => setDeletingActivity(null)}
+                disabled={isDeleting}
+              >
+                Cancel
+              </button>
+              <button 
+                type="button" 
+                className="fc-btn" 
+                style={{ backgroundColor: '#d9534f', color: '#ffffff', borderColor: '#d9534f' }}
+                onClick={handleConfirmDelete}
+                disabled={isDeleting}
+              >
+                {isDeleting ? 'Deleting...' : 'Delete Activity'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Status Notification Modal */}
+      {statusModal && (
+        <div 
+          className="fc-modal-backdrop" 
+          onClick={() => setStatusModal(null)} 
+          role="dialog" 
+          aria-modal="true"
+        >
+          <div 
+            className="fc-modal" 
+            style={{ maxWidth: '28rem', textAlign: 'center', padding: '2rem 1.75rem' }} 
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.25rem' }}>
+              <button 
+                type="button" 
+                className="fc-modal-close" 
+                onClick={() => setStatusModal(null)} 
+                aria-label="Close"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div style={{
+              width: '60px',
+              height: '60px',
+              borderRadius: '50%',
+              margin: '-0.5rem auto 1.25rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: statusModal.success ? 'rgba(74, 124, 89, 0.15)' : 'rgba(217, 83, 79, 0.15)',
+              color: statusModal.success ? 'var(--forest)' : '#d9534f'
+            }}>
+              {statusModal.success ? <CheckCircle2 size={36} /> : <AlertCircle size={36} />}
+            </div>
+
+            <h2 className="fc-modal-title" style={{ fontSize: '1.3rem', marginBottom: '0.5rem' }}>
+              {statusModal.success ? 'Success' : 'Error'}
+            </h2>
+
+            <p style={{ color: 'var(--ink-soft)', marginBottom: '1.5rem', fontSize: '0.95rem' }}>
+              {statusModal.message}
+            </p>
+
+            <button 
+              type="button" 
+              className="fc-btn fc-btn-primary" 
+              onClick={() => setStatusModal(null)}
+            >
+              Close
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

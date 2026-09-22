@@ -316,3 +316,45 @@
   color: var(--forest-deep);
   margin-right: 0.35rem;
 }
+
+.activity-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.activity-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid var(--line);
+  background: var(--cream);
+  color: var(--ink);
+}
+
+.activity-action-btn:hover {
+  transform: translateY(-1px);
+}
+
+.activity-action-btn.edit:hover {
+  background: var(--forest);
+  color: #ffffff;
+  border-color: var(--forest);
+}
+
+.activity-action-btn.delete {
+  color: #c9302c;
+  border-color: rgba(201, 48, 44, 0.25);
+}
+
+.activity-action-btn.delete:hover {
+  background: #d9534f;
+  color: #ffffff;
+  border-color: #d9534f;
+}

@@ -174,6 +174,86 @@ public class CropActivityService : ICropActivityService
         };
     }
 
+    public async Task<CropActivityDto> UpdateActivityAsync(int activityId, UpdateCropActivityRequestDto request, int userId, string userRole, CancellationToken cancellationToken = default)
+    {
+        var activity = await _context.CropActivities
+            .Include(a => a.LoggedByUser)
+            .Include(a => a.CultivationCycle)
+                .ThenInclude(c => c!.Field)
+                    .ThenInclude(f => f!.Farmer)
+            .FirstOrDefaultAsync(a => a.Id == activityId, cancellationToken);
+
+        if (activity == null)
+            throw new InvalidOperationException("Crop activity not found.");
+
+        if (userRole == "Farmer" && activity.LoggedByUserId != userId && activity.CultivationCycle?.Field?.FarmerId != userId)
+            throw new UnauthorizedAccessException("You do not have permission to edit this activity.");
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var oneWeekAgo = today.AddDays(-7);
+
+        if (request.Date > today)
+        {
+            throw new ArgumentException("Activity date cannot be in the future.");
+        }
+
+        if (request.Date < oneWeekAgo)
+        {
+            throw new ArgumentException($"Activity date ({request.Date:yyyy-MM-dd}) cannot be older than the past week ({oneWeekAgo:yyyy-MM-dd}). Activities can only be recorded/updated within the last 7 days.");
+        }
+
+        if (activity.CultivationCycle != null && request.Date < activity.CultivationCycle.SowingDate)
+        {
+            throw new ArgumentException($"Activity date ({request.Date:yyyy-MM-dd}) cannot be earlier than the cultivation cycle's sowing date ({activity.CultivationCycle.SowingDate:yyyy-MM-dd}).");
+        }
+
+        if (activity.CultivationCycle != null && activity.CultivationCycle.ActualHarvestDate.HasValue && request.Date > activity.CultivationCycle.ActualHarvestDate.Value)
+        {
+            throw new ArgumentException($"Activity date ({request.Date:yyyy-MM-dd}) cannot be after the harvest date ({activity.CultivationCycle.ActualHarvestDate.Value:yyyy-MM-dd}).");
+        }
+
+        ValidateActivityDetails(request.ActivityType, request.DetailsJson);
+
+        activity.ActivityType = request.ActivityType;
+        activity.Date = request.Date;
+        activity.DetailsJson = request.DetailsJson;
+
+        await _context.SaveChangesAsync(cancellationToken);
+
+        return new CropActivityDto
+        {
+            Id = activity.Id,
+            CultivationCycleId = activity.CultivationCycleId,
+            ActivityType = activity.ActivityType.ToString(),
+            Date = activity.Date,
+            DetailsJson = activity.DetailsJson,
+            LoggedByUserId = activity.LoggedByUserId,
+            LoggedByUserName = activity.LoggedByUser?.Name ?? "Unknown",
+            CreatedAt = activity.CreatedAt,
+            FieldName = activity.CultivationCycle?.Field?.Name ?? "Unknown Field",
+            FarmerName = activity.CultivationCycle?.Field?.Farmer?.Name ?? activity.LoggedByUser?.Name ?? "Unknown Farmer",
+            FarmerId = activity.CultivationCycle?.Field?.FarmerId,
+            CycleName = activity.CultivationCycle != null ? $"{activity.CultivationCycle.Season} {activity.CultivationCycle.Year}" : null
+        };
+    }
+
+    public async Task DeleteActivityAsync(int activityId, int userId, string userRole, CancellationToken cancellationToken = default)
+    {
+        var activity = await _context.CropActivities
+            .Include(a => a.CultivationCycle)
+                .ThenInclude(c => c!.Field)
+            .FirstOrDefaultAsync(a => a.Id == activityId, cancellationToken);
+
+        if (activity == null)
+            throw new InvalidOperationException("Crop activity not found.");
+
+        if (userRole == "Farmer" && activity.LoggedByUserId != userId && activity.CultivationCycle?.Field?.FarmerId != userId)
+            throw new UnauthorizedAccessException("You do not have permission to delete this activity.");
+
+        _context.CropActivities.Remove(activity);
+        await _context.SaveChangesAsync(cancellationToken);
+    }
+
     private static void ValidateActivityDetails(CropActivityType activityType, string detailsJson)
     {
         if (string.IsNullOrWhiteSpace(detailsJson))

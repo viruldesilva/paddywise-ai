@@ -75,4 +75,54 @@ public class CropActivitiesController : ControllerBase
         var activities = await _activityService.GetAllActivitiesAsync(farmerId, cycleId, activityType);
         return Ok(activities);
     }
+
+    [HttpPut("/api/activities/{id}")]
+    [HttpPut("{id}")]
+    [Authorize(Roles = "Farmer,Admin")]
+    public async Task<ActionResult<CropActivityDto>> UpdateActivity(int id, UpdateCropActivityRequestDto request)
+    {
+        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var role = User.FindFirstValue(ClaimTypes.Role)!;
+
+        try
+        {
+            var updated = await _activityService.UpdateActivityAsync(id, request, userId, role);
+            return Ok(updated);
+        }
+        catch (System.ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (System.InvalidOperationException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (System.UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+    }
+
+    [HttpDelete("/api/activities/{id}")]
+    [HttpDelete("{id}")]
+    [Authorize(Roles = "Farmer,Admin")]
+    public async Task<IActionResult> DeleteActivity(int id)
+    {
+        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var role = User.FindFirstValue(ClaimTypes.Role)!;
+
+        try
+        {
+            await _activityService.DeleteActivityAsync(id, userId, role);
+            return NoContent();
+        }
+        catch (System.InvalidOperationException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (System.UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+    }
 }
