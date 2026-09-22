@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { AlertCircle, ArrowLeft, History, Menu } from 'lucide-react';
+import { AlertCircle, ArrowLeft, History, Menu, LogOut } from 'lucide-react';
 import { Sidebar } from '../../../components/Sidebar';
 import { useAuth } from '../../../hooks/useAuth';
 import { extractApiErrorMessage } from '../../../services/authService';
@@ -34,7 +34,7 @@ interface PlanLoad {
 }
 
 export default function CycleDetailPage() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { id } = useParams<{ id: string }>();
 
   const cycleId = Number(id);
@@ -176,6 +176,15 @@ export default function CycleDetailPage() {
                 <span className="dashboard-user-name">{user.name}</span>
                 <span className="dashboard-user-sub">{user.email}</span>
               </div>
+              <button 
+                onClick={logout} 
+                className="btn btn-secondary btn-sm"
+                title="Sign Out"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
+              >
+                <LogOut size={16} />
+                Sign Out
+              </button>
             </div>
           </div>
         </header>

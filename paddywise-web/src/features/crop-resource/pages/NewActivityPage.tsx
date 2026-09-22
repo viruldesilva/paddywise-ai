@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Menu } from 'lucide-react';
+import { ArrowLeft, Menu, LogOut } from 'lucide-react';
 import { ActivityPanel } from '../components/ActivityPanel';
 import { useAuth } from '../../../hooks/useAuth';
 import { Sidebar } from '../../../components/Sidebar';
@@ -11,7 +11,7 @@ import '../../field-cultivation/styles/fieldCultivation.css';
 import './ActivityDashboard.css';
 
 export const NewActivityPage: React.FC = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   
@@ -52,6 +52,15 @@ export const NewActivityPage: React.FC = () => {
                 <span className="dashboard-user-name">{user.name}</span>
                 <span className="dashboard-user-sub">{user.email}</span>
               </div>
+              <button 
+                onClick={logout} 
+                className="btn btn-secondary btn-sm"
+                title="Sign Out"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
+              >
+                <LogOut size={16} />
+                Sign Out
+              </button>
             </div>
           </div>
         </header>

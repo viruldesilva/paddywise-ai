@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import type { UserRole } from '../types/auth';
+import { useAuth } from '../hooks/useAuth';
 import './Navbar.css';
 import logoImage from '../assets/logo2.png';
 import {
@@ -20,7 +21,8 @@ import {
   MapPin,
   Camera,
   CheckCircle,
-  X
+  X,
+  LogOut
 } from 'lucide-react';
 import '../styles/Sidebar.css';
 
@@ -32,6 +34,7 @@ interface SidebarProps {
 
 export function Sidebar({ role, isOpen, onClose }: SidebarProps) {
   const location = useLocation();
+  const { logout } = useAuth();
 
   const farmerLinks = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
@@ -115,6 +118,16 @@ export function Sidebar({ role, isOpen, onClose }: SidebarProps) {
         </nav>
 
         <div className="sidebar-footer">
+          <button
+            type="button"
+            onClick={logout}
+            className="sidebar-logout-btn"
+            title="Sign Out"
+          >
+            <LogOut size={18} className="sidebar-logout-icon" />
+            <span>Sign Out</span>
+          </button>
+
           <div className="sidebar-help">
             <h4>Need Help?</h4>
             <p>Contact support for assistance.</p>

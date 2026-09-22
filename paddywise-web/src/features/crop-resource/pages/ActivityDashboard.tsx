@@ -5,12 +5,12 @@ import { fieldApi } from '../../field-cultivation/services/fieldApi';
 import type { CultivationCycle } from '../../field-cultivation/types';
 import { ActivityHistory } from '../components/ActivityHistory';
 import { Sidebar } from '../../../components/Sidebar';
-import { Menu, Plus } from 'lucide-react';
+import { Menu, Plus, LogOut } from 'lucide-react';
 import '../../../styles/Dashboard.css';
 import './ActivityDashboard.css';
 
 export const ActivityDashboard: React.FC = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   
   const [cycles, setCycles] = useState<CultivationCycle[]>([]);
   const [selectedCycleId, setSelectedCycleId] = useState<number | 'all'>('all');
@@ -65,6 +65,15 @@ export const ActivityDashboard: React.FC = () => {
                 <span className="dashboard-user-name">{user.name}</span>
                 <span className="dashboard-user-sub">{user.email}</span>
               </div>
+              <button 
+                onClick={logout} 
+                className="btn btn-secondary btn-sm"
+                title="Sign Out"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
+              >
+                <LogOut size={16} />
+                Sign Out
+              </button>
             </div>
           </div>
         </header>

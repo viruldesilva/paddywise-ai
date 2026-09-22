@@ -185,3 +185,8 @@ ul {
 .dark-section .btn-secondary:hover {
   background-color: rgba(246, 241, 227, 0.1);
 }
+
+.btn-sm {
+  padding: 0.4rem 0.85rem;
+  font-size: 0.8125rem;
+}
