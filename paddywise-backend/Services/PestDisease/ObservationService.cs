@@ -233,7 +233,9 @@ public class ObservationService : IObservationService
                 agentOutput = null;
             }
 
-            if (agentOutput == null || agentOutput.PossibleIssues.Count == 0)
+            // An empty PossibleIssues list is a legitimate "no likely match found" outcome per
+            // the agent's own contract, not a failure — only a parse failure (null) is.
+            if (agentOutput == null)
             {
                 success = false;
                 error = "The diagnosis agent did not return a valid result. Please try again shortly.";

@@ -202,11 +202,14 @@ Agent rules that apply here same as every component:
     ```
     If unset, it falls back to the shared `Gemini:ApiKey` automatically — so teammates without
     a dedicated key still work.
-- Known gap: `ObservationService.RequestAnalysisAsync` treats an empty `possibleIssues` list as
-  a failed run ("did not return a valid result"), but the agent's system prompt tells the model
-  to return an empty list when nothing plausibly matches. A genuine no-match diagnosis
-  currently surfaces to the farmer as an error rather than a legitimate "no match found"
-  outcome — worth revisiting.
+- Fixed: `ObservationService.RequestAnalysisAsync` no longer treats an empty `PossibleIssues`
+  list as a failed run. Only a `null` `agentOutput` (JSON parse failure) is a failure now — an
+  empty list is a legitimate "no likely match found" outcome per the agent's own contract, and
+  `CropAnalysisValidator` already agreed (it never flagged an empty list, only a missing
+  `RecommendedNextStep`). Note: a no-match run still creates zero `PestDiseaseReport` rows, so
+  the response looks identical to "not yet analyzed" and the `Reports.Count > 0` re-request
+  guard doesn't block a repeat call — there's no DTO field surfacing "analysis ran, no match"
+  distinctly. Worth revisiting once the frontend needs to show that state.
 - Not started: `PestDiseaseKnowledge` admin CRUD, golden test cases (no test project exists
   yet), and the web frontend (no `paddywise-web/src/features/pest-disease` folder exists).
 
