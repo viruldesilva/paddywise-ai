@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using PaddyWise.Api.Data;
@@ -11,9 +12,11 @@ using PaddyWise.Api.Data;
 namespace PaddyWise.Api.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260920094801_AddDiagnosisRunLog")]
+    partial class AddDiagnosisRunLog
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,44 +24,6 @@ namespace PaddyWise.Api.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
-
-            modelBuilder.Entity("PaddyWise.Api.Entities.CropResource.CropActivity", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("ActivityType")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("CultivationCycleId")
-                        .HasColumnType("integer");
-
-                    b.Property<DateOnly>("Date")
-                        .HasColumnType("date");
-
-                    b.Property<string>("DetailsJson")
-                        .IsRequired()
-                        .HasColumnType("jsonb");
-
-                    b.Property<int>("LoggedByUserId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ActivityType");
-
-                    b.HasIndex("CultivationCycleId");
-
-                    b.HasIndex("LoggedByUserId");
-
-                    b.ToTable("CropActivities");
-                });
 
             modelBuilder.Entity("PaddyWise.Api.Entities.FieldCultivation.AgentRunLog", b =>
                 {
@@ -813,25 +778,6 @@ namespace PaddyWise.Api.Migrations
                         .IsUnique();
 
                     b.ToTable("Users");
-                });
-
-            modelBuilder.Entity("PaddyWise.Api.Entities.CropResource.CropActivity", b =>
-                {
-                    b.HasOne("PaddyWise.Api.Entities.FieldCultivation.CultivationCycle", "CultivationCycle")
-                        .WithMany()
-                        .HasForeignKey("CultivationCycleId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("PaddyWise.Api.Entities.Shared.User", "LoggedByUser")
-                        .WithMany()
-                        .HasForeignKey("LoggedByUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("CultivationCycle");
-
-                    b.Navigation("LoggedByUser");
                 });
 
             modelBuilder.Entity("PaddyWise.Api.Entities.FieldCultivation.AgentRunLog", b =>

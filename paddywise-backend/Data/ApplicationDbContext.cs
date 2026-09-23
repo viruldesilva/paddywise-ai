@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
+using PaddyWise.Api.Entities.CropResource;
 using PaddyWise.Api.Entities.FieldCultivation;
+using PaddyWise.Api.Entities.PestDisease;
 using PaddyWise.Api.Entities.Shared;
 
 namespace PaddyWise.Api.Data;
@@ -19,7 +21,11 @@ public class ApplicationDbContext : DbContext
     public DbSet<GrowthStageLog> GrowthStageLogs => Set<GrowthStageLog>();//stage observations per cycle
     public DbSet<CultivationPlan> CultivationPlans => Set<CultivationPlan>();//agent-generated plan per cycle
     public DbSet<AgentRunLog> AgentRunLogs => Set<AgentRunLog>();//audit trail of agent runs
-    public DbSet<PaddyWise.Api.Entities.CropResource.CropActivity> CropActivities => Set<PaddyWise.Api.Entities.CropResource.CropActivity>();//farmer crop activities
+    public DbSet<CropObservation> CropObservations => Set<CropObservation>();//farmer-submitted pest/disease report
+    public DbSet<PestDiseaseReport> PestDiseaseReports => Set<PestDiseaseReport>();//agent diagnosis per observation
+    public DbSet<PestDiseaseKnowledge> PestDiseaseKnowledgeEntries => Set<PestDiseaseKnowledge>();//DOA-sourced reference data
+    public DbSet<DiagnosisRunLog> DiagnosisRunLogs => Set<DiagnosisRunLog>();//audit trail of Crop Analysis agent runs
+    public DbSet<CropActivity> CropActivities => Set<CropActivity>();//farmer crop activities
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -138,7 +144,7 @@ public class ApplicationDbContext : DbContext
                 .OnDelete(DeleteBehavior.SetNull);
         });
 
-        modelBuilder.Entity<PaddyWise.Api.Entities.CropResource.CropActivity>(entity =>
+        modelBuilder.Entity<CropActivity>(entity =>
         {
             entity.Property(a => a.DetailsJson).HasColumnType("jsonb");
 
@@ -156,6 +162,64 @@ public class ApplicationDbContext : DbContext
                 .HasForeignKey(a => a.LoggedByUserId)
                 .IsRequired()
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<CropObservation>(entity =>
+        {
+            entity.HasIndex(o => o.CultivationCycleId);
+            entity.HasIndex(o => o.ReportedByUserId);
+
+            entity.HasOne(o => o.CultivationCycle)
+                .WithMany()
+                .HasForeignKey(o => o.CultivationCycleId)
+                .IsRequired()
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Restrict so removing a user cannot erase the observation trail.
+            entity.HasOne(o => o.ReportedByUser)
+                .WithMany()
+                .HasForeignKey(o => o.ReportedByUserId)
+                .IsRequired()
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<PestDiseaseReport>(entity =>
+        {
+            entity.Property(r => r.Confidence).HasPrecision(3, 2);
+
+            entity.HasIndex(r => r.CropObservationId);
+            entity.HasIndex(r => r.Status);
+
+            entity.HasOne(r => r.CropObservation)
+                .WithMany(o => o.Reports)
+                .HasForeignKey(r => r.CropObservationId)
+                .IsRequired()
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(r => r.Officer)
+                .WithMany()
+                .HasForeignKey(r => r.OfficerId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<PestDiseaseKnowledge>(entity =>
+        {
+            entity.HasIndex(k => k.Name).IsUnique();
+        });
+
+        modelBuilder.Entity<DiagnosisRunLog>(entity =>
+        {
+            entity.Property(l => l.InputJson).HasColumnType("jsonb");
+            entity.Property(l => l.ToolCallsJson).HasColumnType("jsonb");
+
+            entity.HasIndex(l => l.CropObservationId);
+            entity.HasIndex(l => l.CorrelationId);
+
+            // SetNull so deleting an observation cannot erase the record that an agent ran.
+            entity.HasOne(l => l.CropObservation)
+                .WithMany()
+                .HasForeignKey(l => l.CropObservationId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<Division>().HasData(
@@ -177,6 +241,82 @@ public class ApplicationDbContext : DbContext
             new Variety { Id = 6, Name = "Bg 359", DurationDays = 105, AgeGroup = "3.5 month" },
             new Variety { Id = 7, Name = "At 307", DurationDays = 90, AgeGroup = "3 month" },
             new Variety { Id = 8, Name = "Bw 367", DurationDays = 105, AgeGroup = "3.5 month" }
+        );
+
+        // Symptoms/management text below are working values from general agronomic references
+        // and MUST be verified against current Sri Lanka Department of Agriculture publications
+        // before the diagnosis agent's matches are treated as authoritative.
+        modelBuilder.Entity<PestDiseaseKnowledge>().HasData(
+            new PestDiseaseKnowledge
+            {
+                Id = 1,
+                Name = "Thrips",
+                Symptoms = "Silvery streaks and curling on young leaves; stunted growth in seedlings.",
+                FavorableConditions = "Dry weather, drought-stressed nurseries.",
+                CropStages = "Nursery, Tillering",
+                ManagementGuidance = "Maintain adequate field water level; apply an approved insecticide only once infestation passes the economic threshold.",
+                Source = "Sri Lanka Department of Agriculture"
+            },
+            new PestDiseaseKnowledge
+            {
+                Id = 2,
+                Name = "Brown Planthopper",
+                Symptoms = "Yellowing and drying of leaves from the base upward (\"hopperburn\"); stunted, wilting tillers.",
+                FavorableConditions = "Dense planting, excess nitrogen, continuous flooding, high humidity.",
+                CropStages = "Tillering, PanicleInitiation",
+                ManagementGuidance = "Avoid excess nitrogen; alternate wetting and drying; favor resistant varieties; targeted insecticide only at economic threshold.",
+                Source = "Sri Lanka Department of Agriculture"
+            },
+            new PestDiseaseKnowledge
+            {
+                Id = 3,
+                Name = "Yellow Stem Borer",
+                Symptoms = "Dead heart (dried central shoot) during vegetative growth; whitehead (empty, upright panicle) at the reproductive stage.",
+                FavorableConditions = "Continuous rice cropping without fallow, high nitrogen.",
+                CropStages = "Tillering, Flowering",
+                ManagementGuidance = "Remove and destroy egg masses and post-harvest stubble; use light traps; targeted insecticide once dead-heart incidence passes threshold.",
+                Source = "Sri Lanka Department of Agriculture"
+            },
+            new PestDiseaseKnowledge
+            {
+                Id = 4,
+                Name = "Rice Leaf Folder",
+                Symptoms = "Leaves folded longitudinally and webbed together; white/transparent streaks where larvae scrape and feed inside the fold.",
+                FavorableConditions = "High nitrogen, dense canopy, high humidity.",
+                CropStages = "Tillering, PanicleInitiation",
+                ManagementGuidance = "Balanced nitrogen application; conserve natural enemies; insecticide only above the recommended damage threshold.",
+                Source = "Sri Lanka Department of Agriculture"
+            },
+            new PestDiseaseKnowledge
+            {
+                Id = 5,
+                Name = "Rice Sheath Mite",
+                Symptoms = "Brown to black lesions on the leaf sheath near the waterline; can cause unfilled or discolored grains.",
+                FavorableConditions = "Warm, humid conditions and dense planting.",
+                CropStages = "PanicleInitiation, Flowering",
+                ManagementGuidance = "Avoid excess nitrogen and overly dense planting; miticide only under severe, confirmed infestation.",
+                Source = "Sri Lanka Department of Agriculture"
+            },
+            new PestDiseaseKnowledge
+            {
+                Id = 6,
+                Name = "Rice Gall Midge",
+                Symptoms = "Affected tiller produces a tubular \"silvershoot\"/onion-leaf gall instead of a normal leaf whorl and no panicle.",
+                FavorableConditions = "High humidity, shaded or low-lying fields, continuous rice cropping.",
+                CropStages = "Nursery, Tillering",
+                ManagementGuidance = "Synchronize planting across the area; use resistant varieties; remove wild grasses acting as alternate hosts.",
+                Source = "Sri Lanka Department of Agriculture"
+            },
+            new PestDiseaseKnowledge
+            {
+                Id = 7,
+                Name = "Sheath Rot",
+                Symptoms = "Reddish-brown lesions on the flag leaf sheath enclosing the panicle; panicle may fail to emerge fully or grains are discolored.",
+                FavorableConditions = "High humidity, excess nitrogen, dense planting.",
+                CropStages = "PanicleInitiation, Flowering",
+                ManagementGuidance = "Avoid excess nitrogen; ensure adequate spacing/drainage for airflow; treat seed and apply fungicide at booting stage if severe.",
+                Source = "Sri Lanka Department of Agriculture"
+            }
         );
     }
 }

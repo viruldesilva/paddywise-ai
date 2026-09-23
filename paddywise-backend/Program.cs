@@ -1,15 +1,21 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using PaddyWise.Api.Agents.CropResource;
+using PaddyWise.Api.Agents.FieldCultivation;
+using PaddyWise.Api.Agents.PestDisease;
 using PaddyWise.Api.Agents.Shared;
 using PaddyWise.Api.Data;
+using PaddyWise.Api.Services.CropResource;
+using PaddyWise.Api.Services.FieldCultivation;
+using PaddyWise.Api.Services.PestDisease;
 using PaddyWise.Api.Services.Shared;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // ============================================================
-// SERVICES
+// SERVICES & JSON OPTIONS
 // ============================================================
 
 builder.Services.AddControllers()
@@ -115,29 +121,27 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 
 
 // ============================================================
-// FIELD CULTIVATION SERVICES
+// FIELD CULTIVATION SERVICES (Component 1)
 // ============================================================
 
-builder.Services.AddScoped<
-    PaddyWise.Api.Services.FieldCultivation.IFieldService,
-    PaddyWise.Api.Services.FieldCultivation.FieldService>();
-
-builder.Services.AddScoped<
-    PaddyWise.Api.Services.FieldCultivation.ICycleService,
-    PaddyWise.Api.Services.FieldCultivation.CycleService>();
-
-builder.Services.AddScoped<
-    PaddyWise.Api.Services.FieldCultivation.ICultivationPlanService,
-    PaddyWise.Api.Services.FieldCultivation.CultivationPlanService>();
+builder.Services.AddScoped<IFieldService, FieldService>();
+builder.Services.AddScoped<ICycleService, CycleService>();
+builder.Services.AddScoped<ICultivationPlanService, CultivationPlanService>();
 
 
 // ============================================================
-// CROP RESOURCE SERVICES
+// CROP RESOURCE SERVICES (Component 2)
 // ============================================================
 
-builder.Services.AddScoped<
-    PaddyWise.Api.Services.CropResource.ICropActivityService,
-    PaddyWise.Api.Services.CropResource.CropActivityService>();
+builder.Services.AddScoped<ICropActivityService, CropActivityService>();
+
+
+// ============================================================
+// PEST & DISEASE MONITORING SERVICES (Component 3)
+// ============================================================
+
+builder.Services.AddScoped<IObservationService, ObservationService>();
+builder.Services.AddScoped<IPestDiseaseReportService, PestDiseaseReportService>();
 
 
 // ============================================================
@@ -153,34 +157,41 @@ builder.Services.AddHttpClient(
 
 builder.Services.AddScoped<ILlmClient, GeminiLlmClient>();
 
+// Component 3's own Gemini key (Gemini:PestDiseaseApiKey), falling back to Gemini:ApiKey if unset.
+builder.Services.AddKeyedScoped<ILlmClient, GeminiLlmClient>(AgentNames.PestDiseaseDiagnosis, (sp, _) =>
+    new GeminiLlmClient(
+        sp.GetRequiredService<IHttpClientFactory>(),
+        sp.GetRequiredService<IConfiguration>(),
+        sp.GetRequiredService<ILogger<GeminiLlmClient>>(),
+        "Gemini:PestDiseaseApiKey"));
+
 
 // ============================================================
 // AGENTIC AI
 // ============================================================
 
-// Component 1
+// Component 1 (Cultivation Planning Coordinator)
 builder.Services.AddScoped<
-    IAgent<
-        PaddyWise.Api.Agents.FieldCultivation.PlanAgentInput,
-        PaddyWise.Api.Agents.FieldCultivation.CultivationPlanOutput>,
-    PaddyWise.Api.Agents.FieldCultivation.CultivationPlanningAgent>();
-
+    IAgent<PlanAgentInput, CultivationPlanOutput>,
+    CultivationPlanningAgent>();
 
 // Component 2 (Crop Resource & Activity Analysis)
 builder.Services.AddScoped<
-    PaddyWise.Api.Agents.CropResource.ICropActivityAnalysisService,
-    PaddyWise.Api.Agents.CropResource.ResourceAnalysisAgent>();
+    ICropActivityAnalysisService,
+    ResourceAnalysisAgent>();
 
 builder.Services.AddKeyedScoped<
     IAgent<DelegatedTask, DelegatedTaskResult>,
-    PaddyWise.Api.Agents.CropResource.ResourceAnalysisAgent>(
+    ResourceAnalysisAgent>(
         AgentNames.ResourceAnalysis);
 
+// Component 3 (Pest & Disease Diagnosis)
 builder.Services.AddKeyedScoped<
     IAgent<DelegatedTask, DelegatedTaskResult>,
-    PestDiseaseDiagnosisAgentStub>(
+    CropAnalysisAgent>(
         AgentNames.PestDiseaseDiagnosis);
 
+// Component 4 (Scheduling & Validation - Stub)
 builder.Services.AddKeyedScoped<
     IAgent<DelegatedTask, DelegatedTaskResult>,
     SchedulingValidationAgentStub>(
@@ -246,10 +257,6 @@ var app = builder.Build();
 // ============================================================
 // DATABASE CONNECTION TEST
 // ============================================================
-//
-// This will immediately tell you whether your API can connect
-// to Neon PostgreSQL when the application starts.
-//
 
 if (app.Environment.IsDevelopment())
 {
