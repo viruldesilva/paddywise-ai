@@ -41,7 +41,7 @@ export function Sidebar({ role, isOpen, onClose }: SidebarProps) {
     { name: 'Manage Profile', path: '#profile', icon: User },
     { name: 'Fields & Cultivation Cycles', path: '/fields', icon: Map },
     { name: 'Record Activities', path: '/activities', icon: Activity },
-    { name: 'Report Pests/Diseases', path: '#report', icon: Bug },
+    { name: 'Report Pests/Diseases', path: '/observations', icon: Bug },
     { name: 'Weather & History', path: '#weather', icon: Cloud },
     { name: 'AI Analysis & Recommendations', path: '/activities?tab=advisor', icon: Brain },
   ];
@@ -51,6 +51,7 @@ export function Sidebar({ role, isOpen, onClose }: SidebarProps) {
     { name: 'Past Crop Activities', path: '/activities', icon: Activity },
     { name: 'View Farmer Fields & Reports', path: '#fields', icon: FileText },
     { name: 'Review AI Recommendations', path: '/plans/pending', icon: CheckSquare },
+    { name: 'Review Pest/Disease Reports', path: '/pest-disease-reports', icon: Bug },
     { name: 'Add Expert Recommendations', path: '#expert', icon: MessageSquare },
     { name: 'Monitor Disease & Statistics', path: '#stats', icon: BarChart2 },
   ];
