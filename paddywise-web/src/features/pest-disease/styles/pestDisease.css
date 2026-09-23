@@ -1,0 +1,741 @@
+/*
+ * Pest & Disease Monitoring — Component 3.
+ * Uses only the design tokens declared in styles/global.css.
+ */
+
+/* ---------------------------------------------------------------- page head */
+
+.pd-page-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 2rem;
+}
+
+.pd-page-title {
+  font-family: var(--font-heading);
+  font-size: 2.25rem;
+  color: var(--ink);
+  margin-bottom: 0.5rem;
+}
+
+.pd-page-sub {
+  font-family: var(--font-body);
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+  max-width: 38rem;
+}
+
+@media (max-width: 768px) {
+  .pd-page-title {
+    font-size: 1.75rem;
+  }
+}
+
+/* -------------------------------------------------------------------- cards */
+
+.pd-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.pd-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  background-color: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 1.35rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.pd-card:hover {
+  border-color: var(--shoot);
+  box-shadow: 0 10px 24px rgba(33, 45, 30, 0.08);
+}
+
+.pd-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.pd-card-title {
+  font-family: var(--font-heading);
+  font-size: 1.15rem;
+  color: var(--ink);
+  line-height: 1.3;
+}
+
+.pd-card-sub {
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+  margin-top: 0.2rem;
+}
+
+.pd-card-symptoms {
+  font-family: var(--font-body);
+  font-size: 0.92rem;
+  color: var(--ink);
+  background-color: var(--cream-deep);
+  border-radius: 10px;
+  padding: 0.75rem 0.9rem;
+  white-space: pre-wrap;
+}
+
+.pd-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.pd-image-preview {
+  max-width: 100%;
+  max-height: 14rem;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  object-fit: cover;
+}
+
+/* ---------------------------------------------------------------- reports */
+
+.pd-reports {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  border-top: 1px solid var(--line);
+  padding-top: 0.9rem;
+}
+
+.pd-report {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  background-color: var(--cream-deep);
+  border-radius: 10px;
+  padding: 0.6rem 0.85rem;
+}
+
+.pd-report-issue {
+  font-family: var(--font-body);
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.pd-report-confidence {
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+
+.pd-report-comment {
+  flex-basis: 100%;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  border-left: 3px solid var(--shoot);
+  padding-left: 0.7rem;
+  margin-top: 0.3rem;
+}
+
+/* ------------------------------------------------------------------ buttons */
+
+.pd-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 500;
+  padding: 0.6rem 1.25rem;
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  transition: background-color 0.2s, color 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+
+.pd-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.pd-btn-primary {
+  background-color: var(--gold);
+  color: var(--forest-deep);
+}
+
+.pd-btn-primary:not(:disabled):hover {
+  background-color: var(--gold-deep);
+  box-shadow: 0 4px 12px rgba(225, 166, 59, 0.3);
+}
+
+.pd-btn-outline {
+  background-color: transparent;
+  color: var(--forest);
+  border-color: var(--line);
+}
+
+.pd-btn-outline:not(:disabled):hover {
+  background-color: var(--forest);
+  color: var(--cream);
+  border-color: var(--forest);
+}
+
+.pd-btn-quiet {
+  background-color: var(--cream-deep);
+  color: var(--ink);
+}
+
+.pd-btn-quiet:not(:disabled):hover {
+  background-color: var(--shoot-light);
+}
+
+.pd-btn-ghost {
+  background-color: transparent;
+  color: var(--forest);
+  border-color: var(--shoot);
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+}
+
+.pd-btn-ghost:not(:disabled):hover {
+  background-color: rgba(127, 166, 108, 0.16);
+}
+
+/* ------------------------------------------- loading / error / empty states */
+
+.pd-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  text-align: center;
+  background-color: var(--cream-deep);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 3rem 1.5rem;
+}
+
+.pd-state-icon {
+  color: var(--shoot);
+}
+
+.pd-state-title {
+  font-family: var(--font-heading);
+  font-size: 1.35rem;
+  color: var(--ink);
+}
+
+.pd-state-text {
+  font-family: var(--font-body);
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+  max-width: 30rem;
+}
+
+.pd-state-error {
+  background-color: rgba(166, 105, 63, 0.1);
+  border-color: var(--clay);
+  color: var(--clay);
+}
+
+.pd-state-error .pd-state-text {
+  color: var(--clay);
+}
+
+/* --------------------------------------------------------------------- form */
+
+.pd-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.pd-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.pd-form-group label {
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--ink-soft);
+}
+
+.pd-input {
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  color: var(--ink);
+  background-color: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.65rem 0.85rem;
+  width: 100%;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.pd-input:focus {
+  outline: none;
+  border-color: var(--shoot);
+  box-shadow: 0 0 0 3px rgba(127, 166, 108, 0.22);
+}
+
+.pd-input:disabled {
+  background-color: var(--cream-deep);
+  color: var(--ink-soft);
+  cursor: not-allowed;
+}
+
+.pd-textarea {
+  resize: vertical;
+  min-height: 6rem;
+}
+
+.pd-field-error {
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  color: var(--clay);
+}
+
+.pd-counter {
+  align-self: flex-end;
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  color: var(--ink-soft);
+}
+
+.pd-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  border-top: 1px solid var(--line);
+  padding-top: 1.1rem;
+}
+
+.pd-alert {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  color: var(--clay);
+  background-color: rgba(166, 105, 63, 0.1);
+  border: 1px solid var(--clay);
+  border-radius: 10px;
+  padding: 0.7rem 0.9rem;
+}
+
+.pd-spin {
+  animation: pd-spin 1s linear infinite;
+}
+
+@keyframes pd-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pd-spin {
+    animation: none;
+  }
+}
+
+/* -------------------------------------------------------------------- modal */
+
+.pd-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background-color: rgba(24, 42, 30, 0.55);
+  overflow-y: auto;
+}
+
+.pd-modal {
+  width: 100%;
+  max-width: 40rem;
+  max-height: 90vh;
+  overflow-y: auto;
+  background-color: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 24px 48px rgba(24, 42, 30, 0.28);
+}
+
+.pd-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.pd-modal-title {
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  color: var(--ink);
+}
+
+.pd-modal-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-soft);
+  border-radius: 9999px;
+  padding: 0.35rem;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.pd-modal-close:hover {
+  background-color: var(--cream-deep);
+  color: var(--ink);
+}
+
+/* ----------------------------------------------------------- status badges */
+
+.pd-badge {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  border-radius: 9999px;
+  padding: 0.25rem 0.7rem;
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  background-color: var(--cream-deep);
+  color: var(--ink-soft);
+}
+
+.pd-badge-pending {
+  background-color: rgba(225, 166, 59, 0.18);
+  color: var(--gold-deep);
+}
+
+.pd-badge-approved {
+  background-color: var(--forest);
+  color: var(--cream);
+}
+
+.pd-badge-rejected {
+  background-color: rgba(166, 105, 63, 0.2);
+  color: var(--clay);
+}
+
+.pd-badge-revision {
+  background-color: rgba(127, 166, 108, 0.22);
+  color: var(--forest);
+}
+
+/* -------------------------------------------------------------------- table */
+
+.pd-table-wrap {
+  overflow-x: auto;
+  background-color: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+
+.pd-table {
+  width: 100%;
+  min-width: 44rem;
+  border-collapse: collapse;
+  font-family: var(--font-body);
+}
+
+.pd-table-caption {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.pd-table thead th {
+  text-align: left;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  background-color: var(--cream-deep);
+  padding: 0.7rem 1rem;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+.pd-table tbody td {
+  font-size: 0.92rem;
+  color: var(--ink);
+  vertical-align: top;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.pd-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.pd-table tbody tr:hover td {
+  background-color: var(--cream-deep);
+}
+
+.pd-table-strong {
+  display: block;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.pd-table-sub {
+  display: block;
+  max-width: 22rem;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--ink-soft);
+  margin-top: 0.2rem;
+}
+
+.pd-table-action {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.pd-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------------- queue */
+
+.pd-queue-controls {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+}
+
+.pd-queue-filter {
+  min-width: 16rem;
+  max-width: 24rem;
+  flex: 1 1 16rem;
+}
+
+.pd-queue-count {
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
+/* ------------------------------------------------------------------- drawer */
+
+.pd-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  justify-content: flex-end;
+  background-color: rgba(24, 42, 30, 0.55);
+}
+
+.pd-drawer {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 44rem;
+  height: 100%;
+  background-color: var(--cream);
+  border-left: 1px solid var(--line);
+  box-shadow: -24px 0 48px rgba(24, 42, 30, 0.28);
+}
+
+.pd-drawer-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.pd-drawer-title {
+  font-family: var(--font-heading);
+  font-size: 1.4rem;
+  color: var(--ink);
+}
+
+.pd-drawer-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 1.5rem;
+}
+
+.pd-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 1.1rem;
+  margin-bottom: 1.25rem;
+}
+
+.pd-summary-item dt {
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin-bottom: 0.25rem;
+}
+
+.pd-summary-item dd {
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  color: var(--ink);
+}
+
+.pd-confidence-note {
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  font-style: italic;
+}
+
+/* -------------------------------------------------------------- review form */
+
+.pd-review-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  background-color: var(--cream-deep);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 1.25rem;
+  margin-top: 1.5rem;
+}
+
+.pd-review-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  border: none;
+}
+
+.pd-review-legend {
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--ink-soft);
+  margin-bottom: 0.6rem;
+}
+
+.pd-review-choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  background-color: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0.8rem 0.9rem;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.pd-review-choice:hover {
+  border-color: var(--shoot);
+}
+
+.pd-review-choice-on {
+  border-color: var(--shoot);
+  box-shadow: 0 0 0 3px rgba(127, 166, 108, 0.22);
+}
+
+.pd-review-choice input {
+  margin-top: 0.2rem;
+  accent-color: var(--forest);
+}
+
+.pd-review-choices:disabled .pd-review-choice {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.pd-review-choice-name {
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+/* -------------------------------------------------------------------- toast */
+
+.pd-toast {
+  position: fixed;
+  z-index: 80;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  max-width: calc(100vw - 3rem);
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  color: var(--cream);
+  background-color: var(--forest);
+  border-radius: 9999px;
+  padding: 0.7rem 1.1rem;
+  box-shadow: 0 12px 28px rgba(24, 42, 30, 0.32);
+}
+
+.pd-toast-close {
+  display: inline-flex;
+  color: var(--shoot-light);
+  transition: color 0.2s;
+}
+
+.pd-toast-close:hover {
+  color: var(--cream);
+}
+
+@media (max-width: 640px) {
+  .pd-queue-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .pd-queue-filter {
+    max-width: none;
+  }
+
+  .pd-drawer-head,
+  .pd-drawer-body {
+    padding: 1.1rem;
+  }
+}
