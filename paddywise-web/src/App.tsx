@@ -14,6 +14,7 @@ import FieldDetailPage from './features/field-cultivation/pages/FieldDetailPage'
 import CycleDetailPage from './features/field-cultivation/pages/CycleDetailPage';
 import PlanApprovalPage from './features/field-cultivation/pages/PlanApprovalPage';
 import { NewActivityPage } from './features/crop-resource/pages/NewActivityPage';
+import { ManageProfilePage } from './features/profile/pages/ManageProfilePage';
 
 function RoleRedirect() {
   const { user } = useAuth();
@@ -134,6 +135,15 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <ActivityDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <ManageProfilePage />
             </ProtectedRoute>
           }
         />

@@ -17,6 +17,7 @@ export interface AuthContextType {
   login: (emailOrDto: string | LoginRequestDto, password?: string) => Promise<AuthResponseDto>;
   register: (data: RegisterRequestDto) => Promise<AuthResponseDto>;
   logout: () => void;
+  updateUser?: (data: Partial<AuthUser>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -125,6 +126,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  const updateUser = (data: Partial<AuthUser>) => {
+    setUser((prev) => {
+      if (!prev) return null;
+      const updated = { ...prev, ...data };
+      const currentToken = tokenStorage.getAccessToken() || '';
+      const refreshToken = tokenStorage.getRefreshToken() || '';
+      tokenStorage.saveSession({
+        accessToken: currentToken,
+        refreshToken: refreshToken,
+        name: updated.name,
+        email: updated.email,
+        role: updated.role,
+      });
+      return updated;
+    });
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -135,6 +153,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         login,
         register,
         logout,
+        updateUser,
       }}
     >
       {children}

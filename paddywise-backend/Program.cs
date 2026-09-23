@@ -118,6 +118,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 // ============================================================
 
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IProfileService, ProfileService>();
 
 
 // ============================================================

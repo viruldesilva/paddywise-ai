@@ -38,7 +38,7 @@ export function Sidebar({ role, isOpen, onClose }: SidebarProps) {
 
   const farmerLinks = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-    { name: 'Manage Profile', path: '#profile', icon: User },
+    { name: 'Manage Profile', path: '/profile', icon: User },
     { name: 'Fields & Cultivation Cycles', path: '/fields', icon: Map },
     { name: 'Record Activities', path: '/activities', icon: Activity },
     { name: 'Report Pests/Diseases', path: '#report', icon: Bug },
