@@ -166,10 +166,14 @@ builder.Services.AddScoped<
     PaddyWise.Api.Agents.FieldCultivation.CultivationPlanningAgent>();
 
 
-// Components 2–4
+// Component 2 (Crop Resource & Activity Analysis)
+builder.Services.AddScoped<
+    PaddyWise.Api.Agents.CropResource.ICropActivityAnalysisService,
+    PaddyWise.Api.Agents.CropResource.ResourceAnalysisAgent>();
+
 builder.Services.AddKeyedScoped<
     IAgent<DelegatedTask, DelegatedTaskResult>,
-    ResourceAnalysisAgentStub>(
+    PaddyWise.Api.Agents.CropResource.ResourceAnalysisAgent>(
         AgentNames.ResourceAnalysis);
 
 builder.Services.AddKeyedScoped<

@@ -51,7 +51,7 @@ public class CropActivitiesController : ControllerBase
         {
             return NotFound(new { message = ex.Message });
         }
-        catch (System.UnauthorizedAccessException ex)
+        catch (System.UnauthorizedAccessException)
         {
             return Forbid();
         }

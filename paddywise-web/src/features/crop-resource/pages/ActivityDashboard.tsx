@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../../hooks/useAuth';
 import { fieldApi } from '../../field-cultivation/services/fieldApi';
 import type { CultivationCycle } from '../../field-cultivation/types';
 import { ActivityHistory } from '../components/ActivityHistory';
+import { AiAdvisorPanel } from '../components/AiAdvisorPanel';
 import { Sidebar } from '../../../components/Sidebar';
-import { Menu, Plus, LogOut } from 'lucide-react';
+import { Menu, Plus, LogOut, Sparkles, Activity as ActivityIcon } from 'lucide-react';
 import '../../../styles/Dashboard.css';
 import './ActivityDashboard.css';
 
 export const ActivityDashboard: React.FC = () => {
   const { user, logout } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const currentTab = searchParams.get('tab') === 'advisor' ? 'advisor' : 'history';
   
   const [cycles, setCycles] = useState<CultivationCycle[]>([]);
   const [selectedCycleId, setSelectedCycleId] = useState<number | 'all'>('all');
@@ -40,6 +43,14 @@ export const ActivityDashboard: React.FC = () => {
 
   const isOfficer = user?.role === 'AgriculturalOfficer' || user?.role === 'FieldOfficer' || user?.role === 'Admin';
   const selectedCycle = cycles.find(c => c.id === selectedCycleId) || null;
+
+  const handleTabChange = (tab: 'history' | 'advisor') => {
+    if (tab === 'advisor') {
+      setSearchParams({ tab: 'advisor' });
+    } else {
+      setSearchParams({});
+    }
+  };
 
   if (!user) return null;
 
@@ -79,61 +90,96 @@ export const ActivityDashboard: React.FC = () => {
         </header>
 
         <main className="dashboard-content container">
-          <div className="activity-header-section" style={{ textAlign: 'left', marginBottom: '2rem' }}>
+          <div className="activity-header-section" style={{ textAlign: 'left', marginBottom: '1.5rem' }}>
             <span className="eyebrow" style={{ color: 'var(--ink-soft)', fontSize: '0.85rem', fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '0.5rem', display: 'block' }}>
-              {isOfficer ? 'AGRICULTURAL EXTENSION & MONITORING' : 'CROP MANAGEMENT'}
+              {isOfficer ? 'AGRICULTURAL EXTENSION & MONITORING' : 'CROP RESOURCE & MANAGEMENT'}
             </span>
             <h1 className="fc-page-title" style={{ fontFamily: 'var(--font-heading)', fontSize: '2.5rem', color: 'var(--ink)', margin: 0 }}>
-              {isOfficer ? 'All Farmers Crop Activities' : 'Record Activities'}
+              {currentTab === 'advisor'
+                ? 'AI Paddy Field Advisor'
+                : (isOfficer ? 'All Farmers Crop Activities' : 'Record & Monitor Activities')}
             </h1>
             <p className="fc-page-sub" style={{ color: 'var(--ink-soft)', fontSize: '1.1rem', marginTop: '0.5rem' }}>
-              {isOfficer ? 'Monitor and review past agricultural operations logged by all farmers across cultivation cycles' : 'Record and monitor your agricultural operations'}
+              {currentTab === 'advisor'
+                ? 'Evidence-based agronomic intelligence synthesizing field activities with RRDI guidelines & DOA safety standards.'
+                : (isOfficer ? 'Monitor and review past agricultural operations logged by all farmers across cultivation cycles' : 'Record and monitor your agricultural operations')}
             </p>
           </div>
 
-          <div style={{ width: '100%' }}>
-            {user?.role === 'Farmer' && (
-              <div style={{ marginBottom: '2rem' }}>
-                <label className="form-label" style={{ marginBottom: '0.5rem', display: 'block', fontWeight: 600 }}>Select Cultivation Cycle</label>
-                {isLoadingCycles ? (
-                  <p style={{ color: 'var(--ink-soft)', margin: 0 }}>Loading cycles...</p>
-                ) : cycles.length === 0 ? (
-                  <p style={{ color: 'var(--clay)', margin: 0 }}>No active or planned cycles found. Please create one in Field Management first.</p>
-                ) : (
-                  <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                    <select 
-                      className="form-input" 
-                      value={selectedCycleId} 
-                      onChange={e => setSelectedCycleId(e.target.value === 'all' ? 'all' : Number(e.target.value))}
-                      style={{ maxWidth: '420px' }}
-                    >
-                      <option value="all">All Cultivation Cycles</option>
-                      {cycles.map(c => (
-                        <option key={c.id} value={c.id}>
-                          {c.season} {c.year} - {c.fieldName} ({c.varietyName})
-                        </option>
-                      ))}
-                    </select>
+          {/* Navigation Tabs */}
+          <div className="activity-nav-tabs">
+            <button 
+              type="button"
+              className={`activity-nav-tab ${currentTab === 'history' ? 'active' : ''}`}
+              onClick={() => handleTabChange('history')}
+            >
+              <ActivityIcon size={18} />
+              <span>Activity Log & History</span>
+            </button>
+            <button 
+              type="button"
+              className={`activity-nav-tab ${currentTab === 'advisor' ? 'active' : ''}`}
+              onClick={() => handleTabChange('advisor')}
+            >
+              <Sparkles size={18} color="#059669" />
+              <span>AI Field Advisor & Recommendations</span>
+              <span className="advisor-tab-badge">Agentic AI</span>
+            </button>
+          </div>
 
-                    {selectedCycle && (
-                      <Link 
-                        to={`/cycles/${selectedCycle.id}/activities/new`}
-                        className="fc-btn fc-btn-primary"
-                        style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.7rem 1.25rem' }}
-                      >
-                        <Plus size={16} /> Record Activity
-                      </Link>
+          <div style={{ width: '100%' }}>
+            {currentTab === 'advisor' ? (
+              <AiAdvisorPanel 
+                cycles={cycles} 
+                selectedCycleId={selectedCycleId} 
+                onCycleSelect={(cycleId) => setSelectedCycleId(cycleId)}
+              />
+            ) : (
+              <>
+                {user?.role === 'Farmer' && (
+                  <div style={{ marginBottom: '2rem' }}>
+                    <label className="form-label" style={{ marginBottom: '0.5rem', display: 'block', fontWeight: 600 }}>Select Cultivation Cycle</label>
+                    {isLoadingCycles ? (
+                      <p style={{ color: 'var(--ink-soft)', margin: 0 }}>Loading cycles...</p>
+                    ) : cycles.length === 0 ? (
+                      <p style={{ color: 'var(--clay)', margin: 0 }}>No active or planned cycles found. Please create one in Field Management first.</p>
+                    ) : (
+                      <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                        <select 
+                          className="form-input" 
+                          value={selectedCycleId} 
+                          onChange={e => setSelectedCycleId(e.target.value === 'all' ? 'all' : Number(e.target.value))}
+                          style={{ maxWidth: '420px' }}
+                        >
+                          <option value="all">All Cultivation Cycles</option>
+                          {cycles.map(c => (
+                            <option key={c.id} value={c.id}>
+                              {c.season} {c.year} - {c.fieldName} ({c.varietyName})
+                            </option>
+                          ))}
+                        </select>
+
+                        {selectedCycle && (
+                          <Link 
+                            to={`/cycles/${selectedCycle.id}/activities/new`}
+                            className="fc-btn fc-btn-primary"
+                            style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.7rem 1.25rem' }}
+                          >
+                            <Plus size={16} /> Record Activity
+                          </Link>
+                        )}
+                      </div>
                     )}
                   </div>
                 )}
-              </div>
+                <ActivityHistory 
+                  selectedCycleId={selectedCycleId} 
+                  cycles={cycles} 
+                  refreshTrigger={refreshTrigger} 
+                  userRole={user.role} 
+                />
+              </>
             )}
-            <ActivityHistory 
-              selectedCycleId={selectedCycleId} 
-              cycles={cycles} 
-              refreshTrigger={refreshTrigger} 
-              userRole={user.role} 
-            />
           </div>
         </main>
       </div>

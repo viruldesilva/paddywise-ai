@@ -43,7 +43,7 @@ export function Sidebar({ role, isOpen, onClose }: SidebarProps) {
     { name: 'Record Activities', path: '/activities', icon: Activity },
     { name: 'Report Pests/Diseases', path: '#report', icon: Bug },
     { name: 'Weather & History', path: '#weather', icon: Cloud },
-    { name: 'AI Analysis & Recommendations', path: '#ai', icon: Brain },
+    { name: 'AI Analysis & Recommendations', path: '/activities?tab=advisor', icon: Brain },
   ];
 
   const agriculturalOfficerLinks = [
@@ -100,7 +100,11 @@ export function Sidebar({ role, isOpen, onClose }: SidebarProps) {
           <ul>
             {links.map((link, index) => {
               const Icon = link.icon;
-              const isActive = location.pathname === link.path;
+              const isQueryLink = link.path.includes('?');
+              const currentFull = `${location.pathname}${location.search}`;
+              const isActive = isQueryLink
+                ? currentFull === link.path
+                : location.pathname === link.path && !location.search.includes('tab=advisor');
 
               return (
                 <li key={index}>
