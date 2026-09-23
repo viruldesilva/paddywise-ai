@@ -74,8 +74,44 @@
 }
 
 .sidebar-footer {
-  padding: 1.5rem;
+  padding: 1.25rem 1.5rem 1.5rem;
   border-top: 1px solid rgba(246, 241, 227, 0.1);
+}
+
+.sidebar-logout-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  background: rgba(229, 115, 115, 0.08);
+  border: 1px solid rgba(229, 115, 115, 0.25);
+  border-radius: 8px;
+  color: var(--cream);
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  text-align: left;
+}
+
+.sidebar-logout-btn:hover {
+  background: rgba(229, 115, 115, 0.2);
+  border-color: rgba(229, 115, 115, 0.5);
+  color: #ff8a80;
+  transform: translateY(-1px);
+}
+
+.sidebar-logout-icon {
+  color: #e57373;
+  transition: transform 0.25s ease, color 0.25s ease;
+}
+
+.sidebar-logout-btn:hover .sidebar-logout-icon {
+  transform: translateX(2px);
+  color: #ff8a80;
 }
 
 .sidebar-help {

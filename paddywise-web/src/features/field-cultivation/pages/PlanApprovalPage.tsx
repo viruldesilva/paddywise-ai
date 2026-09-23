@@ -8,6 +8,7 @@ import {
   Menu,
   RefreshCw,
   X,
+  LogOut,
 } from 'lucide-react';
 import { Sidebar } from '../../../components/Sidebar';
 import { useAuth } from '../../../hooks/useAuth';
@@ -50,7 +51,7 @@ const TOAST_MS = 5_000;
  * AgriculturalOfficer only, so the route is scoped to that role.
  */
 export default function PlanApprovalPage() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
 
   const [rows, setRows] = useState<PendingPlanSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -226,6 +227,15 @@ export default function PlanApprovalPage() {
                 <span className="dashboard-user-name">{user.name}</span>
                 <span className="dashboard-user-sub">{user.email}</span>
               </div>
+              <button 
+                onClick={logout} 
+                className="btn btn-secondary btn-sm"
+                title="Sign Out"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
+              >
+                <LogOut size={16} />
+                Sign Out
+              </button>
             </div>
           </div>
         </header>

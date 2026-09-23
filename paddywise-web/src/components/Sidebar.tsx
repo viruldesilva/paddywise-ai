@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import type { UserRole } from '../types/auth';
+import { useAuth } from '../hooks/useAuth';
 import './Navbar.css';
 import logoImage from '../assets/logo2.png';
 import {
@@ -20,7 +21,8 @@ import {
   MapPin,
   Camera,
   CheckCircle,
-  X
+  X,
+  LogOut
 } from 'lucide-react';
 import '../styles/Sidebar.css';
 
@@ -32,19 +34,21 @@ interface SidebarProps {
 
 export function Sidebar({ role, isOpen, onClose }: SidebarProps) {
   const location = useLocation();
+  const { logout } = useAuth();
 
   const farmerLinks = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { name: 'Manage Profile', path: '#profile', icon: User },
     { name: 'Fields & Cultivation Cycles', path: '/fields', icon: Map },
-    { name: 'Record Activities', path: '#activities', icon: Activity },
+    { name: 'Record Activities', path: '/activities', icon: Activity },
     { name: 'Report Pests/Diseases', path: '#report', icon: Bug },
     { name: 'Weather & History', path: '#weather', icon: Cloud },
-    { name: 'AI Analysis & Recommendations', path: '#ai', icon: Brain },
+    { name: 'AI Analysis & Recommendations', path: '/activities?tab=advisor', icon: Brain },
   ];
 
   const agriculturalOfficerLinks = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
+    { name: 'Past Crop Activities', path: '/activities', icon: Activity },
     { name: 'View Farmer Fields & Reports', path: '#fields', icon: FileText },
     { name: 'Review AI Recommendations', path: '/plans/pending', icon: CheckSquare },
     { name: 'Add Expert Recommendations', path: '#expert', icon: MessageSquare },
@@ -53,6 +57,7 @@ export function Sidebar({ role, isOpen, onClose }: SidebarProps) {
 
   const adminLinks = [
     { name: 'Dashboard', path: '/dashboard/admin', icon: LayoutDashboard },
+    { name: 'Past Crop Activities', path: '/activities', icon: Activity },
     { name: 'Manage Users', path: '/admin/users', icon: Users },
     { name: 'Manage Knowledge Base', path: '#knowledge', icon: Database },
     { name: 'System Settings & Audit Logs', path: '#settings', icon: Settings },
@@ -60,6 +65,7 @@ export function Sidebar({ role, isOpen, onClose }: SidebarProps) {
 
   const fieldOfficerLinks = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
+    { name: 'Past Crop Activities', path: '/activities', icon: Activity },
     { name: 'Visit Farms & Inspections', path: '#inspections', icon: MapPin },
     { name: 'Upload Field Images', path: '#upload', icon: Camera },
     { name: 'Verify Problems & Feedback', path: '#feedback', icon: CheckCircle },
@@ -94,7 +100,11 @@ export function Sidebar({ role, isOpen, onClose }: SidebarProps) {
           <ul>
             {links.map((link, index) => {
               const Icon = link.icon;
-              const isActive = location.pathname === link.path;
+              const isQueryLink = link.path.includes('?');
+              const currentFull = `${location.pathname}${location.search}`;
+              const isActive = isQueryLink
+                ? currentFull === link.path
+                : location.pathname === link.path && !location.search.includes('tab=advisor');
 
               return (
                 <li key={index}>
@@ -112,6 +122,16 @@ export function Sidebar({ role, isOpen, onClose }: SidebarProps) {
         </nav>
 
         <div className="sidebar-footer">
+          <button
+            type="button"
+            onClick={logout}
+            className="sidebar-logout-btn"
+            title="Sign Out"
+          >
+            <LogOut size={18} className="sidebar-logout-icon" />
+            <span>Sign Out</span>
+          </button>
+
           <div className="sidebar-help">
             <h4>Need Help?</h4>
             <p>Contact support for assistance.</p>

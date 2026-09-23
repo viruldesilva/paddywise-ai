@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using PaddyWise.Api.Entities.CropResource;
 using PaddyWise.Api.Entities.FieldCultivation;
 using PaddyWise.Api.Entities.PestDisease;
 using PaddyWise.Api.Entities.Shared;
@@ -24,6 +25,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<PestDiseaseReport> PestDiseaseReports => Set<PestDiseaseReport>();//agent diagnosis per observation
     public DbSet<PestDiseaseKnowledge> PestDiseaseKnowledgeEntries => Set<PestDiseaseKnowledge>();//DOA-sourced reference data
     public DbSet<DiagnosisRunLog> DiagnosisRunLogs => Set<DiagnosisRunLog>();//audit trail of Crop Analysis agent runs
+    public DbSet<CropActivity> CropActivities => Set<CropActivity>();//farmer crop activities
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -140,6 +142,26 @@ public class ApplicationDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(l => l.CultivationPlanId)
                 .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<CropActivity>(entity =>
+        {
+            entity.Property(a => a.DetailsJson).HasColumnType("jsonb");
+
+            entity.HasIndex(a => a.CultivationCycleId);
+            entity.HasIndex(a => a.ActivityType);
+
+            entity.HasOne(a => a.CultivationCycle)
+                .WithMany()
+                .HasForeignKey(a => a.CultivationCycleId)
+                .IsRequired()
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(a => a.LoggedByUser)
+                .WithMany()
+                .HasForeignKey(a => a.LoggedByUserId)
+                .IsRequired()
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<CropObservation>(entity =>
