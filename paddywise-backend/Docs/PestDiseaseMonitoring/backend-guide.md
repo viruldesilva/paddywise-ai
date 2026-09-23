@@ -174,8 +174,14 @@ Agent rules that apply here same as every component:
 ## Current implementation status
 
 - Entities, DTOs, migrations, `ObservationsController`, `PestDiseaseReportsController` — done.
-- `PestDiseaseKnowledge` seeded with all 7 required rows — done. Its own admin CRUD endpoints
-  (`GET/POST/PUT/DELETE /api/pest-disease-knowledge`) are **not built yet**.
+- `PestDiseaseKnowledge` seeded with all 7 required rows — done. Its own admin CRUD is done too:
+  `IPestDiseaseKnowledgeService`/`PestDiseaseKnowledgeService`
+  (`Services/PestDisease/`) + `PestDiseaseKnowledgeController`
+  (`Controllers/PestDisease/`). `GET` (list, by id) is any authenticated caller;
+  `POST`/`PUT`/`DELETE` are `Roles = "Admin"`. `Name` must be unique case-insensitively —
+  enforced in the service (matches the DB's unique index) rather than left to a 500 on
+  constraint violation. Deleting an entry is safe: `PestDiseaseReport.PossibleIssue` is a text
+  snapshot, not an FK, so it can't be orphaned.
 - `CropAnalysisAgent` (`Agents/PestDisease/CropAnalysisAgent.cs`) is implemented and wired into
   DI under the `AgentNames.PestDiseaseDiagnosis` key in `Program.cs`, replacing
   `PestDiseaseDiagnosisAgentStub`. It:
@@ -210,8 +216,10 @@ Agent rules that apply here same as every component:
   the response looks identical to "not yet analyzed" and the `Reports.Count > 0` re-request
   guard doesn't block a repeat call — there's no DTO field surfacing "analysis ran, no match"
   distinctly. Worth revisiting once the frontend needs to show that state.
-- Not started: `PestDiseaseKnowledge` admin CRUD, golden test cases (no test project exists
-  yet), and the web frontend (no `paddywise-web/src/features/pest-disease` folder exists).
+- Web frontend exists: `paddywise-web/src/features/pest-disease/` (farmer `ObservationsPage` at
+  `/observations`, officer `PestDiseaseReportsPage` at `/pest-disease-reports`), merged via
+  `feature/pestdisease-UI`. No UI yet for the knowledge base admin CRUD above.
+- Not started: golden test cases (no test project exists yet).
 
 ## Testing golden cases
 
