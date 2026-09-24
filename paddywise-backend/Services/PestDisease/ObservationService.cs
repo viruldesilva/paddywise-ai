@@ -274,6 +274,10 @@ public class ObservationService : IObservationService
             });
         }
 
+        // Set on every completed run, including a no-match one — Reports staying empty alone
+        // cannot tell "not yet analyzed" apart from "ran, found nothing likely."
+        observation.LastAnalyzedAt = DateTime.UtcNow;
+
         await _context.SaveChangesAsync();
 
         return MapToResponse(observation);
@@ -292,6 +296,7 @@ public class ObservationService : IObservationService
         Symptoms = observation.Symptoms,
         Severity = observation.Severity.ToString(),
         ImageUrl = observation.ImageUrl,
+        LastAnalyzedAt = observation.LastAnalyzedAt,
         CreatedAt = observation.CreatedAt,
         UpdatedAt = observation.UpdatedAt,
         Reports = observation.Reports
