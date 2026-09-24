@@ -214,30 +214,7 @@ export default function ObservationsPage() {
                     />
                   )}
 
-                  {observation.reports.length === 0 ? (
-                    <div className="pd-card-actions">
-                      <button
-                        className="pd-btn pd-btn-outline"
-                        disabled={analyzingId === observation.id}
-                        onClick={() => handleRequestAnalysis(observation.id)}
-                      >
-                        {analyzingId === observation.id ? (
-                          <>
-                            <Loader2 size={16} className="pd-spin" />
-                            Analyzing…
-                          </>
-                        ) : (
-                          <>
-                            <Sparkles size={16} />
-                            Ask the diagnosis agent
-                          </>
-                        )}
-                      </button>
-                      {analysisErrors[observation.id] && (
-                        <span className="pd-field-error">{analysisErrors[observation.id]}</span>
-                      )}
-                    </div>
-                  ) : (
+                  {observation.reports.length > 0 && (
                     <div className="pd-reports">
                       {observation.reports.map((report) => (
                         <div className="pd-report" key={report.id}>
@@ -253,6 +230,41 @@ export default function ObservationsPage() {
                           )}
                         </div>
                       ))}
+                    </div>
+                  )}
+
+                  {observation.reports.length === 0 && observation.lastAnalyzedAt && (
+                    <p className="pd-no-match">
+                      The diagnosis agent found no likely match in the knowledge base as of{' '}
+                      {formatDateTime(observation.lastAnalyzedAt)}. You can ask again if you have
+                      more to add.
+                    </p>
+                  )}
+
+                  {observation.reports.length === 0 && (
+                    <div className="pd-card-actions">
+                      <button
+                        className="pd-btn pd-btn-outline"
+                        disabled={analyzingId === observation.id}
+                        onClick={() => handleRequestAnalysis(observation.id)}
+                      >
+                        {analyzingId === observation.id ? (
+                          <>
+                            <Loader2 size={16} className="pd-spin" />
+                            Analyzing…
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles size={16} />
+                            {observation.lastAnalyzedAt
+                              ? 'Ask the diagnosis agent again'
+                              : 'Ask the diagnosis agent'}
+                          </>
+                        )}
+                      </button>
+                      {analysisErrors[observation.id] && (
+                        <span className="pd-field-error">{analysisErrors[observation.id]}</span>
+                      )}
                     </div>
                   )}
                 </article>
