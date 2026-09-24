@@ -311,16 +311,20 @@ public class CultivationPlanService : ICultivationPlanService
         {
             // Approving is what starts the season: the plan and the cycle move together or
             // not at all, so neither can be left describing a state the other contradicts.
-            await using var transaction = await _context.Database.BeginTransactionAsync();
-
-            if (plan.CultivationCycle.Status == CycleStatus.Planned)
+            var strategy = _context.Database.CreateExecutionStrategy();
+            await strategy.ExecuteAsync(async () =>
             {
-                plan.CultivationCycle.Status = CycleStatus.Active;
-                plan.CultivationCycle.UpdatedAt = DateTime.UtcNow;
-            }
+                await using var transaction = await _context.Database.BeginTransactionAsync();
 
-            await _context.SaveChangesAsync();
-            await transaction.CommitAsync();
+                if (plan.CultivationCycle.Status == CycleStatus.Planned)
+                {
+                    plan.CultivationCycle.Status = CycleStatus.Active;
+                    plan.CultivationCycle.UpdatedAt = DateTime.UtcNow;
+                }
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+            });
         }
         else
         {

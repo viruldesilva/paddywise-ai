@@ -9,6 +9,7 @@ using PaddyWise.Api.Data;
 using PaddyWise.Api.Services.CropResource;
 using PaddyWise.Api.Services.FieldCultivation;
 using PaddyWise.Api.Services.PestDisease;
+using PaddyWise.Api.Services.ReportingApproval;
 using PaddyWise.Api.Services.Shared;
 using System.Text;
 
@@ -143,6 +144,13 @@ builder.Services.AddScoped<ICropActivityService, CropActivityService>();
 builder.Services.AddScoped<IObservationService, ObservationService>();
 builder.Services.AddScoped<IPestDiseaseReportService, PestDiseaseReportService>();
 builder.Services.AddScoped<IPestDiseaseKnowledgeService, PestDiseaseKnowledgeService>();
+
+
+// ============================================================
+// REPORTING & APPROVAL SERVICES (Component 4)
+// ============================================================
+
+builder.Services.AddScoped<IRevisionDraftService, RevisionDraftService>();
 
 
 // ============================================================

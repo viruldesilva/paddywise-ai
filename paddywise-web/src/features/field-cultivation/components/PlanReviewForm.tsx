@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { AlertCircle, Loader2, Send } from 'lucide-react';
+import { AlertCircle, Loader2, Send, Sparkles } from 'lucide-react';
 import { extractApiErrorMessage } from '../../../services/authService';
+import { getPlanDraftRevisionComment } from '../../reporting-approval/services/reviewsApi';
 import { reviewPlan } from '../services/fieldApi';
 import {
   PLAN_REVIEW_DECISIONS,
@@ -39,6 +40,7 @@ export function PlanReviewForm({ planId, onReviewed, onCancel }: PlanReviewFormP
   const [error, setError] = useState<string | null>(null);
   const [commentError, setCommentError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDrafting, setIsDrafting] = useState(false);
 
   const trimmed = comment.trim();
   const needsComment = reviewNeedsComment(decision);
@@ -47,6 +49,21 @@ export function PlanReviewForm({ planId, onReviewed, onCancel }: PlanReviewFormP
     setDecision(next);
     // The old warning describes a rule the new decision may not have.
     setCommentError(null);
+  };
+
+  const handleDraftWithAi = async () => {
+    if (isDrafting || isSubmitting) return;
+    setIsDrafting(true);
+    setError(null);
+    try {
+      const draft = await getPlanDraftRevisionComment(planId);
+      setComment(draft);
+      setCommentError(null);
+    } catch (err: unknown) {
+      setError(extractApiErrorMessage(err, 'Could not draft revision comment. Please try again.'));
+    } finally {
+      setIsDrafting(false);
+    }
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -116,9 +133,38 @@ export function PlanReviewForm({ planId, onReviewed, onCancel }: PlanReviewFormP
       </fieldset>
 
       <div className="fc-form-group">
-        <label htmlFor="plan-review-comment">
-          Comment {needsComment ? '' : '(optional)'}
-        </label>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+          <label htmlFor="plan-review-comment" style={{ margin: 0 }}>
+            Comment {needsComment ? '' : '(optional)'}
+          </label>
+          <button
+            type="button"
+            className="fc-btn fc-btn-outline"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              fontSize: '0.78rem',
+              padding: '0.2rem 0.65rem',
+              borderRadius: '6px',
+            }}
+            disabled={isSubmitting || isDrafting}
+            onClick={handleDraftWithAi}
+            title="Use AI to automatically draft a revision comment based on validation errors"
+          >
+            {isDrafting ? (
+              <>
+                <Loader2 size={13} className="fc-spin" />
+                <span>Drafting with AI…</span>
+              </>
+            ) : (
+              <>
+                <Sparkles size={13} />
+                <span>Draft with AI</span>
+              </>
+            )}
+          </button>
+        </div>
         <textarea
           id="plan-review-comment"
           className="fc-input fc-textarea"
