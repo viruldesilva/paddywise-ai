@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using PaddyWise.Api.Agents.CropResource;
@@ -143,6 +144,7 @@ builder.Services.AddScoped<ICropActivityService, CropActivityService>();
 builder.Services.AddScoped<IObservationService, ObservationService>();
 builder.Services.AddScoped<IPestDiseaseReportService, PestDiseaseReportService>();
 builder.Services.AddScoped<IPestDiseaseKnowledgeService, PestDiseaseKnowledgeService>();
+builder.Services.AddScoped<IPhotoStorageService, AzureBlobPhotoStorageService>();
 
 
 // ============================================================
@@ -153,18 +155,20 @@ builder.Services.AddHttpClient(
     GeminiLlmClient.HttpClientName,
     client =>
     {
-        client.Timeout = TimeSpan.FromSeconds(60);
+        client.Timeout = TimeSpan.FromSeconds(120);
     });
 
 builder.Services.AddScoped<ILlmClient, GeminiLlmClient>();
 
-// Component 3's own Gemini key (Gemini:PestDiseaseApiKey), falling back to Gemini:ApiKey if unset.
+// Component 3's own Gemini key (Gemini:PestDiseaseApiKey) and model override
+// (Gemini:PestDiseaseModel), each falling back to the shared Gemini:ApiKey / Gemini:Model if unset.
 builder.Services.AddKeyedScoped<ILlmClient, GeminiLlmClient>(AgentNames.PestDiseaseDiagnosis, (sp, _) =>
     new GeminiLlmClient(
         sp.GetRequiredService<IHttpClientFactory>(),
         sp.GetRequiredService<IConfiguration>(),
         sp.GetRequiredService<ILogger<GeminiLlmClient>>(),
-        "Gemini:PestDiseaseApiKey"));
+        "Gemini:PestDiseaseApiKey",
+        "Gemini:PestDiseaseModel"));
 
 
 // ============================================================
@@ -296,6 +300,29 @@ if (app.Environment.IsDevelopment())
 // ============================================================
 // HTTP PIPELINE
 // ============================================================
+
+// First, so it wraps everything below: any unhandled exception gets logged server-side and
+// answered with a clean generic message — never a stack trace or the request's own headers
+// (which include the caller's Authorization Bearer token). Without this, ASP.NET Core's
+// Development-only Developer Exception Page — auto-enabled by WebApplication.CreateBuilder,
+// with no explicit call anywhere in this file — leaks exactly that on any exception type this
+// codebase doesn't happen to catch explicitly (confirmed twice: a Gemini HttpClient timeout,
+// then an Azure Blob Storage RequestFailedException).
+app.UseExceptionHandler(errorApp =>
+{
+    errorApp.Run(async context =>
+    {
+        var exception = context.Features.Get<IExceptionHandlerFeature>()?.Error;
+        context.RequestServices.GetRequiredService<ILogger<Program>>()
+            .LogError(exception, "Unhandled exception on {Method} {Path}.",
+                context.Request.Method, context.Request.Path);
+
+        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+        context.Response.ContentType = "application/json";
+        await context.Response.WriteAsJsonAsync(
+            new { message = "An unexpected error occurred. Please try again." });
+    });
+});
 
 if (app.Environment.IsDevelopment())
 {
