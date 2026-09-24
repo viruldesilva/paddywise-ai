@@ -149,6 +149,16 @@
   margin-top: 0.3rem;
 }
 
+.pd-no-match {
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  color: var(--ink-soft);
+  background-color: var(--cream-deep);
+  border-left: 3px solid var(--gold);
+  border-radius: 0 10px 10px 0;
+  padding: 0.7rem 0.9rem;
+}
+
 /* ------------------------------------------------------------------ buttons */
 
 .pd-btn {

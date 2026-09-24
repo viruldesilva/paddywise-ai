@@ -29,6 +29,11 @@ public class CropObservation
 
     public string? ImageUrl { get; set; }
 
+    /// <summary>When the diagnosis agent last completed a run for this observation, success or
+    /// not. Null means it has never been analyzed. Distinguishes "not yet analyzed" from "ran,
+    /// found no likely match" — Reports staying empty alone cannot, since both look the same.</summary>
+    public DateTime? LastAnalyzedAt { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 

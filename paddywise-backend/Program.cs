@@ -142,6 +142,7 @@ builder.Services.AddScoped<ICropActivityService, CropActivityService>();
 
 builder.Services.AddScoped<IObservationService, ObservationService>();
 builder.Services.AddScoped<IPestDiseaseReportService, PestDiseaseReportService>();
+builder.Services.AddScoped<IPestDiseaseKnowledgeService, PestDiseaseKnowledgeService>();
 
 
 // ============================================================

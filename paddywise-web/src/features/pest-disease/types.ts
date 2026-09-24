@@ -70,6 +70,9 @@ export interface Observation {
   symptoms: string;
   severity: ObservationSeverity;
   imageUrl: string | null;
+  /** Null when never analyzed. Set with an empty `reports` list once the agent ran and found
+   * no likely match — distinct from "not yet analyzed." */
+  lastAnalyzedAt: string | null;
   createdAt: string;
   updatedAt: string;
   reports: PestDiseaseReportSummary[];

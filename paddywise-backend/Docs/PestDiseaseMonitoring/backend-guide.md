@@ -174,8 +174,14 @@ Agent rules that apply here same as every component:
 ## Current implementation status
 
 - Entities, DTOs, migrations, `ObservationsController`, `PestDiseaseReportsController` — done.
-- `PestDiseaseKnowledge` seeded with all 7 required rows — done. Its own admin CRUD endpoints
-  (`GET/POST/PUT/DELETE /api/pest-disease-knowledge`) are **not built yet**.
+- `PestDiseaseKnowledge` seeded with all 7 required rows — done. Its own admin CRUD is done too:
+  `IPestDiseaseKnowledgeService`/`PestDiseaseKnowledgeService`
+  (`Services/PestDisease/`) + `PestDiseaseKnowledgeController`
+  (`Controllers/PestDisease/`). `GET` (list, by id) is any authenticated caller;
+  `POST`/`PUT`/`DELETE` are `Roles = "Admin"`. `Name` must be unique case-insensitively —
+  enforced in the service (matches the DB's unique index) rather than left to a 500 on
+  constraint violation. Deleting an entry is safe: `PestDiseaseReport.PossibleIssue` is a text
+  snapshot, not an FK, so it can't be orphaned.
 - `CropAnalysisAgent` (`Agents/PestDisease/CropAnalysisAgent.cs`) is implemented and wired into
   DI under the `AgentNames.PestDiseaseDiagnosis` key in `Program.cs`, replacing
   `PestDiseaseDiagnosisAgentStub`. It:
@@ -202,13 +208,23 @@ Agent rules that apply here same as every component:
     ```
     If unset, it falls back to the shared `Gemini:ApiKey` automatically — so teammates without
     a dedicated key still work.
-- Known gap: `ObservationService.RequestAnalysisAsync` treats an empty `possibleIssues` list as
-  a failed run ("did not return a valid result"), but the agent's system prompt tells the model
-  to return an empty list when nothing plausibly matches. A genuine no-match diagnosis
-  currently surfaces to the farmer as an error rather than a legitimate "no match found"
-  outcome — worth revisiting.
-- Not started: `PestDiseaseKnowledge` admin CRUD, golden test cases (no test project exists
-  yet), and the web frontend (no `paddywise-web/src/features/pest-disease` folder exists).
+- Fixed: `ObservationService.RequestAnalysisAsync` no longer treats an empty `PossibleIssues`
+  list as a failed run. Only a `null` `agentOutput` (JSON parse failure) is a failure now — an
+  empty list is a legitimate "no likely match found" outcome per the agent's own contract, and
+  `CropAnalysisValidator` already agreed (it never flagged an empty list, only a missing
+  `RecommendedNextStep`). A no-match run still creates zero `PestDiseaseReport` rows, so the
+  `Reports.Count > 0` re-request guard doesn't block a repeat call — that's intentional, a
+  farmer may re-ask after adding detail.
+- Fixed: no-match visibility. `CropObservation.LastAnalyzedAt` (nullable `DateTime`, migration
+  `AddLastAnalyzedAtToCropObservation`) is set whenever `RequestAnalysisAsync` completes
+  successfully, match or not, and carried on `ObservationResponseDto`. Null means never
+  analyzed; set with an empty `Reports` list means "ran, found nothing likely" — the two are no
+  longer indistinguishable. The frontend renders the third state accordingly (see
+  `paddywise-web`'s frontend guide).
+- Web frontend exists: `paddywise-web/src/features/pest-disease/` (farmer `ObservationsPage` at
+  `/observations`, officer `PestDiseaseReportsPage` at `/pest-disease-reports`), merged via
+  `feature/pestdisease-UI`. No UI yet for the knowledge base admin CRUD above.
+- Not started: golden test cases (no test project exists yet).
 
 ## Testing golden cases
 
