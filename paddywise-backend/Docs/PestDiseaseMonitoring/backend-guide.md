@@ -212,10 +212,15 @@ Agent rules that apply here same as every component:
   list as a failed run. Only a `null` `agentOutput` (JSON parse failure) is a failure now — an
   empty list is a legitimate "no likely match found" outcome per the agent's own contract, and
   `CropAnalysisValidator` already agreed (it never flagged an empty list, only a missing
-  `RecommendedNextStep`). Note: a no-match run still creates zero `PestDiseaseReport` rows, so
-  the response looks identical to "not yet analyzed" and the `Reports.Count > 0` re-request
-  guard doesn't block a repeat call — there's no DTO field surfacing "analysis ran, no match"
-  distinctly. Worth revisiting once the frontend needs to show that state.
+  `RecommendedNextStep`). A no-match run still creates zero `PestDiseaseReport` rows, so the
+  `Reports.Count > 0` re-request guard doesn't block a repeat call — that's intentional, a
+  farmer may re-ask after adding detail.
+- Fixed: no-match visibility. `CropObservation.LastAnalyzedAt` (nullable `DateTime`, migration
+  `AddLastAnalyzedAtToCropObservation`) is set whenever `RequestAnalysisAsync` completes
+  successfully, match or not, and carried on `ObservationResponseDto`. Null means never
+  analyzed; set with an empty `Reports` list means "ran, found nothing likely" — the two are no
+  longer indistinguishable. The frontend renders the third state accordingly (see
+  `paddywise-web`'s frontend guide).
 - Web frontend exists: `paddywise-web/src/features/pest-disease/` (farmer `ObservationsPage` at
   `/observations`, officer `PestDiseaseReportsPage` at `/pest-disease-reports`), merged via
   `feature/pestdisease-UI`. No UI yet for the knowledge base admin CRUD above.
