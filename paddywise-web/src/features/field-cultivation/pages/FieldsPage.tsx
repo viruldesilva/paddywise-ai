@@ -10,6 +10,7 @@ import {
   Ruler,
   Sprout,
   X,
+  LogOut,
 } from 'lucide-react';
 import { Sidebar } from '../../../components/Sidebar';
 import { useAuth } from '../../../hooks/useAuth';
@@ -21,7 +22,7 @@ import '../../../styles/Dashboard.css';
 import '../styles/fieldCultivation.css';
 
 export default function FieldsPage() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
 
   const [fields, setFields] = useState<Field[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -93,6 +94,15 @@ export default function FieldsPage() {
                 <span className="dashboard-user-name">{user.name}</span>
                 <span className="dashboard-user-sub">{user.email}</span>
               </div>
+              <button 
+                onClick={logout} 
+                className="btn btn-secondary btn-sm"
+                title="Sign Out"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
+              >
+                <LogOut size={16} />
+                Sign Out
+              </button>
             </div>
           </div>
         </header>

@@ -24,6 +24,17 @@ minimal lines a task explicitly names. If a task seems to need more, stop and as
 
 ## 2. Running the apps
 
+The backend throws on startup unless three secrets are set (once per machine, from
+`paddywise-backend/`): `Jwt:Key` (shared team secret, ≥32 chars),
+`ConnectionStrings:DefaultConnection` (shared Neon Postgres string), `Gemini:ApiKey`
+(your own, from [Google AI Studio](https://aistudio.google.com/apikey)):
+
+```bash
+dotnet user-secrets set "Jwt:Key" "<shared-secret>"
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "<shared-connection-string>"
+dotnet user-secrets set "Gemini:ApiKey" "<your-own-key>"
+```
+
 ```bash
 # Backend → http://localhost:5164   (Swagger at /swagger; https profile also on 7188)
 cd paddywise-backend && dotnet restore && dotnet ef database update && dotnet run
@@ -38,6 +49,10 @@ cd paddywise_mobile && flutter pub get && flutter run
 The web app reaches the API only when the backend is on **5164** and the dev server on **5173** —
 both are hard-coded (API base URL in `src/api/axiosInstance.ts`, CORS policy `AllowReactApp` in
 `Program.cs`). Mobile talks to no backend yet.
+
+No test project exists for the backend or the web app. `npm run lint` (eslint) is available in
+`paddywise-web`. Mobile has `flutter analyze` and `flutter test` (runs `test/widget_test.dart`),
+but is unrelated to Component 1 work.
 
 ## 3. Backend conventions
 
@@ -128,3 +143,6 @@ pattern); every run writes an `AgentRunLog` row whether it succeeds or fails;
 user text goes in the user prompt inside a delimited block, never in the system
 prompt. `ILlmClient` is the only place the provider is known - swapping vendors
 is one class.
+
+Component 1's agent in full detail (tools, validation rules, plan/approval states) is
+documented in `docs/cultivation-planning-agent.md`.

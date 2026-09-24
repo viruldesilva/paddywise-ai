@@ -13,6 +13,9 @@ import FieldsPage from './features/field-cultivation/pages/FieldsPage';
 import FieldDetailPage from './features/field-cultivation/pages/FieldDetailPage';
 import CycleDetailPage from './features/field-cultivation/pages/CycleDetailPage';
 import PlanApprovalPage from './features/field-cultivation/pages/PlanApprovalPage';
+import { NewActivityPage } from './features/crop-resource/pages/NewActivityPage';
+import ObservationsPage from './features/pest-disease/pages/ObservationsPage';
+import PestDiseaseReportsPage from './features/pest-disease/pages/PestDiseaseReportsPage';
 
 function RoleRedirect() {
   const { user } = useAuth();
@@ -111,6 +114,15 @@ function AppContent() {
         />
 
         <Route
+          path="/cycles/:id/activities/new"
+          element={
+            <ProtectedRoute allowedRoles={['Farmer']}>
+              <NewActivityPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
           path="/plans/pending"
           element={
             <ProtectedRoute allowedRoles={['AgriculturalOfficer']}>
@@ -124,6 +136,24 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <ActivityDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/observations"
+          element={
+            <ProtectedRoute allowedRoles={['Farmer']}>
+              <ObservationsPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/pest-disease-reports"
+          element={
+            <ProtectedRoute allowedRoles={['AgriculturalOfficer']}>
+              <PestDiseaseReportsPage />
             </ProtectedRoute>
           }
         />
