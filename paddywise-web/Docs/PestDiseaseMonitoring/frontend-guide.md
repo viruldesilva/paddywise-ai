@@ -111,9 +111,34 @@ independent — editing one never requires touching the other.
 - **No admin UI** for the `PestDiseaseKnowledge` CRUD endpoints
   (`Controllers/PestDisease/PestDiseaseKnowledgeController.cs`) — the API exists
   (`GET/POST/PUT/DELETE /api/pest-disease-knowledge`), nothing in `paddywise-web` calls it yet.
-- **No image upload.** `ObservationForm.tsx`'s photo field is a plain URL text input — the
-  farmer must already have the photo hosted somewhere. There is no file-upload endpoint on the
-  backend to wire up yet.
+- Fixed: image upload. `ObservationForm.tsx` now has a real `<input type="file" accept="image/*"
+  capture="environment">` (opens the phone's rear camera directly on mobile) above the existing
+  "Photo URL" field, with a local preview via `URL.createObjectURL` (revoked on change/unmount
+  to avoid leaking blob URLs) and a "Remove photo" button. The URL field stays as a fallback —
+  disabled and re-labeled once a file is chosen, so it's clear the file wins. Submit flow:
+  create/update the observation first (unchanged), then — only if a file was chosen — call the
+  new `uploadObservationPhoto(id, file)` (`services/pestDiseaseApi.ts`, posts `FormData` to
+  `POST /api/observations/{id}/photo`) and use *its* returned `Observation` for `onSaved`. Known
+  limitation, not fixed here: if the create/update call succeeds but the photo upload fails
+  afterward, the shared `submitError` message ("Could not save this report") is misleading — the
+  report *was* saved, just without a photo. Not handled specially; a retry from the form would
+  create a second observation rather than resuming the first.
+- **Fixed: real-world 415 on upload, found by the user testing through the actual UI (not
+  caught by this session's own testing, which had used curl's multipart — curl sets its own
+  correct `Content-Type` automatically, unaffected by this bug).** `axiosInstance` sets a
+  default `Content-Type: application/json` header on the whole instance
+  (`src/api/axiosInstance.ts`). Unlike an unset header, axios does not override an *explicitly
+  set* one just because the request body is `FormData` — so the multipart boundary axios would
+  normally generate never got added, and the backend received a request declaring JSON with an
+  actual multipart body, which `[ApiController]` rejects with 415. Fixed in
+  `uploadObservationPhoto` by passing `headers: { 'Content-Type': undefined }` per-request,
+  which lets the browser set the real multipart header (with boundary) itself. Verified two
+  ways: through the real form (login as the actual `farmer1` account, opened "Report a
+  problem" — modal, cultivation-cycle dropdown, and file input all render and populate
+  correctly) and, since this browser session's file-attach tool can't select arbitrary local
+  files, by reproducing the exact bug and fix with a Node script using the project's real
+  `axios` package against the live backend: identical setup without the header override → 415
+  (reproduces the reported bug exactly); with it → 200 and a real blob URL back.
 - Not yet tested against a real, running backend + live Gemini call from the browser (only
   route-level smoke-tested: pages load, redirect correctly when unauthenticated, no console
   errors) — see backend-guide.md's "real-Gemini smoke test" item.
