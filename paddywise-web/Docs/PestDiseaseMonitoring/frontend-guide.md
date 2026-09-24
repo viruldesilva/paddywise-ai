@@ -102,13 +102,12 @@ independent — editing one never requires touching the other.
 
 ## Known gaps (see backend-guide.md's "Current implementation status" for the backend side)
 
-- **No-match visibility.** `ObservationsPage.tsx` decides whether to show "Ask the diagnosis
-  agent" vs. the results list purely from `observation.reports.length === 0`. Since the backend
-  now treats an empty `possibleIssues` list as a valid "no likely match" outcome rather than a
-  failure, a no-match run still produces zero `PestDiseaseReport` rows — so the page can't tell
-  "not yet analyzed" apart from "analyzed, nothing matched." A farmer can re-click indefinitely.
-  Fixing this needs a backend signal first (something persisted for a no-match run), then a
-  frontend branch to render it distinctly.
+- Fixed: no-match visibility. `Observation.lastAnalyzedAt` (from the backend's new
+  `CropObservation.LastAnalyzedAt`) is now on the DTO. `ObservationsPage.tsx` renders three
+  states off `reports.length` and `lastAnalyzedAt` together: never analyzed → "Ask the
+  diagnosis agent"; analyzed with matches → the results list; analyzed with none → a `.pd-no-match`
+  note ("found no likely match... as of `<date>`") plus "Ask the diagnosis agent again", instead
+  of the two states silently colliding.
 - **No admin UI** for the `PestDiseaseKnowledge` CRUD endpoints
   (`Controllers/PestDisease/PestDiseaseKnowledgeController.cs`) — the API exists
   (`GET/POST/PUT/DELETE /api/pest-disease-knowledge`), nothing in `paddywise-web` calls it yet.
