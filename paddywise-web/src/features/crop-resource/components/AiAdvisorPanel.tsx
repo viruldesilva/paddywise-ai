@@ -341,7 +341,7 @@ export const AiAdvisorPanel: React.FC<AiAdvisorPanelProps> = ({
                 <div className="diag-hero-metric">
                   <div className="hero-value-group">
                     <span className="hero-number">
-                      {analysis.diagnostics.fertilizer.totalUreaKgPerHa ?? analysis.diagnostics.fertilizer.TotalUreaKgPerHa ?? 0}
+                      {analysis.diagnostics.fertilizer.totalUreaKgPerHa ?? 0}
                     </span>
                     <span className="hero-unit">kg/ha</span>
                   </div>
