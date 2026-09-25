@@ -579,6 +579,9 @@ namespace PaddyWise.Api.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<int>("Category")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -618,86 +621,93 @@ namespace PaddyWise.Api.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2026, 9, 24, 9, 46, 1, 540, DateTimeKind.Utc).AddTicks(9619),
+                            Category = 0,
+                            CreatedAt = new DateTime(2026, 9, 25, 16, 53, 11, 44, DateTimeKind.Utc).AddTicks(9836),
                             CropStages = "Nursery, Tillering",
                             FavorableConditions = "Dry weather, drought-stressed nurseries.",
                             ManagementGuidance = "Maintain adequate field water level; apply an approved insecticide only once infestation passes the economic threshold.",
                             Name = "Thrips",
                             Source = "Sri Lanka Department of Agriculture",
                             Symptoms = "Silvery streaks and curling on young leaves; stunted growth in seedlings.",
-                            UpdatedAt = new DateTime(2026, 9, 24, 9, 46, 1, 540, DateTimeKind.Utc).AddTicks(9622)
+                            UpdatedAt = new DateTime(2026, 9, 25, 16, 53, 11, 44, DateTimeKind.Utc).AddTicks(9838)
                         },
                         new
                         {
                             Id = 2,
-                            CreatedAt = new DateTime(2026, 9, 24, 9, 46, 1, 540, DateTimeKind.Utc).AddTicks(9627),
+                            Category = 0,
+                            CreatedAt = new DateTime(2026, 9, 25, 16, 53, 11, 44, DateTimeKind.Utc).AddTicks(9841),
                             CropStages = "Tillering, PanicleInitiation",
                             FavorableConditions = "Dense planting, excess nitrogen, continuous flooding, high humidity.",
                             ManagementGuidance = "Avoid excess nitrogen; alternate wetting and drying; favor resistant varieties; targeted insecticide only at economic threshold.",
                             Name = "Brown Planthopper",
                             Source = "Sri Lanka Department of Agriculture",
                             Symptoms = "Yellowing and drying of leaves from the base upward (\"hopperburn\"); stunted, wilting tillers.",
-                            UpdatedAt = new DateTime(2026, 9, 24, 9, 46, 1, 540, DateTimeKind.Utc).AddTicks(9627)
+                            UpdatedAt = new DateTime(2026, 9, 25, 16, 53, 11, 44, DateTimeKind.Utc).AddTicks(9841)
                         },
                         new
                         {
                             Id = 3,
-                            CreatedAt = new DateTime(2026, 9, 24, 9, 46, 1, 540, DateTimeKind.Utc).AddTicks(9629),
+                            Category = 0,
+                            CreatedAt = new DateTime(2026, 9, 25, 16, 53, 11, 44, DateTimeKind.Utc).AddTicks(9843),
                             CropStages = "Tillering, Flowering",
                             FavorableConditions = "Continuous rice cropping without fallow, high nitrogen.",
                             ManagementGuidance = "Remove and destroy egg masses and post-harvest stubble; use light traps; targeted insecticide once dead-heart incidence passes threshold.",
                             Name = "Yellow Stem Borer",
                             Source = "Sri Lanka Department of Agriculture",
                             Symptoms = "Dead heart (dried central shoot) during vegetative growth; whitehead (empty, upright panicle) at the reproductive stage.",
-                            UpdatedAt = new DateTime(2026, 9, 24, 9, 46, 1, 540, DateTimeKind.Utc).AddTicks(9629)
+                            UpdatedAt = new DateTime(2026, 9, 25, 16, 53, 11, 44, DateTimeKind.Utc).AddTicks(9843)
                         },
                         new
                         {
                             Id = 4,
-                            CreatedAt = new DateTime(2026, 9, 24, 9, 46, 1, 540, DateTimeKind.Utc).AddTicks(9631),
+                            Category = 0,
+                            CreatedAt = new DateTime(2026, 9, 25, 16, 53, 11, 44, DateTimeKind.Utc).AddTicks(9845),
                             CropStages = "Tillering, PanicleInitiation",
                             FavorableConditions = "High nitrogen, dense canopy, high humidity.",
                             ManagementGuidance = "Balanced nitrogen application; conserve natural enemies; insecticide only above the recommended damage threshold.",
                             Name = "Rice Leaf Folder",
                             Source = "Sri Lanka Department of Agriculture",
                             Symptoms = "Leaves folded longitudinally and webbed together; white/transparent streaks where larvae scrape and feed inside the fold.",
-                            UpdatedAt = new DateTime(2026, 9, 24, 9, 46, 1, 540, DateTimeKind.Utc).AddTicks(9631)
+                            UpdatedAt = new DateTime(2026, 9, 25, 16, 53, 11, 44, DateTimeKind.Utc).AddTicks(9845)
                         },
                         new
                         {
                             Id = 5,
-                            CreatedAt = new DateTime(2026, 9, 24, 9, 46, 1, 540, DateTimeKind.Utc).AddTicks(9632),
+                            Category = 0,
+                            CreatedAt = new DateTime(2026, 9, 25, 16, 53, 11, 44, DateTimeKind.Utc).AddTicks(9846),
                             CropStages = "PanicleInitiation, Flowering",
                             FavorableConditions = "Warm, humid conditions and dense planting.",
                             ManagementGuidance = "Avoid excess nitrogen and overly dense planting; miticide only under severe, confirmed infestation.",
                             Name = "Rice Sheath Mite",
                             Source = "Sri Lanka Department of Agriculture",
                             Symptoms = "Brown to black lesions on the leaf sheath near the waterline; can cause unfilled or discolored grains.",
-                            UpdatedAt = new DateTime(2026, 9, 24, 9, 46, 1, 540, DateTimeKind.Utc).AddTicks(9633)
+                            UpdatedAt = new DateTime(2026, 9, 25, 16, 53, 11, 44, DateTimeKind.Utc).AddTicks(9846)
                         },
                         new
                         {
                             Id = 6,
-                            CreatedAt = new DateTime(2026, 9, 24, 9, 46, 1, 540, DateTimeKind.Utc).AddTicks(9634),
+                            Category = 0,
+                            CreatedAt = new DateTime(2026, 9, 25, 16, 53, 11, 44, DateTimeKind.Utc).AddTicks(9847),
                             CropStages = "Nursery, Tillering",
                             FavorableConditions = "High humidity, shaded or low-lying fields, continuous rice cropping.",
                             ManagementGuidance = "Synchronize planting across the area; use resistant varieties; remove wild grasses acting as alternate hosts.",
                             Name = "Rice Gall Midge",
                             Source = "Sri Lanka Department of Agriculture",
                             Symptoms = "Affected tiller produces a tubular \"silvershoot\"/onion-leaf gall instead of a normal leaf whorl and no panicle.",
-                            UpdatedAt = new DateTime(2026, 9, 24, 9, 46, 1, 540, DateTimeKind.Utc).AddTicks(9634)
+                            UpdatedAt = new DateTime(2026, 9, 25, 16, 53, 11, 44, DateTimeKind.Utc).AddTicks(9847)
                         },
                         new
                         {
                             Id = 7,
-                            CreatedAt = new DateTime(2026, 9, 24, 9, 46, 1, 540, DateTimeKind.Utc).AddTicks(9636),
+                            Category = 1,
+                            CreatedAt = new DateTime(2026, 9, 25, 16, 53, 11, 44, DateTimeKind.Utc).AddTicks(9848),
                             CropStages = "PanicleInitiation, Flowering",
                             FavorableConditions = "High humidity, excess nitrogen, dense planting.",
                             ManagementGuidance = "Avoid excess nitrogen; ensure adequate spacing/drainage for airflow; treat seed and apply fungicide at booting stage if severe.",
                             Name = "Sheath Rot",
                             Source = "Sri Lanka Department of Agriculture",
                             Symptoms = "Reddish-brown lesions on the flag leaf sheath enclosing the panicle; panicle may fail to emerge fully or grains are discolored.",
-                            UpdatedAt = new DateTime(2026, 9, 24, 9, 46, 1, 540, DateTimeKind.Utc).AddTicks(9636)
+                            UpdatedAt = new DateTime(2026, 9, 25, 16, 53, 11, 44, DateTimeKind.Utc).AddTicks(9849)
                         });
                 });
 
