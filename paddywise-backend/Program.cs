@@ -163,7 +163,12 @@ builder.Services.AddHttpClient(
     GeminiLlmClient.HttpClientName,
     client =>
     {
-        client.Timeout = TimeSpan.FromSeconds(120);
+        // Raised from 120s: a 25-entry PestDiseaseKnowledge list (up from the original 7)
+        // makes the system prompt large enough that gemini-3.1-pro-preview's very first
+        // response — before any get_pest_knowledge tool round trip — can itself exceed
+        // 120s. This buys more time; it doesn't establish the call was ever going to
+        // finish rather than genuinely hang. Revisit if the knowledge base keeps growing.
+        client.Timeout = TimeSpan.FromSeconds(240);
     });
 
 builder.Services.AddScoped<ILlmClient, GeminiLlmClient>();
