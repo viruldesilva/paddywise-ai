@@ -268,8 +268,9 @@ Agent rules that apply here same as every component:
   longer indistinguishable. The frontend renders the third state accordingly (see
   `paddywise-web`'s frontend guide).
 - Web frontend exists: `paddywise-web/src/features/pest-disease/` (farmer `ObservationsPage` at
-  `/observations`, officer `PestDiseaseReportsPage` at `/pest-disease-reports`), merged via
-  `feature/pestdisease-UI`. No UI yet for the knowledge base admin CRUD above.
+  `/observations`, officer `PestDiseaseReportsPage` at `/pest-disease-reports`, admin
+  `KnowledgeBasePage` at `/pest-disease-knowledge` for the CRUD above), merged via
+  `feature/pestdisease-UI`.
 - **Real-Gemini smoke test run** (2026-09-24, against the live API, not just compiled) surfaced
   two real bugs, both now fixed:
   - Fixed: the model was guessing plausible-sounding pest/disease names from its own training
