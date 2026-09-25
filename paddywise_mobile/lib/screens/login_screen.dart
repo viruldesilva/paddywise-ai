@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../theme/app_theme.dart';
 import '../services/auth_service.dart';
-import 'register_screen.dart';
-import 'dashboard_screen.dart';
 
 /// Kumburu vector logo icon
 class KumburuLogoIcon extends StatelessWidget {
@@ -111,18 +110,13 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      final user = await AuthService.login(
+      await AuthService.login(
         email: email,
         password: password,
       );
 
       if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => DashboardScreen(user: user),
-        ),
-      );
+      context.go('/dashboard');
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -398,12 +392,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       GestureDetector(
                         onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const RegisterScreen(),
-                            ),
-                          );
+                          context.go('/register');
                         },
                         child: const Text(
                           'Request access',
