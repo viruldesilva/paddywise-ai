@@ -60,7 +60,7 @@ export function Sidebar({ role, isOpen, onClose }: SidebarProps) {
     { name: 'Dashboard', path: '/dashboard/admin', icon: LayoutDashboard },
     { name: 'Past Crop Activities', path: '/activities', icon: Activity },
     { name: 'Manage Users', path: '/admin/users', icon: Users },
-    { name: 'Manage Knowledge Base', path: '#knowledge', icon: Database },
+    { name: 'Manage Knowledge Base', path: '/pest-disease-knowledge', icon: Database },
     { name: 'System Settings & Audit Logs', path: '#settings', icon: Settings },
   ];
 

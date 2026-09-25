@@ -16,6 +16,7 @@ import PlanApprovalPage from './features/field-cultivation/pages/PlanApprovalPag
 import { NewActivityPage } from './features/crop-resource/pages/NewActivityPage';
 import ObservationsPage from './features/pest-disease/pages/ObservationsPage';
 import PestDiseaseReportsPage from './features/pest-disease/pages/PestDiseaseReportsPage';
+import KnowledgeBasePage from './features/pest-disease/pages/KnowledgeBasePage';
 
 function RoleRedirect() {
   const { user } = useAuth();
@@ -154,6 +155,15 @@ function AppContent() {
           element={
             <ProtectedRoute allowedRoles={['AgriculturalOfficer']}>
               <PestDiseaseReportsPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/pest-disease-knowledge"
+          element={
+            <ProtectedRoute allowedRoles={['Admin']}>
+              <KnowledgeBasePage />
             </ProtectedRoute>
           }
         />

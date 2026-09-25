@@ -168,3 +168,43 @@ export function reportReviewNeedsComment(decision: ReportReviewDecision): boolea
 export function formatConfidence(confidence: number): string {
   return `${Math.round(confidence * 100)}%`;
 }
+
+/* ------------------------------------------------------ knowledge base (admin) */
+
+/** DTOs/PestDisease/PestDiseaseKnowledgeDto.cs — PestDiseaseKnowledgeResponseDto. */
+export interface PestDiseaseKnowledgeEntry {
+  id: number;
+  name: string;
+  symptoms: string;
+  favorableConditions: string | null;
+  cropStages: string | null;
+  managementGuidance: string;
+  source: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * DTOs/PestDisease/PestDiseaseKnowledgeDto.cs — SavePestDiseaseKnowledgeRequestDto.
+ * Shared by create (POST) and update (PUT) — a full replace either way. Name must be
+ * unique case-insensitively; CropAnalysisAgent's get_pest_knowledge tool looks entries
+ * up by this exact string.
+ */
+export interface SaveKnowledgeEntryRequest {
+  name: string;
+  symptoms: string;
+  favorableConditions: string | null;
+  cropStages: string | null;
+  managementGuidance: string;
+  source: string;
+}
+
+/** SavePestDiseaseKnowledgeRequestDto's DataAnnotations MaxLength values. */
+export const KNOWLEDGE_ENTRY_RULES = {
+  nameMaxLength: 150,
+  symptomsMaxLength: 1000,
+  favorableConditionsMaxLength: 500,
+  cropStagesMaxLength: 200,
+  managementGuidanceMaxLength: 1000,
+  sourceMaxLength: 200,
+} as const;
