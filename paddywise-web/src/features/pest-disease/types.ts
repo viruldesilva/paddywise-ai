@@ -19,7 +19,17 @@ export type PestDiseaseReportStatus =
   | 'Rejected'
   | 'RevisionRequested';
 
+/** Entities/PestDisease/PestDiseaseCategory.cs */
+export type PestDiseaseCategory = 'Pest' | 'Disease';
+
 export const OBSERVATION_TYPES: readonly ObservationType[] = ['Pest', 'Disease', 'Unknown'];
+
+export const PEST_DISEASE_CATEGORIES: readonly PestDiseaseCategory[] = ['Pest', 'Disease'];
+
+export const PEST_DISEASE_CATEGORY_LABELS: Record<PestDiseaseCategory, string> = {
+  Pest: 'Pest',
+  Disease: 'Disease',
+};
 
 export const OBSERVATION_SEVERITIES: readonly ObservationSeverity[] = [
   'Low',
@@ -175,6 +185,7 @@ export function formatConfidence(confidence: number): string {
 export interface PestDiseaseKnowledgeEntry {
   id: number;
   name: string;
+  category: PestDiseaseCategory;
   symptoms: string;
   favorableConditions: string | null;
   cropStages: string | null;
@@ -192,6 +203,7 @@ export interface PestDiseaseKnowledgeEntry {
  */
 export interface SaveKnowledgeEntryRequest {
   name: string;
+  category: PestDiseaseCategory;
   symptoms: string;
   favorableConditions: string | null;
   cropStages: string | null;

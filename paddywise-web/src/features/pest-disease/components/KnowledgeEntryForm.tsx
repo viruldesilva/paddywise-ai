@@ -3,11 +3,20 @@ import type { FormEvent } from 'react';
 import { AlertCircle } from 'lucide-react';
 import { extractApiErrorMessage } from '../../../services/authService';
 import { createKnowledgeEntry, updateKnowledgeEntry } from '../services/pestDiseaseApi';
-import { KNOWLEDGE_ENTRY_RULES } from '../types';
-import type { PestDiseaseKnowledgeEntry, SaveKnowledgeEntryRequest } from '../types';
+import {
+  KNOWLEDGE_ENTRY_RULES,
+  PEST_DISEASE_CATEGORIES,
+  PEST_DISEASE_CATEGORY_LABELS,
+} from '../types';
+import type {
+  PestDiseaseCategory,
+  PestDiseaseKnowledgeEntry,
+  SaveKnowledgeEntryRequest,
+} from '../types';
 
 interface FormValues {
   name: string;
+  category: PestDiseaseCategory;
   symptoms: string;
   favorableConditions: string;
   cropStages: string;
@@ -19,6 +28,7 @@ type FormErrors = Partial<Record<keyof FormValues, string>>;
 
 const EMPTY_VALUES: FormValues = {
   name: '',
+  category: 'Pest',
   symptoms: '',
   favorableConditions: '',
   cropStages: '',
@@ -29,6 +39,7 @@ const EMPTY_VALUES: FormValues = {
 function toValues(entry: PestDiseaseKnowledgeEntry): FormValues {
   return {
     name: entry.name,
+    category: entry.category,
     symptoms: entry.symptoms,
     favorableConditions: entry.favorableConditions ?? '',
     cropStages: entry.cropStages ?? '',
@@ -113,6 +124,7 @@ export function KnowledgeEntryForm({ entry, onSaved, onCancel }: KnowledgeEntryF
 
     const request: SaveKnowledgeEntryRequest = {
       name: values.name.trim(),
+      category: values.category,
       symptoms: values.symptoms.trim(),
       favorableConditions:
         values.favorableConditions.trim().length > 0 ? values.favorableConditions.trim() : null,
@@ -160,6 +172,23 @@ export function KnowledgeEntryForm({ entry, onSaved, onCancel }: KnowledgeEntryF
           disabled={isSubmitting}
         />
         {errors.name && <span className="pd-field-error">{errors.name}</span>}
+      </div>
+
+      <div className="pd-form-group">
+        <label htmlFor="pd-kb-category">Category</label>
+        <select
+          id="pd-kb-category"
+          className="pd-input"
+          value={values.category}
+          onChange={(event) => setValue('category', event.target.value as PestDiseaseCategory)}
+          disabled={isSubmitting}
+        >
+          {PEST_DISEASE_CATEGORIES.map((category) => (
+            <option key={category} value={category}>
+              {PEST_DISEASE_CATEGORY_LABELS[category]}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div className="pd-form-group">

@@ -16,12 +16,23 @@ import { useAuth } from '../../../hooks/useAuth';
 import { extractApiErrorMessage } from '../../../services/authService';
 import { KnowledgeEntryForm } from '../components/KnowledgeEntryForm';
 import { deleteKnowledgeEntry, getKnowledgeEntries } from '../services/pestDiseaseApi';
-import type { PestDiseaseKnowledgeEntry } from '../types';
+import { PEST_DISEASE_CATEGORY_LABELS } from '../types';
+import type { PestDiseaseCategory, PestDiseaseKnowledgeEntry } from '../types';
 import { formatDateTime } from '../utils/dates';
 import '../../../styles/Dashboard.css';
 import '../styles/pestDisease.css';
 
 const TOAST_MS = 5_000;
+
+/** The filter's "every category" option, kept out of the category string union. */
+const ALL_CATEGORIES = 'all';
+type CategoryFilter = PestDiseaseCategory | typeof ALL_CATEGORIES;
+
+const CATEGORY_FILTER_OPTIONS: readonly { value: CategoryFilter; label: string }[] = [
+  { value: ALL_CATEGORIES, label: 'All categories' },
+  { value: 'Pest', label: 'Pest' },
+  { value: 'Disease', label: 'Disease' },
+];
 
 /**
  * Admin CRUD over the PestDiseaseKnowledge reference table — the same data
@@ -34,6 +45,7 @@ export default function KnowledgeBasePage() {
 
   const [entries, setEntries] = useState<PestDiseaseKnowledgeEntry[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>(ALL_CATEGORIES);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
@@ -106,6 +118,8 @@ export default function KnowledgeBasePage() {
   };
 
   const rows = entries ?? [];
+  const rowsToShow =
+    categoryFilter === ALL_CATEGORIES ? rows : rows.filter((entry) => entry.category === categoryFilter);
 
   if (!user) return null;
 
@@ -168,6 +182,26 @@ export default function KnowledgeBasePage() {
             </div>
           </div>
 
+          {!isLoading && !error && rows.length > 0 && (
+            <div className="pd-queue-controls">
+              <div className="pd-form-group pd-queue-filter">
+                <label htmlFor="pd-kb-category-filter">Category</label>
+                <select
+                  id="pd-kb-category-filter"
+                  className="pd-input"
+                  value={categoryFilter}
+                  onChange={(event) => setCategoryFilter(event.target.value as CategoryFilter)}
+                >
+                  {CATEGORY_FILTER_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
+
           {isLoading && (
             <div className="pd-state">
               <p className="pd-state-text">Loading the knowledge base…</p>
@@ -199,7 +233,15 @@ export default function KnowledgeBasePage() {
             </div>
           )}
 
-          {!isLoading && !error && rows.length > 0 && (
+          {!isLoading && !error && rows.length > 0 && rowsToShow.length === 0 && (
+            <div className="pd-state">
+              <BookOpen size={28} className="pd-state-icon" />
+              <h2 className="pd-state-title">Nothing here</h2>
+              <p className="pd-state-text">No entry matches this filter.</p>
+            </div>
+          )}
+
+          {!isLoading && !error && rowsToShow.length > 0 && (
             <div className="pd-table-wrap">
               <table className="pd-table">
                 <caption className="pd-table-caption">
@@ -208,6 +250,7 @@ export default function KnowledgeBasePage() {
                 <thead>
                   <tr>
                     <th scope="col">Name</th>
+                    <th scope="col">Category</th>
                     <th scope="col">Symptoms</th>
                     <th scope="col">Source</th>
                     <th scope="col">Updated</th>
@@ -217,7 +260,7 @@ export default function KnowledgeBasePage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((entry) => (
+                  {rowsToShow.map((entry) => (
                     <tr key={entry.id}>
                       <td>
                         <span className="pd-table-strong">{entry.name}</span>
@@ -225,6 +268,7 @@ export default function KnowledgeBasePage() {
                           <span className="pd-table-sub">{entry.cropStages}</span>
                         )}
                       </td>
+                      <td>{PEST_DISEASE_CATEGORY_LABELS[entry.category]}</td>
                       <td>
                         <span className="pd-table-sub" style={{ whiteSpace: 'normal' }}>
                           {entry.symptoms}
