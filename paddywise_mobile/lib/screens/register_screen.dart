@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../theme/app_theme.dart';
 import '../models/user.dart';
 import '../services/auth_service.dart';
-import 'dashboard_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -71,7 +71,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     });
 
     try {
-      final user = await AuthService.register(
+      await AuthService.register(
         fullName: name,
         email: email,
         role: _selectedRole,
@@ -87,13 +87,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       await Future.delayed(const Duration(milliseconds: 900));
 
       if (!mounted) return;
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(
-          builder: (context) => DashboardScreen(user: user),
-        ),
-        (route) => false,
-      );
+      context.go('/dashboard');
     } catch (e) {
       if (!mounted) return;
       setState(() {
