@@ -28,6 +28,22 @@ dotnet ef database update
 dotnet run              # http://localhost:5164, Swagger at /swagger
 ```
 
+Optional but recommended: `dotnet build` will warn ("No Six Labors license found...") without a
+Six Labors license for `SixLabors.ImageSharp` (used by `CropAnalysisAgent` to downscale
+observation photos before sending them to Gemini). Get a free Community license at
+https://sixlabors.com/pricing/ and drop it at `paddywise-backend/sixlabors.lic` — it's
+gitignored, so each machine needs its own copy. The build still succeeds without it; only the
+warning goes away.
+
+Optional: photo upload (`POST /api/observations/{id}/photo`) needs Azure Blob Storage
+credentials. Without them, the app runs fine and every other feature works — only that one
+endpoint fails, with a clear "Storage:ConnectionString and Storage:ContainerName are required"
+500 message telling you what to set:
+```bash
+dotnet user-secrets set "Storage:ConnectionString" "<Azure Storage account connection string>"
+dotnet user-secrets set "Storage:ContainerName" "observation-photos"
+```
+
 No test project exists yet. `dotnet build` is the only correctness gate — run it before
 calling any backend task done.
 
@@ -174,8 +190,14 @@ Agent rules that apply here same as every component:
 ## Current implementation status
 
 - Entities, DTOs, migrations, `ObservationsController`, `PestDiseaseReportsController` — done.
-- `PestDiseaseKnowledge` seeded with all 7 required rows — done. Its own admin CRUD endpoints
-  (`GET/POST/PUT/DELETE /api/pest-disease-knowledge`) are **not built yet**.
+- `PestDiseaseKnowledge` seeded with all 7 required rows — done. Its own admin CRUD is done too:
+  `IPestDiseaseKnowledgeService`/`PestDiseaseKnowledgeService`
+  (`Services/PestDisease/`) + `PestDiseaseKnowledgeController`
+  (`Controllers/PestDisease/`). `GET` (list, by id) is any authenticated caller;
+  `POST`/`PUT`/`DELETE` are `Roles = "Admin"`. `Name` must be unique case-insensitively —
+  enforced in the service (matches the DB's unique index) rather than left to a 500 on
+  constraint violation. Deleting an entry is safe: `PestDiseaseReport.PossibleIssue` is a text
+  snapshot, not an FK, so it can't be orphaned.
 - `CropAnalysisAgent` (`Agents/PestDisease/CropAnalysisAgent.cs`) is implemented and wired into
   DI under the `AgentNames.PestDiseaseDiagnosis` key in `Program.cs`, replacing
   `PestDiseaseDiagnosisAgentStub`. It:
@@ -202,13 +224,107 @@ Agent rules that apply here same as every component:
     ```
     If unset, it falls back to the shared `Gemini:ApiKey` automatically — so teammates without
     a dedicated key still work.
-- Known gap: `ObservationService.RequestAnalysisAsync` treats an empty `possibleIssues` list as
-  a failed run ("did not return a valid result"), but the agent's system prompt tells the model
-  to return an empty list when nothing plausibly matches. A genuine no-match diagnosis
-  currently surfaces to the farmer as an error rather than a legitimate "no match found"
-  outcome — worth revisiting.
-- Not started: `PestDiseaseKnowledge` admin CRUD, golden test cases (no test project exists
-  yet), and the web frontend (no `paddywise-web/src/features/pest-disease` folder exists).
+  - Can also use its own model, independent of the shared one: `GeminiLlmClient` likewise takes
+    a `modelConfigKey` constructor arg (default `Gemini:Model`), and the same keyed registration
+    passes `Gemini:PestDiseaseModel`. Set it only if you want image analysis on a different
+    model than Component 1's planning agent uses:
+    ```bash
+    dotnet user-secrets set "Gemini:PestDiseaseModel" "<model-name>"
+    ```
+    Unset (the default), it falls back to `Gemini:Model`, then to `GeminiLlmClient.DefaultModel`
+    (`gemini-3.6-flash`) if that's unset too — same fallback chain as the API key.
+  - Downscales large photos before sending them: `LoadImageAsync` now runs the downloaded
+    bytes through `DownscaleIfNeeded` (`SixLabors.ImageSharp`) before the size check — if
+    either dimension exceeds 1024px, it resizes proportionally to a 1024px long edge (never
+    upscales) and re-encodes as JPEG at quality 85, updating the mime type to `image/jpeg`
+    only when a resize actually happened. `MaxImageBytes` (6MB) stays as a final safety net
+    on the resized bytes rather than being removed — it should now almost never trip. A
+    decode failure in the resize step logs a warning and falls back to the original
+    bytes/mime type unchanged, so a resize-step bug degrades to "send as-is" rather than
+    failing the run. Reason: a full-size inline image, not the text turn (which alone
+    completes in a few seconds against `gemini-3.1-pro-preview` per a curl timing check), is
+    what was pushing real requests toward `HttpClient`'s timeout — `Program.cs`'s Gemini
+    `HttpClient` is currently set to 120s (not 150s) as a companion safety margin, set
+    separately from this change.
+  - **Licensing note:** `SixLabors.ImageSharp` (v4.1.2) is Six Labors Split-Licensed, not
+    Apache-2.0. A Community license has been obtained and placed at
+    `paddywise-backend/sixlabors.lic` (gitignored — every machine that builds this project
+    needs its own copy; it is not distributed with the repo). Without it, `dotnet build` prints
+    "No Six Labors license found..." as a warning (the build still succeeds either way; the
+    license only gates a runtime feature-limited/watermarked mode, not compilation). Confirm
+    the Community tier still fits before the license's `ExpiryDateUtc` (2027-12-23) or before
+    the project's usage outgrows the Community tier's terms.
+- Fixed: `ObservationService.RequestAnalysisAsync` no longer treats an empty `PossibleIssues`
+  list as a failed run. Only a `null` `agentOutput` (JSON parse failure) is a failure now — an
+  empty list is a legitimate "no likely match found" outcome per the agent's own contract, and
+  `CropAnalysisValidator` already agreed (it never flagged an empty list, only a missing
+  `RecommendedNextStep`). A no-match run still creates zero `PestDiseaseReport` rows, so the
+  `Reports.Count > 0` re-request guard doesn't block a repeat call — that's intentional, a
+  farmer may re-ask after adding detail.
+- Fixed: no-match visibility. `CropObservation.LastAnalyzedAt` (nullable `DateTime`, migration
+  `AddLastAnalyzedAtToCropObservation`) is set whenever `RequestAnalysisAsync` completes
+  successfully, match or not, and carried on `ObservationResponseDto`. Null means never
+  analyzed; set with an empty `Reports` list means "ran, found nothing likely" — the two are no
+  longer indistinguishable. The frontend renders the third state accordingly (see
+  `paddywise-web`'s frontend guide).
+- Web frontend exists: `paddywise-web/src/features/pest-disease/` (farmer `ObservationsPage` at
+  `/observations`, officer `PestDiseaseReportsPage` at `/pest-disease-reports`), merged via
+  `feature/pestdisease-UI`. No UI yet for the knowledge base admin CRUD above.
+- **Real-Gemini smoke test run** (2026-09-24, against the live API, not just compiled) surfaced
+  two real bugs, both now fixed:
+  - Fixed: the model was guessing plausible-sounding pest/disease names from its own training
+    data (e.g. "Sheath Blight", "Rice Thrips", "Stem Borer") instead of knowing what's actually
+    seeded (`Sheath Rot`, `Thrips`, `Yellow Stem Borer`) — confirmed via raw replicated calls to
+    the live API, where most guesses missed the exact-match `get_pest_knowledge` lookup, each
+    miss costing a full round trip, and was the likely cause of a run timing out entirely.
+    `SystemPrompt` changed from a `static readonly string` field to `BuildSystemPrompt
+    (IReadOnlyList<string> knownNames)`, called from `RunAsync` with the live
+    `PestDiseaseKnowledgeEntries` names (queried fresh every run, since the CRUD from above lets
+    admins change them at any time — a hardcoded list would go stale). The prompt now states the
+    exact current list and tells the model to consider only those names; the
+    `get_pest_knowledge` call requirement is unchanged, it still has to confirm details/source
+    for whatever it picks.
+  - Fixed: a Gemini call that runs past `HttpClient.Timeout` threw `TaskCanceledException`, a
+    type the code didn't catch (only `LlmException`, a non-2xx response, was handled) — so it
+    propagated unhandled through `RequestAnalysisAsync`, skipping the `DiagnosisRunLog` write
+    entirely and hitting ASP.NET's Developer Exception Page. Added a `catch
+    (OperationCanceledException ex)` block in `ObservationService.RequestAnalysisAsync`
+    immediately after the `LlmException` one, same structure: logs a warning, sets `dispatch` to
+    a failed result with a farmer-safe message ("The diagnosis assistant took too long to
+    respond. Please try again."), then falls through to the same `DiagnosisRunLog`-writing path
+    — a timeout is now logged and returns a clean 400 instead of an unhandled 500.
+
+### Security notes
+
+- **Resolved, twice, then closed for good.** The unhandled-timeout 500 above was leaking the
+  request's Authorization Bearer token — ASP.NET's Developer Exception Page, auto-enabled by
+  `WebApplication.CreateBuilder` in Development with no explicit call anywhere in `Program.cs`,
+  dumps request headers into the response body on any unhandled exception. The
+  `OperationCanceledException` catch fixed that one *source* of it (confirmed via the smoke
+  test — the leaked token belonged to a disposable test account, not a real user). It then
+  recurred from a second, different source: an unhandled `Azure.RequestFailedException` from
+  the photo-upload endpoint below, same token-leak, different exception type. That confirmed
+  the real gap was systemic, not per-exception-type — `Program.cs` now has `app.UseExceptionHandler(...)`
+  registered first in the HTTP pipeline (before Swagger/HTTPS redirection/CORS/auth), so it
+  wraps everything: any unhandled exception, any type, from any endpoint, is logged
+  server-side and answered with a clean `{ "message": "An unexpected error occurred. Please
+  try again." }` — never a stack trace, never headers. The two `catch` blocks added earlier
+  (`OperationCanceledException` in `ObservationService`, `StorageNotConfiguredException` in
+  `ObservationsController`) stay — they give a *specific*, actionable message instead of the
+  generic one; the global handler is the safety net underneath everything, not a replacement
+  for handling what's worth a distinct farmer-facing message.
+- **Photo upload built:** `POST /api/observations/{id}/photo` (`IFormFile`, `Roles = "Farmer"`,
+  same ownership + "already has a diagnosis" edit-lock as `UpdateAsync`). Stores to Azure Blob
+  Storage via `Services/PestDisease/{IPhotoStorageService,AzureBlobPhotoStorageService}.cs`
+  (public-read-on-blob container, server-generated `Guid` filename — the client's own filename
+  is never trusted), sets `CropObservation.ImageUrl` to the resulting blob URL. 10MB cap,
+  content-type must start with `image/`. Missing `Storage:*` secrets surface as a distinct
+  `StorageNotConfiguredException` → 500 (a setup problem) rather than the generic
+  `InvalidOperationException` → 400 used for actual validation failures. The manual "paste a
+  URL" field on `ObservationForm.tsx` was kept as a fallback (user's choice) — so the SSRF
+  hardening item on `LoadImageAsync` (fetching a farmer-supplied `ImageUrl` with no host
+  allowlist) is unaffected by this change and remains open.
+- Not started: golden test cases (no test project exists yet).
 
 ## Testing golden cases
 

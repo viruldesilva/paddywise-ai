@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { AlertCircle, Loader2, Send } from 'lucide-react';
+import { AlertCircle, Loader2, Send, Sparkles } from 'lucide-react';
 import { extractApiErrorMessage } from '../../../services/authService';
+import { getReportDraftRevisionComment } from '../../reporting-approval/services/reviewsApi';
 import { reviewPestDiseaseReport } from '../services/pestDiseaseApi';
 import {
   REPORT_REVIEW_DECISIONS,
@@ -36,6 +37,7 @@ export function ReportReviewForm({ reportId, onReviewed, onCancel }: ReportRevie
   const [error, setError] = useState<string | null>(null);
   const [commentError, setCommentError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDrafting, setIsDrafting] = useState(false);
 
   const trimmed = comment.trim();
   const needsComment = reportReviewNeedsComment(decision);
@@ -43,6 +45,21 @@ export function ReportReviewForm({ reportId, onReviewed, onCancel }: ReportRevie
   const handleDecisionChange = (next: ReportReviewDecision) => {
     setDecision(next);
     setCommentError(null);
+  };
+
+  const handleDraftWithAi = async () => {
+    if (isDrafting || isSubmitting) return;
+    setIsDrafting(true);
+    setError(null);
+    try {
+      const draft = await getReportDraftRevisionComment(reportId);
+      setComment(draft);
+      setCommentError(null);
+    } catch (err: unknown) {
+      setError(extractApiErrorMessage(err, 'Could not draft revision comment. Please try again.'));
+    } finally {
+      setIsDrafting(false);
+    }
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -117,7 +134,38 @@ export function ReportReviewForm({ reportId, onReviewed, onCancel }: ReportRevie
       </fieldset>
 
       <div className="pd-form-group">
-        <label htmlFor="pd-review-comment">Comment {needsComment ? '' : '(optional)'}</label>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+          <label htmlFor="pd-review-comment" style={{ margin: 0 }}>
+            Comment {needsComment ? '' : '(optional)'}
+          </label>
+          <button
+            type="button"
+            className="fc-btn fc-btn-outline"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              fontSize: '0.78rem',
+              padding: '0.2rem 0.65rem',
+              borderRadius: '6px',
+            }}
+            disabled={isSubmitting || isDrafting}
+            onClick={handleDraftWithAi}
+            title="Use AI to automatically draft a revision comment based on observation symptoms"
+          >
+            {isDrafting ? (
+              <>
+                <Loader2 size={13} className="fc-spin" />
+                <span>Drafting with AI…</span>
+              </>
+            ) : (
+              <>
+                <Sparkles size={13} />
+                <span>Draft with AI</span>
+              </>
+            )}
+          </button>
+        </div>
         <textarea
           id="pd-review-comment"
           className="pd-input pd-textarea"

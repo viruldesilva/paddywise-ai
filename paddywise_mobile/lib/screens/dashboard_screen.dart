@@ -5,9 +5,14 @@ import '../services/auth_service.dart';
 import 'login_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
-  final User user;
+  final User? user;
+  final bool embeddedInShell;
 
-  const DashboardScreen({super.key, required this.user});
+  const DashboardScreen({
+    super.key,
+    this.user,
+    this.embeddedInShell = false,
+  });
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -20,7 +25,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
-    _currentUser = widget.user;
+    _currentUser = widget.user ?? AuthService.getCurrentUser()!;
     if (_currentUser.role == UserRole.admin) {
       _usersList = AuthService.getAllUsers();
     }
@@ -98,6 +103,33 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final bodyContent = SingleChildScrollView(
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Welcome Banner
+          _buildWelcomeBanner(),
+          const SizedBox(height: 20),
+
+          // Metrics Cards
+          _buildMetrics(),
+          const SizedBox(height: 20),
+
+          // Role Specific Functional Panel
+          if (_currentUser.role == UserRole.farmer) _buildFarmerPanel(),
+          if (_currentUser.role == UserRole.extensionOfficer)
+            _buildOfficerPanel(),
+          if (_currentUser.role == UserRole.buyer) _buildBuyerPanel(),
+          if (_currentUser.role == UserRole.admin) _buildAdminPanel(),
+        ],
+      ),
+    );
+
+    if (widget.embeddedInShell) {
+      return bodyContent;
+    }
+
     return Scaffold(
       backgroundColor: AppColors.cream,
       appBar: AppBar(
@@ -146,28 +178,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ],
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(18),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Welcome Banner
-              _buildWelcomeBanner(),
-              const SizedBox(height: 20),
-
-              // Metrics Cards
-              _buildMetrics(),
-              const SizedBox(height: 20),
-
-              // Role Specific Functional Panel
-              if (_currentUser.role == UserRole.farmer) _buildFarmerPanel(),
-              if (_currentUser.role == UserRole.extensionOfficer)
-                _buildOfficerPanel(),
-              if (_currentUser.role == UserRole.buyer) _buildBuyerPanel(),
-              if (_currentUser.role == UserRole.admin) _buildAdminPanel(),
-            ],
-          ),
-        ),
+        child: bodyContent,
       ),
     );
   }
