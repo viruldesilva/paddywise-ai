@@ -10,6 +10,10 @@ enum UserRole {
         return UserRole.farmer;
       case 'extension_officer':
       case 'officer':
+      case 'agriculturalofficer':
+      case 'agricultural_officer':
+      case 'fieldofficer':
+      case 'field_officer':
         return UserRole.extensionOfficer;
       case 'buyer':
       case 'buyer_/_miller':
@@ -35,6 +39,19 @@ enum UserRole {
     }
   }
 
+  String toBackendString() {
+    switch (this) {
+      case UserRole.farmer:
+        return 'Farmer';
+      case UserRole.extensionOfficer:
+        return 'AgriculturalOfficer';
+      case UserRole.buyer:
+        return 'Farmer';
+      case UserRole.admin:
+        return 'Admin';
+    }
+  }
+
   String get displayName {
     switch (this) {
       case UserRole.farmer:
@@ -57,6 +74,7 @@ class User {
   final String? phone;
   final String? division;
   final DateTime createdAt;
+  final String? token;
 
   const User({
     required this.id,
@@ -66,6 +84,7 @@ class User {
     this.phone,
     this.division,
     required this.createdAt,
+    this.token,
   });
 
   Map<String, dynamic> toJson() {
@@ -77,6 +96,7 @@ class User {
       'phone': phone,
       'division': division,
       'createdAt': createdAt.toIso8601String(),
+      if (token != null) 'token': token,
     };
   }
 
@@ -90,6 +110,7 @@ class User {
       division: json['division'] as String?,
       createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ??
           DateTime.now(),
+      token: json['token'] as String?,
     );
   }
 }
