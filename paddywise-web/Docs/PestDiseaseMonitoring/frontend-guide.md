@@ -89,7 +89,10 @@ Every error is surfaced through `extractApiErrorMessage(err, fallback)` from
 their C# member name string (e.g. `PestDiseaseReportStatus = 'PendingOfficerReview' | ...`),
 not the ordinal. `formatConfidence(confidence)` renders `0.82` as `"82%"` — used everywhere a
 confidence is shown, since the agent's confidence is a possible-match score, never certainty
-(the UI copy says "possible match", not "diagnosis").
+(the UI copy says "possible match", not "diagnosis"). `PestDiseaseCategory = 'Pest' | 'Disease'`
+mirrors `Entities/PestDisease/PestDiseaseCategory.cs`, with `PEST_DISEASE_CATEGORIES` /
+`PEST_DISEASE_CATEGORY_LABELS` following the same const-array-plus-label-map shape as
+`OBSERVATION_TYPES`/`OBSERVATION_TYPE_LABELS`.
 
 If a backend DTO in `DTOs/PestDisease/` changes shape, update the matching interface here in
 the same change — there is no shared schema generation between the two.
@@ -152,6 +155,16 @@ independent — editing one never requires touching the other.
 - Not yet tested against a real, running backend + live Gemini call from the browser (only
   route-level smoke-tested: pages load, redirect correctly when unauthenticated, no console
   errors) — see backend-guide.md's "real-Gemini smoke test" item.
+- **Fixed: knowledge base `Category` field (2026-09-25)**, matching the backend's `Category`
+  addition (see backend-guide.md). `KnowledgeEntryForm.tsx` gained a `Category` select
+  (Pest/Disease, defaulting to `Pest` for new entries) placed right after the Name field,
+  following the exact same `<select>` + const-array-map pattern as `ObservationForm.tsx`'s
+  `observationType`/`severity` selects — no new UI pattern invented.
+  `KnowledgeBasePage.tsx` gained a client-side category filter (`pd-queue-controls` /
+  `pd-form-group pd-queue-filter`, the same classes and shape `PestDiseaseReportsPage.tsx`
+  already uses for its status filter — filtering happens in-memory over the already-fetched
+  list rather than adding a server round trip, since `GET /api/pest-disease-knowledge` has no
+  category query param) and a Category column in the table.
 
 ## Build / lint
 
