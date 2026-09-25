@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text.Json;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using PaddyWise.Api.Agents.Shared;
@@ -14,17 +15,32 @@ public class ObservationService : IObservationService
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
+    /// <summary>Comfortably above a phone photo, well under Kestrel's default request body limit.</summary>
+    private const long MaxPhotoBytes = 10 * 1024 * 1024;
+
+    private static readonly Dictionary<string, string> ImageExtensionsByContentType =
+        new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["image/jpeg"] = ".jpg",
+            ["image/png"] = ".png",
+            ["image/webp"] = ".webp",
+            ["image/gif"] = ".gif"
+        };
+
     private readonly ApplicationDbContext _context;
     private readonly IAgent<DelegatedTask, DelegatedTaskResult> _diagnosisAgent;
+    private readonly IPhotoStorageService _photoStorage;
     private readonly ILogger<ObservationService> _logger;
 
     public ObservationService(
         ApplicationDbContext context,
         [FromKeyedServices(AgentNames.PestDiseaseDiagnosis)] IAgent<DelegatedTask, DelegatedTaskResult> diagnosisAgent,
+        IPhotoStorageService photoStorage,
         ILogger<ObservationService> logger)
     {
         _context = context;
         _diagnosisAgent = diagnosisAgent;
+        _photoStorage = photoStorage;
         _logger = logger;
     }
 
@@ -152,6 +168,55 @@ public class ObservationService : IObservationService
         return MapToResponse(observation);
     }
 
+    public async Task<ObservationResponseDto?> SetPhotoAsync(int observationId, int farmerId, IFormFile file)
+    {
+        var observation = await _context.CropObservations
+            .Include(o => o.CultivationCycle)
+                .ThenInclude(c => c.Field)
+            .Include(o => o.ReportedByUser)
+            .Include(o => o.Reports)
+            .FirstOrDefaultAsync(o => o.Id == observationId);
+
+        if (observation == null)
+            return null;
+
+        if (observation.ReportedByUserId != farmerId)
+            throw new UnauthorizedAccessException("You do not have access to this observation.");
+
+        // Same edit lock as UpdateAsync — the photo an already-analyzed report ran against
+        // cannot shift under it.
+        if (observation.Reports.Count > 0)
+            throw new InvalidOperationException(
+                "This observation already has a diagnosis and can no longer be edited.");
+
+        if (file == null || file.Length == 0)
+            throw new InvalidOperationException("A photo file is required.");
+
+        if (file.Length > MaxPhotoBytes)
+            throw new InvalidOperationException("Photo cannot exceed 10MB.");
+
+        if (string.IsNullOrWhiteSpace(file.ContentType) ||
+            !file.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException("File must be an image.");
+        }
+
+        var extension = ImageExtensionsByContentType.TryGetValue(file.ContentType, out var mapped)
+            ? mapped
+            : ".jpg";
+
+        await using var stream = file.OpenReadStream();
+        var url = await _photoStorage.UploadPhotoAsync(
+            stream, file.ContentType, extension, CancellationToken.None);
+
+        observation.ImageUrl = url;
+        observation.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        return MapToResponse(observation);
+    }
+
     public async Task<ObservationResponseDto?> RequestAnalysisAsync(int observationId, int farmerId)
     {
         var observation = await _context.CropObservations
@@ -209,6 +274,24 @@ public class ObservationService : IObservationService
             {
                 Success = false,
                 Error = $"The diagnosis assistant is unavailable right now ({(int)ex.StatusCode}). Please try again.",
+                Duration = stopwatch.Elapsed
+            };
+        }
+        catch (OperationCanceledException ex)
+        {
+            // CancellationToken.None is passed to RunAsync above, so this can only be a
+            // client-side HttpClient timeout inside GeminiLlmClient, never an externally
+            // cancelled request — safe to always treat as a failed run rather than rethrow.
+            _logger.LogWarning(
+                ex,
+                "Diagnosis agent for observation {ObservationId} (correlation {CorrelationId}) timed out.",
+                observationId,
+                correlationId);
+
+            dispatch = new AgentResult<DelegatedTaskResult>
+            {
+                Success = false,
+                Error = "The diagnosis assistant took too long to respond. Please try again.",
                 Duration = stopwatch.Elapsed
             };
         }

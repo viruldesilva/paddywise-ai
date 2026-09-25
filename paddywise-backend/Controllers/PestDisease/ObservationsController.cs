@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using PaddyWise.Api.DTOs.PestDisease;
 using PaddyWise.Api.Entities.Shared;
@@ -96,6 +97,39 @@ public class ObservationsController : ControllerBase
                 return NotFound(new { message = "Observation not found." });
 
             return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+        }
+    }
+
+    /// <summary>Uploads a photo for an observation that has no diagnosis yet, and sets its
+    /// ImageUrl to the stored file's public URL.</summary>
+    [Authorize(Roles = "Farmer")]
+    [HttpPost("{id:int}/photo")]
+    public async Task<IActionResult> UploadPhoto(int id, IFormFile file)
+    {
+        var farmerId = GetCallerId();
+        if (farmerId == null)
+            return Unauthorized(new { message = "Invalid access token. Please log in again." });
+
+        try
+        {
+            var result = await _observationService.SetPhotoAsync(id, farmerId.Value, file);
+            if (result == null)
+                return NotFound(new { message = "Observation not found." });
+
+            return Ok(result);
+        }
+        catch (StorageNotConfiguredException ex)
+        {
+            // A server setup problem, not something the farmer did wrong.
+            return StatusCode(StatusCodes.Status500InternalServerError, new { message = ex.Message });
         }
         catch (InvalidOperationException ex)
         {
