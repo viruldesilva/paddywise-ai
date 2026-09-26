@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../theme/app_theme.dart';
 import '../models/user.dart';
 import '../services/auth_service.dart';
@@ -110,7 +111,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
         children: [
           // Welcome Banner
           _buildWelcomeBanner(),
-          const SizedBox(height: 20),
+          const SizedBox(height: 18),
+
+          // Farmer Quick Action to Record Activity
+          if (_currentUser.role == UserRole.farmer) ...[
+            _buildFarmerQuickActions(),
+            const SizedBox(height: 18),
+          ],
 
           // Metrics Cards
           _buildMetrics(),
@@ -249,6 +256,71 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  Widget _buildFarmerQuickActions() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: AppColors.forest,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.forest.withAlpha(45),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppColors.gold,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.add_task_rounded, color: AppColors.forestDeep, size: 22),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: const [
+                Text(
+                  'Record Crop Activity',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.cream,
+                    fontFamily: 'serif',
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  'Fertilizer, irrigation, sprays & farm tasks',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.shootLight,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => context.push('/activities/new'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.gold,
+              foregroundColor: AppColors.forestDeep,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: const Text('Add Now', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildMetrics() {
     List<Widget> cards = [];
 
@@ -258,7 +330,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           _MetricCard(
             label: 'Cultivation Season',
             value: 'Yala 2026',
-            sub: 'Day 45 (Tillering)',
+            sub: 'Day 45 (Tillering) • Tap to Log',
+            onTap: () => context.push('/activities/new'),
           ),
           _MetricCard(
             label: 'Registered Field',
@@ -428,6 +501,45 @@ class _DashboardScreenState extends State<DashboardScreen> {
               },
               icon: const Icon(Icons.photo_camera),
               label: const Text('Simulate Symptom Scan'),
+            ),
+          ),
+          const SizedBox(height: 20),
+          const Divider(height: 1, color: AppColors.line),
+          const SizedBox(height: 16),
+          Row(
+            children: const [
+              Icon(Icons.edit_calendar_rounded, color: AppColors.forest, size: 22),
+              SizedBox(width: 8),
+              Text(
+                'Crop Activity Tracking',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.ink,
+                  fontFamily: 'serif',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Record fertilizer dosages, irrigation cycles, pesticide sprays, and farm operations within the 7-day compliance window.',
+            style: TextStyle(fontSize: 13, color: AppColors.inkSoft),
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                context.push('/activities/new');
+              },
+              icon: const Icon(Icons.add_task_rounded, size: 18),
+              label: const Text('Record Activity', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.forest,
+                foregroundColor: AppColors.cream,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              ),
             ),
           ),
         ],
@@ -731,17 +843,19 @@ class _MetricCard extends StatelessWidget {
   final String value;
   final String sub;
   final Color? valueColor;
+  final VoidCallback? onTap;
 
   const _MetricCard({
     required this.label,
     required this.value,
     required this.sub,
     this.valueColor,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final card = Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -751,14 +865,21 @@ class _MetricCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label.toUpperCase(),
-            style: const TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 0.5,
-              color: AppColors.inkSoft,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                label.toUpperCase(),
+                style: const TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
+                  color: AppColors.inkSoft,
+                ),
+              ),
+              if (onTap != null)
+                const Icon(Icons.arrow_forward_ios_rounded, size: 10, color: AppColors.shoot),
+            ],
           ),
           const SizedBox(height: 6),
           Text(
@@ -781,6 +902,15 @@ class _MetricCard extends StatelessWidget {
         ],
       ),
     );
+
+    if (onTap != null) {
+      return InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: card,
+      );
+    }
+    return card;
   }
 }
 
