@@ -12,5 +12,6 @@ void main() {
     final paths = shellRoute.routes.map((r) => r.path).toList();
     expect(paths, contains('/activities/new'));
     expect(paths, contains('/cycles/:id/activities/new'));
+    expect(paths, contains('/activities/:id/edit'));
   });
 }

@@ -10,6 +10,8 @@ import '../../features/reporting_approval/screens/notifications_screen.dart';
 import '../../features/profile/screens/profile_screen.dart';
 import '../../features/crop-resource/screens/new_activity_screen.dart';
 import '../../features/crop-resource/screens/past_activities_screen.dart';
+import '../../features/crop-resource/screens/edit_activity_screen.dart';
+import '../../features/crop-resource/models/crop_activity_models.dart';
 import '../widgets/app_shell.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey =
@@ -138,6 +140,18 @@ final GoRouter appRouter = GoRouter(
             final idStr = state.uri.queryParameters['cycleId'];
             final cycleId = idStr != null ? int.tryParse(idStr) : null;
             return NewActivityScreen(cycleId: cycleId);
+          },
+        ),
+        GoRoute(
+          path: '/activities/:id/edit',
+          builder: (BuildContext context, GoRouterState state) {
+            final idStr = state.pathParameters['id'];
+            final activityId = idStr != null ? int.tryParse(idStr) : null;
+            final activity = state.extra is CropActivityDto ? state.extra as CropActivityDto : null;
+            return EditActivityScreen(
+              activityId: activityId,
+              initialActivity: activity,
+            );
           },
         ),
       ],

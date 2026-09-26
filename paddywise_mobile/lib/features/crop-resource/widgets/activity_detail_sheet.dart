@@ -6,17 +6,20 @@ import '../models/crop_activity_models.dart';
 class ActivityDetailSheet extends StatelessWidget {
   final CropActivityDto activity;
   final VoidCallback? onDelete;
+  final VoidCallback? onEdit;
 
   const ActivityDetailSheet({
     super.key,
     required this.activity,
     this.onDelete,
+    this.onEdit,
   });
 
   static Future<void> show(
     BuildContext context, {
     required CropActivityDto activity,
     VoidCallback? onDelete,
+    VoidCallback? onEdit,
   }) {
     return showModalBottomSheet(
       context: context,
@@ -25,6 +28,7 @@ class ActivityDetailSheet extends StatelessWidget {
       builder: (ctx) => ActivityDetailSheet(
         activity: activity,
         onDelete: onDelete,
+        onEdit: onEdit,
       ),
     );
   }
@@ -145,6 +149,15 @@ class ActivityDetailSheet extends StatelessWidget {
                     ],
                   ),
                 ),
+                if (onEdit != null)
+                  IconButton(
+                    icon: const Icon(Icons.edit_outlined, color: AppColors.forest),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      onEdit!();
+                    },
+                    tooltip: 'Edit Activity',
+                  ),
                 IconButton(
                   icon: const Icon(Icons.close_rounded, color: AppColors.inkSoft),
                   onPressed: () => Navigator.of(context).pop(),
@@ -207,36 +220,72 @@ class ActivityDetailSheet extends StatelessWidget {
                 const SizedBox(height: 8),
                 _buildTypeSpecificDetails(details),
 
-                const SizedBox(height: 24),
-
-                // Delete Action Button (if requested)
-                if (onDelete != null)
-                  OutlinedButton.icon(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      onDelete!();
-                    },
-                    icon: const Icon(Icons.delete_outline_rounded, color: AppColors.errorText),
-                    label: const Text(
-                      'Delete Activity',
-                      style: TextStyle(
-                        color: AppColors.errorText,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: AppColors.errorText),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                  ),
-
                 const SizedBox(height: 12),
               ],
             ),
           ),
+
+          // Persistent Bottom Actions (Edit & Delete)
+          if (onEdit != null || onDelete != null) ...[
+            const Divider(height: 1, color: AppColors.line),
+            SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+                child: Row(
+                  children: [
+                    if (onEdit != null)
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                            onEdit!();
+                          },
+                          icon: const Icon(Icons.edit_outlined, size: 18),
+                          label: const Text(
+                            'Edit Activity',
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.forest,
+                            foregroundColor: AppColors.cream,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                        ),
+                      ),
+                    if (onEdit != null && onDelete != null) const SizedBox(width: 12),
+                    if (onDelete != null)
+                      OutlinedButton.icon(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          onDelete!();
+                        },
+                        icon: const Icon(Icons.delete_outline_rounded,
+                            color: AppColors.errorText, size: 18),
+                        label: const Text(
+                          'Delete',
+                          style: TextStyle(
+                            color: AppColors.errorText,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: AppColors.errorText),
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 14, horizontal: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );

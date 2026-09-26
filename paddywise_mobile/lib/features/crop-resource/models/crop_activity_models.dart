@@ -39,6 +39,25 @@ class CreateCropActivityRequest {
   };
 }
 
+/// Request DTO for updating an activity via PUT /api/activities/{id}
+class UpdateCropActivityRequest {
+  final String activityType;
+  final String date; // YYYY-MM-DD
+  final String detailsJson;
+
+  const UpdateCropActivityRequest({
+    required this.activityType,
+    required this.date,
+    required this.detailsJson,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'activityType': activityType,
+    'date': date,
+    'detailsJson': detailsJson,
+  };
+}
+
 /// DTO for a recorded crop activity returned by the backend.
 class CropActivityDto {
   final int id;
@@ -107,6 +126,36 @@ class CropActivityDto {
     } catch (_) {
       return {};
     }
+  }
+
+  CropActivityDto copyWith({
+    int? id,
+    int? cultivationCycleId,
+    String? activityType,
+    String? date,
+    String? detailsJson,
+    int? loggedByUserId,
+    String? loggedByUserName,
+    String? createdAt,
+    String? fieldName,
+    String? farmerName,
+    int? farmerId,
+    String? cycleName,
+  }) {
+    return CropActivityDto(
+      id: id ?? this.id,
+      cultivationCycleId: cultivationCycleId ?? this.cultivationCycleId,
+      activityType: activityType ?? this.activityType,
+      date: date ?? this.date,
+      detailsJson: detailsJson ?? this.detailsJson,
+      loggedByUserId: loggedByUserId ?? this.loggedByUserId,
+      loggedByUserName: loggedByUserName ?? this.loggedByUserName,
+      createdAt: createdAt ?? this.createdAt,
+      fieldName: fieldName ?? this.fieldName,
+      farmerName: farmerName ?? this.farmerName,
+      farmerId: farmerId ?? this.farmerId,
+      cycleName: cycleName ?? this.cycleName,
+    );
   }
 }
 

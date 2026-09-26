@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:paddywise_mobile/features/crop-resource/screens/past_activities_screen.dart';
+import 'package:paddywise_mobile/features/crop-resource/screens/edit_activity_screen.dart';
 import 'package:paddywise_mobile/features/crop-resource/widgets/activity_card.dart';
 import 'package:paddywise_mobile/features/crop-resource/widgets/activity_detail_sheet.dart';
 import 'package:paddywise_mobile/theme/app_theme.dart';
@@ -162,6 +163,75 @@ void main() {
 
       // Dialog closed
       expect(find.text('Are you sure you want to remove this'), findsNothing);
+    });
+
+    testWidgets('displays edit button on activity cards and in detail sheet', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.theme,
+          home: const PastActivitiesScreen(),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Find edit buttons on cards
+      final editButtons = find.byIcon(Icons.edit_outlined);
+      expect(editButtons, findsWidgets);
+
+      // Open detail sheet
+      final firstCard = find.byType(ActivityCard).first;
+      await tester.tap(firstCard);
+      await tester.pumpAndSettle();
+
+      // Detail sheet should contain Edit Activity button
+      expect(find.byType(ActivityDetailSheet), findsOneWidget);
+      expect(find.text('Edit Activity'), findsOneWidget);
+    });
+
+    testWidgets('tapping edit button opens EditActivityScreen', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.theme,
+          home: const PastActivitiesScreen(),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Tap first edit button on card
+      final editButtons = find.byIcon(Icons.edit_outlined);
+      await tester.tap(editButtons.first);
+      await tester.pumpAndSettle();
+
+      // Should be on EditActivityScreen
+      expect(find.byType(EditActivityScreen), findsOneWidget);
+      expect(find.text('Edit Crop Activity'), findsOneWidget);
+      expect(find.text('UPDATE OPERATION'), findsOneWidget);
+    });
+
+    testWidgets('tapping edit button in detail sheet opens EditActivityScreen', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.theme,
+          home: const PastActivitiesScreen(),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Open detail sheet
+      final firstCard = find.byType(ActivityCard).first;
+      await tester.tap(firstCard);
+      await tester.pumpAndSettle();
+
+      // Tap Edit Activity in detail sheet
+      await tester.tap(find.text('Edit Activity'));
+      await tester.pumpAndSettle();
+
+      // Should be on EditActivityScreen
+      expect(find.byType(EditActivityScreen), findsOneWidget);
+      expect(find.text('Edit Crop Activity'), findsOneWidget);
     });
   });
 }

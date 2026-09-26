@@ -328,6 +328,95 @@ class CropActivityService {
     throw Exception('An unexpected error occurred while saving the activity.');
   }
 
+  /// Fetch a single activity by ID (from demo cache or all activities)
+  static Future<CropActivityDto?> getActivityById(int id) async {
+    for (final a in _demoActivities) {
+      if (a.id == id) return a;
+    }
+
+    try {
+      final all = await getAllActivities();
+      for (final a in all) {
+        if (a.id == id) return a;
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  /// Update an existing crop activity by ID
+  static Future<CropActivityDto> updateActivity({
+    required int activityId,
+    required UpdateCropActivityRequest request,
+  }) async {
+    final token = AuthService.getAccessToken();
+    final url = Uri.parse('${AuthService.apiBaseUrl}/activities/$activityId');
+
+    http.Response? response;
+    bool networkError = false;
+
+    try {
+      response = await http.put(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode(request.toJson()),
+      ).timeout(_requestTimeout);
+    } catch (_) {
+      networkError = true;
+    }
+
+    // 1. Success from Backend
+    if (response != null && (response.statusCode == 200 || response.statusCode == 204)) {
+      try {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final dto = CropActivityDto.fromJson(data);
+        final index = _demoActivities.indexWhere((a) => a.id == activityId);
+        if (index != -1) {
+          _demoActivities[index] = dto;
+        }
+        return dto;
+      } catch (e) {
+        throw Exception('Failed to parse backend activity response: $e');
+      }
+    }
+
+    // 2. Explicit Backend Error (400, 401, 403, 404, 500)
+    if (response != null) {
+      final message = _extractErrorMessage(response.body, response.statusCode);
+      throw Exception(message);
+    }
+
+    // 3. Network Connection Failure -> Provide graceful demo feedback
+    if (networkError) {
+      final index = _demoActivities.indexWhere((a) => a.id == activityId);
+      final existing = index != -1 ? _demoActivities[index] : null;
+      final dto = CropActivityDto(
+        id: activityId,
+        cultivationCycleId: existing?.cultivationCycleId ?? 1,
+        activityType: request.activityType,
+        date: request.date,
+        detailsJson: request.detailsJson,
+        loggedByUserId: existing?.loggedByUserId ?? 1,
+        loggedByUserName: existing?.loggedByUserName ?? 'Farmer',
+        createdAt: existing?.createdAt ?? DateTime.now().toIso8601String(),
+        fieldName: existing?.fieldName ?? 'Maha Kumbura (Plot 04)',
+        farmerName: existing?.farmerName,
+        farmerId: existing?.farmerId,
+        cycleName: existing?.cycleName ?? 'Yala 2026 · Bg 352',
+      );
+      if (index != -1) {
+        _demoActivities[index] = dto;
+      } else {
+        _demoActivities.insert(0, dto);
+      }
+      return dto;
+    }
+
+    throw Exception('An unexpected error occurred while updating the activity.');
+  }
+
   /// Extract error message from ASP.NET Core response
   static String _extractErrorMessage(String responseBody, int statusCode) {
     try {

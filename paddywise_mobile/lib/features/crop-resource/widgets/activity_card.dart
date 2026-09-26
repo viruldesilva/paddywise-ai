@@ -7,12 +7,14 @@ import 'activity_detail_sheet.dart';
 class ActivityCard extends StatelessWidget {
   final CropActivityDto activity;
   final VoidCallback? onDelete;
+  final VoidCallback? onEdit;
   final VoidCallback? onTap;
 
   const ActivityCard({
     super.key,
     required this.activity,
     this.onDelete,
+    this.onEdit,
     this.onTap,
   });
 
@@ -186,6 +188,7 @@ class ActivityCard extends StatelessWidget {
               () => ActivityDetailSheet.show(
                     context,
                     activity: activity,
+                    onEdit: onEdit,
                     onDelete: onDelete != null
                         ? () => _showDeleteConfirmation(context)
                         : null,
@@ -195,7 +198,7 @@ class ActivityCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Top Row: Type Pill + Date + Delete Button
+                // Top Row: Type Pill + Date + Edit + Delete Buttons
                 Row(
                   children: [
                     Container(
@@ -230,6 +233,17 @@ class ActivityCard extends StatelessWidget {
                         color: AppColors.inkSoft,
                       ),
                     ),
+                    if (onEdit != null) ...[
+                      const SizedBox(width: 4),
+                      IconButton(
+                        icon: const Icon(Icons.edit_outlined, size: 18),
+                        color: AppColors.inkSoft.withAlpha(180),
+                        tooltip: 'Edit Activity',
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                        onPressed: onEdit,
+                      ),
+                    ],
                     if (onDelete != null) ...[
                       const SizedBox(width: 4),
                       IconButton(

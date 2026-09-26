@@ -4,6 +4,7 @@ import '../../../theme/app_theme.dart';
 import '../models/crop_activity_models.dart';
 import '../services/crop_activity_service.dart';
 import '../widgets/activity_card.dart';
+import 'edit_activity_screen.dart';
 
 /// Screen enabling farmers to view, filter, search, inspect, and delete
 /// their past recorded crop activities.
@@ -112,6 +113,43 @@ class _PastActivitiesScreenState extends State<PastActivitiesScreen> {
           ),
         );
       }
+    }
+  }
+
+  Future<void> _handleEdit(CropActivityDto activity) async {
+    CropActivityDto? result;
+    try {
+      result = await context.push<CropActivityDto>(
+        '/activities/${activity.id}/edit',
+        extra: activity,
+      );
+    } catch (_) {
+      result = await Navigator.of(context).push<CropActivityDto>(
+        MaterialPageRoute(
+          builder: (_) => EditActivityScreen(
+            activityId: activity.id,
+            initialActivity: activity,
+          ),
+        ),
+      );
+    }
+
+    if (result != null && mounted) {
+      setState(() {
+        final index = _allActivities.indexWhere((a) => a.id == result!.id);
+        if (index != -1) {
+          _allActivities[index] = result!;
+        } else {
+          _allActivities.insert(0, result!);
+        }
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${result.activityType} activity updated successfully.'),
+          backgroundColor: AppColors.forest,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 
@@ -532,6 +570,7 @@ class _PastActivitiesScreenState extends State<PastActivitiesScreen> {
                                 final activity = filtered[index];
                                 return ActivityCard(
                                   activity: activity,
+                                  onEdit: () => _handleEdit(activity),
                                   onDelete: () => _handleDelete(activity),
                                 );
                               },

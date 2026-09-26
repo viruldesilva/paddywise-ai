@@ -7,6 +7,8 @@ class ActivityForm extends StatefulWidget {
   final CultivationCycleSummary? cycle;
   final Future<void> Function(Map<String, dynamic> data) onSubmit;
   final bool isSubmitting;
+  final Map<String, dynamic>? initialData;
+  final String? submitButtonText;
 
   const ActivityForm({
     super.key,
@@ -14,6 +16,8 @@ class ActivityForm extends StatefulWidget {
     required this.cycle,
     required this.onSubmit,
     this.isSubmitting = false,
+    this.initialData,
+    this.submitButtonText,
   });
 
   @override
@@ -59,7 +63,9 @@ class ActivityFormState extends State<ActivityForm> {
   @override
   void didUpdateWidget(covariant ActivityForm oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.activityType != widget.activityType || oldWidget.cycle != widget.cycle) {
+    if (oldWidget.activityType != widget.activityType ||
+        oldWidget.cycle != widget.cycle ||
+        oldWidget.initialData != widget.initialData) {
       _initDefaults();
     }
   }
@@ -81,15 +87,48 @@ class ActivityFormState extends State<ActivityForm> {
     _touched.clear();
     _hasSubmitted = false;
 
-    // Reset date to today or within range
-    final today = DateTime.now();
-    _selectedDate = today;
+    final init = widget.initialData;
+    if (init != null && init.isNotEmpty) {
+      if (init['date'] != null && (init['date'] as String).isNotEmpty) {
+        final parsed = DateTime.tryParse(init['date'].toString().split('T').first);
+        if (parsed != null) _selectedDate = parsed;
+      }
+      _fertilizerType = init['type'] as String?;
+      if (init['quantity'] != null) {
+        final qStr = init['quantity'].toString();
+        _fertQtyCtrl.text = qStr;
+        _pesticideQtyCtrl.text = qStr;
+      }
+      _cropStage = init['cropStage'] as String? ??
+          (widget.cycle?.currentStage != null ? _growthStageDisplay(widget.cycle!.currentStage) : null);
+      _region = init['region'] as String?;
+      _fertMethod = init['method'] as String?;
 
-    // Set default stage based on cycle
-    final cycleStage = widget.cycle?.currentStage;
-    if (cycleStage != null && cycleStage.isNotEmpty) {
-      // Map cycle growth stages if needed
-      _cropStage = _growthStageDisplay(cycleStage);
+      if (init['waterLevel'] != null) {
+        _waterLevelCtrl.text = init['waterLevel'].toString();
+      }
+      if (init['duration'] != null) {
+        _durationCtrl.text = init['duration'].toString();
+      }
+      _waterSource = init['source'] as String?;
+
+      _pesticideProductCtrl.text = init['product'] as String? ?? '';
+      _targetPestCtrl.text = init['targetPest'] as String? ?? '';
+      _pesticideMethod = init['method'] as String?;
+
+      _specificActivity = init['specificActivity'] as String?;
+      _notesCtrl.text = init['notes'] as String? ?? '';
+    } else {
+      // Reset date to today or within range
+      final today = DateTime.now();
+      _selectedDate = today;
+
+      // Set default stage based on cycle
+      final cycleStage = widget.cycle?.currentStage;
+      if (cycleStage != null && cycleStage.isNotEmpty) {
+        // Map cycle growth stages if needed
+        _cropStage = _growthStageDisplay(cycleStage);
+      }
     }
   }
 
@@ -354,13 +393,15 @@ class ActivityFormState extends State<ActivityForm> {
   }
 
   Future<void> _handleDatePicker() async {
+    final effectiveFirstDate = _selectedDate.isBefore(_minAllowedDate) ? _selectedDate : _minAllowedDate;
+    final effectiveLastDate = _selectedDate.isAfter(_maxAllowedDate) ? _selectedDate : _maxAllowedDate;
     final picked = await showDatePicker(
       context: context,
-      initialDate: _selectedDate.isBefore(_minAllowedDate)
-          ? _minAllowedDate
-          : (_selectedDate.isAfter(_maxAllowedDate) ? _maxAllowedDate : _selectedDate),
-      firstDate: _minAllowedDate,
-      lastDate: _maxAllowedDate,
+      initialDate: _selectedDate.isBefore(effectiveFirstDate)
+          ? effectiveFirstDate
+          : (_selectedDate.isAfter(effectiveLastDate) ? effectiveLastDate : _selectedDate),
+      firstDate: effectiveFirstDate,
+      lastDate: effectiveLastDate,
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -487,8 +528,8 @@ class ActivityFormState extends State<ActivityForm> {
           child: widget.isSubmitting
               ? Row(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
-                    SizedBox(
+                  children: [
+                    const SizedBox(
                       width: 18,
                       height: 18,
                       child: CircularProgressIndicator(
@@ -496,15 +537,17 @@ class ActivityFormState extends State<ActivityForm> {
                         valueColor: AlwaysStoppedAnimation<Color>(AppColors.cream),
                       ),
                     ),
-                    SizedBox(width: 12),
+                    const SizedBox(width: 12),
                     Text(
-                      'Saving Activity...',
-                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                      widget.submitButtonText != null
+                          ? 'Updating Activity...'
+                          : 'Saving Activity...',
+                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
                     ),
                   ],
                 )
               : Text(
-                  'Save ${widget.activityType.label} Activity',
+                  widget.submitButtonText ?? 'Save ${widget.activityType.label} Activity',
                   style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
                 ),
         ),
@@ -859,8 +902,13 @@ class ActivityFormState extends State<ActivityForm> {
     required ValueChanged<String?> onChanged,
     required bool isError,
   }) {
+    final effectiveItems = List<String>.from(items);
+    if (value != null && value.trim().isNotEmpty && !effectiveItems.contains(value)) {
+      effectiveItems.insert(0, value);
+    }
+
     return DropdownButtonFormField<String>(
-      initialValue: items.contains(value) ? value : null,
+      initialValue: effectiveItems.contains(value) ? value : null,
       decoration: InputDecoration(
         fillColor: Colors.white,
         filled: true,
@@ -878,7 +926,7 @@ class ActivityFormState extends State<ActivityForm> {
         ),
       ),
       hint: Text(hint, style: const TextStyle(fontSize: 13, color: AppColors.inkSoft)),
-      items: items
+      items: effectiveItems
           .map((item) => DropdownMenuItem<String>(
                 value: item,
                 child: Text(item, style: const TextStyle(fontSize: 14, color: AppColors.ink)),
