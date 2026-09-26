@@ -9,6 +9,7 @@ import '../../features/reporting_approval/screens/plan_status_screen.dart';
 import '../../features/reporting_approval/screens/notifications_screen.dart';
 import '../../features/profile/screens/profile_screen.dart';
 import '../../features/crop-resource/screens/new_activity_screen.dart';
+import '../../features/crop-resource/screens/past_activities_screen.dart';
 import '../widgets/app_shell.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey =
@@ -116,8 +117,20 @@ final GoRouter appRouter = GoRouter(
           },
         ),
         GoRoute(
+          path: '/cycles/:id/activities',
+          builder: (BuildContext context, GoRouterState state) {
+            final idStr = state.pathParameters['id'];
+            final cycleId = idStr != null ? int.tryParse(idStr) : null;
+            return PastActivitiesScreen(initialCycleId: cycleId);
+          },
+        ),
+        GoRoute(
           path: '/activities',
-          redirect: (BuildContext context, GoRouterState state) => '/activities/new',
+          builder: (BuildContext context, GoRouterState state) {
+            final idStr = state.uri.queryParameters['cycleId'];
+            final cycleId = idStr != null ? int.tryParse(idStr) : null;
+            return PastActivitiesScreen(initialCycleId: cycleId);
+          },
         ),
         GoRoute(
           path: '/activities/new',

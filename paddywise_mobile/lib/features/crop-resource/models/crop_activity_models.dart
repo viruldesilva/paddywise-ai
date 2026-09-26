@@ -86,6 +86,21 @@ class CropActivityDto {
     );
   }
 
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'cultivationCycleId': cultivationCycleId,
+    'activityType': activityType,
+    'date': date,
+    'detailsJson': detailsJson,
+    'loggedByUserId': loggedByUserId,
+    'loggedByUserName': loggedByUserName,
+    'createdAt': createdAt,
+    if (fieldName != null) 'fieldName': fieldName,
+    if (farmerName != null) 'farmerName': farmerName,
+    if (farmerId != null) 'farmerId': farmerId,
+    if (cycleName != null) 'cycleName': cycleName,
+  };
+
   Map<String, dynamic> get parsedDetails {
     try {
       return jsonDecode(detailsJson) as Map<String, dynamic>;

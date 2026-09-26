@@ -270,51 +270,76 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ],
       ),
-      child: Row(
+      child: Column(
         children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: AppColors.gold,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Icon(Icons.add_task_rounded, color: AppColors.forestDeep, size: 22),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.gold,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.add_task_rounded, color: AppColors.forestDeep, size: 22),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: const [
+                    Text(
+                      'Crop Activities',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.cream,
+                        fontFamily: 'serif',
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'Log and review fertilizers, irrigation & pest controls',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.shootLight,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                Text(
-                  'Record Crop Activity',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.cream,
-                    fontFamily: 'serif',
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => context.push('/activities'),
+                  icon: const Icon(Icons.history_edu_rounded, size: 16),
+                  label: const Text('Past Activities', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.cream,
+                    side: const BorderSide(color: AppColors.shootLight),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    minimumSize: Size.zero,
                   ),
                 ),
-                SizedBox(height: 2),
-                Text(
-                  'Fertilizer, irrigation, sprays & farm tasks',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.shootLight,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => context.push('/activities/new'),
+                  icon: const Icon(Icons.add_rounded, size: 18),
+                  label: const Text('Record New', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.gold,
+                    foregroundColor: AppColors.forestDeep,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    minimumSize: Size.zero,
                   ),
                 ),
-              ],
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () => context.push('/activities/new'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.gold,
-              foregroundColor: AppColors.forestDeep,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              minimumSize: Size.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-            child: const Text('Add Now', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+              ),
+            ],
           ),
         ],
       ),
@@ -330,8 +355,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           _MetricCard(
             label: 'Cultivation Season',
             value: 'Yala 2026',
-            sub: 'Day 45 (Tillering) • Tap to Log',
-            onTap: () => context.push('/activities/new'),
+            sub: 'Day 45 (Tillering) • View Activities',
+            onTap: () => context.push('/activities'),
           ),
           _MetricCard(
             label: 'Registered Field',
@@ -527,20 +552,38 @@ class _DashboardScreenState extends State<DashboardScreen> {
             style: TextStyle(fontSize: 13, color: AppColors.inkSoft),
           ),
           const SizedBox(height: 14),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () {
-                context.push('/activities/new');
-              },
-              icon: const Icon(Icons.add_task_rounded, size: 18),
-              label: const Text('Record Activity', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.forest,
-                foregroundColor: AppColors.cream,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    context.push('/activities');
+                  },
+                  icon: const Icon(Icons.history_rounded, size: 18),
+                  label: const Text('Past Activities', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.forest,
+                    side: const BorderSide(color: AppColors.forest),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
+                  ),
+                ),
               ),
-            ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    context.push('/activities/new');
+                  },
+                  icon: const Icon(Icons.add_task_rounded, size: 18),
+                  label: const Text('Record Activity', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.forest,
+                    foregroundColor: AppColors.cream,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),

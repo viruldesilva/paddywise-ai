@@ -21,6 +21,84 @@ class CropActivityService {
     status: 'Active',
   );
 
+  /// Local / demo activities store for seamless offline and responsive operations
+  static final List<CropActivityDto> _demoActivities = [
+    CropActivityDto(
+      id: 201,
+      cultivationCycleId: 1,
+      activityType: 'Fertilizer',
+      date: DateTime.now().subtract(const Duration(days: 2)).toIso8601String().split('T').first,
+      detailsJson: jsonEncode({
+        'activityType': 'Fertilizer',
+        'date': DateTime.now().subtract(const Duration(days: 2)).toIso8601String().split('T').first,
+        'type': 'Urea',
+        'quantity': 50.0,
+        'cropStage': 'Tillering',
+        'region': 'Intermediate',
+        'method': 'Top Dressing',
+      }),
+      loggedByUserId: 1,
+      loggedByUserName: 'Bandara Wanninayake',
+      createdAt: DateTime.now().subtract(const Duration(days: 2)).toIso8601String(),
+      fieldName: 'Maha Kumbura (Plot 04)',
+      cycleName: 'Yala 2026 · Bg 352',
+    ),
+    CropActivityDto(
+      id: 202,
+      cultivationCycleId: 1,
+      activityType: 'Irrigation',
+      date: DateTime.now().subtract(const Duration(days: 4)).toIso8601String().split('T').first,
+      detailsJson: jsonEncode({
+        'activityType': 'Irrigation',
+        'date': DateTime.now().subtract(const Duration(days: 4)).toIso8601String().split('T').first,
+        'waterLevel': 5.0,
+        'duration': 3.0,
+        'source': 'Canal',
+      }),
+      loggedByUserId: 1,
+      loggedByUserName: 'Bandara Wanninayake',
+      createdAt: DateTime.now().subtract(const Duration(days: 4)).toIso8601String(),
+      fieldName: 'Maha Kumbura (Plot 04)',
+      cycleName: 'Yala 2026 · Bg 352',
+    ),
+    CropActivityDto(
+      id: 203,
+      cultivationCycleId: 1,
+      activityType: 'Pesticide',
+      date: DateTime.now().subtract(const Duration(days: 6)).toIso8601String().split('T').first,
+      detailsJson: jsonEncode({
+        'activityType': 'Pesticide',
+        'date': DateTime.now().subtract(const Duration(days: 6)).toIso8601String().split('T').first,
+        'product': 'Chlorantraniliprole',
+        'targetPest': 'Stem Borer',
+        'quantity': 100.0,
+        'method': 'Spraying',
+      }),
+      loggedByUserId: 1,
+      loggedByUserName: 'Bandara Wanninayake',
+      createdAt: DateTime.now().subtract(const Duration(days: 6)).toIso8601String(),
+      fieldName: 'Maha Kumbura (Plot 04)',
+      cycleName: 'Yala 2026 · Bg 352',
+    ),
+    CropActivityDto(
+      id: 204,
+      cultivationCycleId: 1,
+      activityType: 'Other',
+      date: DateTime.now().subtract(const Duration(days: 1)).toIso8601String().split('T').first,
+      detailsJson: jsonEncode({
+        'activityType': 'Other',
+        'date': DateTime.now().subtract(const Duration(days: 1)).toIso8601String().split('T').first,
+        'specificActivity': 'Weeding',
+        'notes': 'Manual weeding completed across plot 04 with 2 hired laborers.',
+      }),
+      loggedByUserId: 1,
+      loggedByUserName: 'Bandara Wanninayake',
+      createdAt: DateTime.now().subtract(const Duration(days: 1)).toIso8601String(),
+      fieldName: 'Maha Kumbura (Plot 04)',
+      cycleName: 'Yala 2026 · Bg 352',
+    ),
+  ];
+
   /// Fetch a single cultivation cycle by ID
   static Future<CultivationCycleSummary> getCycleById(int id) async {
     final token = AuthService.getAccessToken();
@@ -90,6 +168,102 @@ class CropActivityService {
     ];
   }
 
+  /// Fetch all activities for the logged-in farmer with optional cycle and type filter
+  static Future<List<CropActivityDto>> getAllActivities({
+    int? cycleId,
+    String? activityType,
+  }) async {
+    final token = AuthService.getAccessToken();
+    final queryParams = <String, String>{};
+    if (cycleId != null) queryParams['cycleId'] = cycleId.toString();
+    if (activityType != null && activityType != 'All') queryParams['activityType'] = activityType;
+
+    final uri = Uri.parse('${AuthService.apiBaseUrl}/activities').replace(
+      queryParameters: queryParams.isNotEmpty ? queryParams : null,
+    );
+
+    try {
+      final response = await http.get(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+      ).timeout(_requestTimeout);
+
+      if (response.statusCode == 200) {
+        final List<dynamic> list = jsonDecode(response.body) as List<dynamic>;
+        final items = list
+            .map((item) => CropActivityDto.fromJson(item as Map<String, dynamic>))
+            .toList();
+        return items;
+      }
+    } catch (_) {
+      // Fallback to local demo list
+    }
+
+    // Filter local demo activities
+    return _demoActivities.where((a) {
+      if (cycleId != null && a.cultivationCycleId != cycleId) return false;
+      if (activityType != null && activityType != 'All' && a.activityType != activityType) {
+        return false;
+      }
+      return true;
+    }).toList();
+  }
+
+  /// Fetch activities specifically recorded for one cultivation cycle
+  static Future<List<CropActivityDto>> getActivitiesForCycle(int cycleId) async {
+    final token = AuthService.getAccessToken();
+    final url = Uri.parse('${AuthService.apiBaseUrl}/cycles/$cycleId/activities');
+
+    try {
+      final response = await http.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+      ).timeout(_requestTimeout);
+
+      if (response.statusCode == 200) {
+        final List<dynamic> list = jsonDecode(response.body) as List<dynamic>;
+        return list
+            .map((item) => CropActivityDto.fromJson(item as Map<String, dynamic>))
+            .toList();
+      }
+    } catch (_) {
+      // Fallback
+    }
+
+    return _demoActivities.where((a) => a.cultivationCycleId == cycleId).toList();
+  }
+
+  /// Delete a recorded activity by ID
+  static Future<void> deleteActivity(int activityId) async {
+    final token = AuthService.getAccessToken();
+    final url = Uri.parse('${AuthService.apiBaseUrl}/activities/$activityId');
+
+    try {
+      final response = await http.delete(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+      ).timeout(_requestTimeout);
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        _demoActivities.removeWhere((a) => a.id == activityId);
+        return;
+      }
+    } catch (_) {
+      // Fallback
+    }
+
+    _demoActivities.removeWhere((a) => a.id == activityId);
+  }
+
   /// Create a new crop activity for a specific cycle
   static Future<CropActivityDto> createActivity({
     required int cycleId,
@@ -118,7 +292,9 @@ class CropActivityService {
     if (response != null && (response.statusCode == 200 || response.statusCode == 201)) {
       try {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
-        return CropActivityDto.fromJson(data);
+        final dto = CropActivityDto.fromJson(data);
+        _demoActivities.insert(0, dto);
+        return dto;
       } catch (e) {
         throw Exception('Failed to parse backend activity response: $e');
       }
@@ -132,9 +308,8 @@ class CropActivityService {
 
     // 3. Network Connection Failure -> Provide graceful demo feedback
     if (networkError) {
-      // Check if user is in demo mode or backend is simply offline
       final currentUser = AuthService.getCurrentUser();
-      return CropActivityDto(
+      final dto = CropActivityDto(
         id: DateTime.now().millisecondsSinceEpoch % 100000,
         cultivationCycleId: cycleId,
         activityType: request.activityType,
@@ -143,7 +318,11 @@ class CropActivityService {
         loggedByUserId: 1,
         loggedByUserName: currentUser?.fullName ?? 'Farmer',
         createdAt: DateTime.now().toIso8601String(),
+        fieldName: 'Maha Kumbura (Plot 04)',
+        cycleName: 'Yala 2026 · Bg 352',
       );
+      _demoActivities.insert(0, dto);
+      return dto;
     }
 
     throw Exception('An unexpected error occurred while saving the activity.');
