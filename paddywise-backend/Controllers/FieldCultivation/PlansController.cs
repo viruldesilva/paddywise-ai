@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using PaddyWise.Api.DTOs.FieldCultivation;
 using PaddyWise.Api.Entities.Shared;
 using PaddyWise.Api.Services.FieldCultivation;
+using PaddyWise.Api.Services.ReportingApproval.Agents;
 using System.Security.Claims;
 
 namespace PaddyWise.Api.Controllers.FieldCultivation;
@@ -12,10 +13,14 @@ namespace PaddyWise.Api.Controllers.FieldCultivation;
 public class PlansController : ControllerBase
 {
     private readonly ICultivationPlanService _planService;
+    private readonly IValidationAgentService _validationAgentService;
 
-    public PlansController(ICultivationPlanService planService)
+    public PlansController(
+        ICultivationPlanService planService,
+        IValidationAgentService validationAgentService)
     {
         _planService = planService;
+        _validationAgentService = validationAgentService;
     }
 
     /// <summary>
@@ -35,6 +40,8 @@ public class PlansController : ControllerBase
             var result = await _planService.RequestPlanAsync(farmerId.Value, cycleId, request.Objective);
             if (result == null)
                 return NotFound(new { message = "Cultivation cycle not found." });
+
+            await _validationAgentService.ValidateCultivationPlanAsync(result.Id);
 
             return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
         }

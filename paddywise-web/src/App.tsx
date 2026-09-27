@@ -1,6 +1,8 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Home from './pages/Home';
-import LoginPage from './pages/LoginPage';
+import LoginSelectionPage from './features/auth/pages/LoginSelectionPage';
+import AdminLoginPage from './features/auth/pages/AdminLoginPage';
+import OfficerLoginPage from './features/auth/pages/OfficerLoginPage';
 import RegisterPage from './pages/RegisterPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -31,7 +33,9 @@ function AppContent() {
     <Router>
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/login" element={<LoginPage />} />
+        <Route path="/login" element={<LoginSelectionPage />} />
+        <Route path="/login/admin" element={<AdminLoginPage />} />
+        <Route path="/login/officer" element={<OfficerLoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
 
         {/* Generic dashboard route redirects to role-specific dashboard */}

@@ -16,7 +16,8 @@ export interface AuthContextType {
   isLoading: boolean;
   login: (emailOrDto: string | LoginRequestDto, password?: string) => Promise<AuthResponseDto>;
   register: (data: RegisterRequestDto) => Promise<AuthResponseDto>;
-  logout: () => void;
+  logout: (shouldRedirect?: boolean) => void;
+  clearAuth: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -116,11 +117,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const logout = () => {
+  const clearAuth = () => {
     authService.logout();
     setUser(null);
     setToken(null);
-    if (window.location.pathname !== '/login') {
+  };
+
+  const logout = (shouldRedirect: boolean = true) => {
+    clearAuth();
+    if (shouldRedirect && !window.location.pathname.startsWith('/login')) {
       window.location.href = '/login';
     }
   };
@@ -135,6 +140,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         login,
         register,
         logout,
+        clearAuth,
       }}
     >
       {children}
