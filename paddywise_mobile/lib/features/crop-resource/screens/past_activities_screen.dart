@@ -124,6 +124,7 @@ class _PastActivitiesScreenState extends State<PastActivitiesScreen> {
         extra: activity,
       );
     } catch (_) {
+      if (!mounted) return;
       result = await Navigator.of(context).push<CropActivityDto>(
         MaterialPageRoute(
           builder: (_) => EditActivityScreen(
@@ -227,6 +228,17 @@ class _PastActivitiesScreenState extends State<PastActivitiesScreen> {
           ),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.auto_awesome_rounded, color: AppColors.gold),
+            tooltip: 'AI Field Advisor',
+            onPressed: () {
+              final targetCycle = _selectedCycleId ?? (_cycles.isNotEmpty ? _cycles.first.id : null);
+              final route = targetCycle != null
+                  ? '/activities/advisor?cycleId=$targetCycle'
+                  : '/activities/advisor';
+              context.push(route);
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.add_circle_outline_rounded),
             tooltip: 'Record Activity',
@@ -399,6 +411,93 @@ class _PastActivitiesScreenState extends State<PastActivitiesScreen> {
                                     border: InputBorder.none,
                                     contentPadding:
                                         const EdgeInsets.symmetric(vertical: 12),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+
+                              // AI Field Advisor Quick Banner
+                              InkWell(
+                                onTap: () {
+                                  final targetCycle = _selectedCycleId ??
+                                      (_cycles.isNotEmpty
+                                          ? _cycles.first.id
+                                          : null);
+                                  final route = targetCycle != null
+                                      ? '/activities/advisor?cycleId=$targetCycle'
+                                      : '/activities/advisor';
+                                  context.push(route);
+                                },
+                                borderRadius: BorderRadius.circular(10),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 10),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.forestDeep,
+                                    borderRadius: BorderRadius.circular(10),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withAlpha(20),
+                                        blurRadius: 6,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(6),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.gold.withAlpha(30),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(
+                                            Icons.auto_awesome_rounded,
+                                            size: 16,
+                                            color: AppColors.gold),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: const [
+                                            Text(
+                                              'AI Field Advisor Available',
+                                              style: TextStyle(
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.bold,
+                                                color: AppColors.cream,
+                                              ),
+                                            ),
+                                            Text(
+                                              'View DOA diagnostics & stage recommendations',
+                                              style: TextStyle(
+                                                fontSize: 11,
+                                                color: AppColors.shootLight,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 8, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.gold,
+                                          borderRadius:
+                                              BorderRadius.circular(6),
+                                        ),
+                                        child: const Text(
+                                          'Explore AI',
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColors.forestDeep,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ),

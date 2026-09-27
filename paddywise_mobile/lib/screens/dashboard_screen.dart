@@ -310,6 +310,53 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ],
           ),
           const SizedBox(height: 12),
+          // Agentic AI Field Advisor Trigger
+          InkWell(
+            onTap: () => context.push('/activities/advisor'),
+            borderRadius: BorderRadius.circular(10),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white.withAlpha(20),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: AppColors.gold.withAlpha(140)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.auto_awesome_rounded, size: 16, color: AppColors.gold),
+                  const SizedBox(width: 8),
+                  const Expanded(
+                    child: Text(
+                      'AI Field Advisor & Insights',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.cream,
+                      ),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppColors.gold,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: const Text(
+                      'Agentic AI',
+                      style: TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.forestDeep,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  const Icon(Icons.chevron_right_rounded, size: 16, color: AppColors.gold),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
           Row(
             children: [
               Expanded(

@@ -13,5 +13,6 @@ void main() {
     expect(paths, contains('/activities/new'));
     expect(paths, contains('/cycles/:id/activities/new'));
     expect(paths, contains('/activities/:id/edit'));
+    expect(paths, contains('/activities/advisor'));
   });
 }

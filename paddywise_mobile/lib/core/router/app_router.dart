@@ -11,6 +11,7 @@ import '../../features/profile/screens/profile_screen.dart';
 import '../../features/crop-resource/screens/new_activity_screen.dart';
 import '../../features/crop-resource/screens/past_activities_screen.dart';
 import '../../features/crop-resource/screens/edit_activity_screen.dart';
+import '../../features/crop-resource/screens/crop_activity_ai_screen.dart';
 import '../../features/crop-resource/models/crop_activity_models.dart';
 import '../widgets/app_shell.dart';
 
@@ -152,6 +153,22 @@ final GoRouter appRouter = GoRouter(
               activityId: activityId,
               initialActivity: activity,
             );
+          },
+        ),
+        GoRoute(
+          path: '/activities/advisor',
+          builder: (BuildContext context, GoRouterState state) {
+            final idStr = state.uri.queryParameters['cycleId'];
+            final cycleId = idStr != null ? int.tryParse(idStr) : null;
+            return CropActivityAiScreen(cycleId: cycleId);
+          },
+        ),
+        GoRoute(
+          path: '/cycles/:id/activities/advisor',
+          builder: (BuildContext context, GoRouterState state) {
+            final idStr = state.pathParameters['id'];
+            final cycleId = idStr != null ? int.tryParse(idStr) : null;
+            return CropActivityAiScreen(cycleId: cycleId);
           },
         ),
       ],
