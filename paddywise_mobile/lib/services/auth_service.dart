@@ -3,6 +3,7 @@ import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../core/api/api_constants.dart';
 import '../models/user.dart';
 
 class AuthResponse {
@@ -87,12 +88,16 @@ class AuthService {
   static String? _refreshToken;
   static String? _customBaseUrl;
 
-  /// Default API Base URL based on platform
+  /// Default API Base URL based on platform and --dart-define
   static String get defaultApiBaseUrl {
+    // If explicitly provided via --dart-define=API_BASE_URL=... use it on any platform
+    if (const bool.hasEnvironment('API_BASE_URL')) {
+      return ApiConstants.baseUrl;
+    }
     if (kIsWeb) return 'http://localhost:5164/api';
     try {
       if (Platform.isAndroid) {
-        return 'http://10.0.2.2:5164/api';
+        return ApiConstants.baseUrl; // Defaults to http://10.0.2.2:5164/api
       }
     } catch (_) {}
     return 'http://localhost:5164/api';

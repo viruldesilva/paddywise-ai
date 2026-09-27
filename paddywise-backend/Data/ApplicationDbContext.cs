@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using PaddyWise.Api.Entities.CropResource;
 using PaddyWise.Api.Entities.FieldCultivation;
 using PaddyWise.Api.Entities.PestDisease;
+using PaddyWise.Api.Entities.ReportingApproval;
 using PaddyWise.Api.Entities.Shared;
 
 namespace PaddyWise.Api.Data;
@@ -26,6 +27,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<PestDiseaseKnowledge> PestDiseaseKnowledgeEntries => Set<PestDiseaseKnowledge>();//DOA-sourced reference data
     public DbSet<DiagnosisRunLog> DiagnosisRunLogs => Set<DiagnosisRunLog>();//audit trail of Crop Analysis agent runs
     public DbSet<CropActivity> CropActivities => Set<CropActivity>();//farmer crop activities
+    public DbSet<Notification> Notifications => Set<Notification>();//user in-app notifications
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -220,6 +222,18 @@ public class ApplicationDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(l => l.CropObservationId)
                 .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<Notification>(entity =>
+        {
+            entity.HasIndex(n => n.UserId);
+            entity.HasIndex(n => n.IsRead);
+
+            entity.HasOne(n => n.User)
+                .WithMany()
+                .HasForeignKey(n => n.UserId)
+                .IsRequired()
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<Division>().HasData(

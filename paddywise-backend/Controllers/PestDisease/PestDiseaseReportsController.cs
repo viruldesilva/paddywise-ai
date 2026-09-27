@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using PaddyWise.Api.DTOs.PestDisease;
 using PaddyWise.Api.Entities.Shared;
 using PaddyWise.Api.Services.PestDisease;
+using PaddyWise.Api.Services.ReportingApproval;
 using System.Security.Claims;
 
 namespace PaddyWise.Api.Controllers.PestDisease;
@@ -12,10 +13,14 @@ namespace PaddyWise.Api.Controllers.PestDisease;
 public class PestDiseaseReportsController : ControllerBase
 {
     private readonly IPestDiseaseReportService _reportService;
+    private readonly INotificationMessageService _notificationService;
 
-    public PestDiseaseReportsController(IPestDiseaseReportService reportService)
+    public PestDiseaseReportsController(
+        IPestDiseaseReportService reportService,
+        INotificationMessageService notificationService)
     {
         _reportService = reportService;
+        _notificationService = notificationService;
     }
 
     /// <summary>The officer review queue, or — for a farmer — only diagnoses on their own
@@ -80,6 +85,8 @@ public class PestDiseaseReportsController : ControllerBase
             var result = await _reportService.ReviewAsync(id, officerId.Value, request);
             if (result == null)
                 return NotFound(new { message = "Report not found." });
+
+            await _notificationService.GenerateAndCreatePestDiseaseReportNotificationAsync(id);
 
             return Ok(result);
         }

@@ -153,6 +153,7 @@ builder.Services.AddScoped<IPhotoStorageService, AzureBlobPhotoStorageService>()
 // ============================================================
 
 builder.Services.AddScoped<IRevisionDraftService, RevisionDraftService>();
+builder.Services.AddScoped<INotificationMessageService, NotificationMessageService>();
 
 
 // ============================================================

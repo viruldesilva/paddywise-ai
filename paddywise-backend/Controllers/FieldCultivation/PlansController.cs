@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using PaddyWise.Api.DTOs.FieldCultivation;
 using PaddyWise.Api.Entities.Shared;
 using PaddyWise.Api.Services.FieldCultivation;
+using PaddyWise.Api.Services.ReportingApproval;
 using System.Security.Claims;
 
 namespace PaddyWise.Api.Controllers.FieldCultivation;
@@ -12,10 +13,14 @@ namespace PaddyWise.Api.Controllers.FieldCultivation;
 public class PlansController : ControllerBase
 {
     private readonly ICultivationPlanService _planService;
+    private readonly INotificationMessageService _notificationService;
 
-    public PlansController(ICultivationPlanService planService)
+    public PlansController(
+        ICultivationPlanService planService,
+        INotificationMessageService notificationService)
     {
         _planService = planService;
+        _notificationService = notificationService;
     }
 
     /// <summary>
@@ -117,6 +122,8 @@ public class PlansController : ControllerBase
             var result = await _planService.ReviewAsync(id, officerId.Value, request);
             if (result == null)
                 return NotFound(new { message = "Cultivation plan not found." });
+
+            await _notificationService.GenerateAndCreateCultivationPlanNotificationAsync(id);
 
             return Ok(result);
         }
