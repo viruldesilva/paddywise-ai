@@ -6,9 +6,11 @@ import type { CultivationCycle } from '../../field-cultivation/types';
 import { ActivityHistory } from '../components/ActivityHistory';
 import { AiAdvisorPanel } from '../components/AiAdvisorPanel';
 import { ActivityReportGenerator } from '../components/ActivityReportGenerator';
+import { OfficerRecommendationQueue } from '../components/OfficerRecommendationQueue';
 import { activityApi, type CropActivityDto } from '../services/activityApi';
+import { cropAnalysisApi } from '../services/cropAnalysisApi';
 import { Sidebar } from '../../../components/Sidebar';
-import { Menu, Plus, LogOut, Sparkles, Activity as ActivityIcon, FileSpreadsheet } from 'lucide-react';
+import { Menu, Plus, LogOut, Sparkles, Activity as ActivityIcon, FileSpreadsheet, UserCheck } from 'lucide-react';
 import '../../../styles/Dashboard.css';
 import './ActivityDashboard.css';
 
@@ -16,13 +18,18 @@ export const ActivityDashboard: React.FC = () => {
   const { user, logout } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get('tab');
-  const currentTab = tabParam === 'advisor' ? 'advisor' : (tabParam === 'report' ? 'report' : 'history');
-  
+  const currentTab = tabParam === 'advisor'
+    ? 'advisor'
+    : (tabParam === 'report'
+      ? 'report'
+      : (tabParam === 'approvals' ? 'approvals' : 'history'));
+
   const [cycles, setCycles] = useState<CultivationCycle[]>([]);
   const [selectedCycleId, setSelectedCycleId] = useState<number | 'all'>('all');
   const [isLoadingCycles, setIsLoadingCycles] = useState(true);
   const [allActivities, setAllActivities] = useState<CropActivityDto[]>([]);
-  const [refreshTrigger] = useState(0);
+  const [pendingApprovalsCount, setPendingApprovalsCount] = useState<number>(0);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const isOfficer = user?.role === 'AgriculturalOfficer' || user?.role === 'FieldOfficer' || user?.role === 'Admin';
@@ -48,26 +55,33 @@ export const ActivityDashboard: React.FC = () => {
     loadCycles();
   }, [user]);
 
-  // Load all activities for report generator when officer is viewing
+  // Load all activities and pending recommendation count for officer
   useEffect(() => {
-    async function loadActivities() {
+    async function loadOfficerData() {
       if (isOfficer) {
         try {
-          const data = await activityApi.getAllActivities();
+          const [data, pendingRecs] = await Promise.all([
+            activityApi.getAllActivities(),
+            cropAnalysisApi.getPendingOfficerRecommendations()
+          ]);
           setAllActivities(data);
+          const pending = pendingRecs.filter(r => r.status === 'PENDING_OFFICER_REVIEW').length;
+          setPendingApprovalsCount(pending);
         } catch (err) {
-          console.error("Failed to load all activities for reports", err);
+          console.error("Failed to load officer data", err);
         }
       }
     }
-    loadActivities();
+    loadOfficerData();
   }, [isOfficer, refreshTrigger]);
 
-  const handleTabChange = (tab: 'history' | 'advisor' | 'report') => {
+  const handleTabChange = (tab: 'history' | 'advisor' | 'report' | 'approvals') => {
     if (tab === 'advisor') {
       setSearchParams({ tab: 'advisor' });
     } else if (tab === 'report') {
       setSearchParams({ tab: 'report' });
+    } else if (tab === 'approvals') {
+      setSearchParams({ tab: 'approvals' });
     } else {
       setSearchParams({});
     }
@@ -97,8 +111,8 @@ export const ActivityDashboard: React.FC = () => {
                 <span className="dashboard-user-name">{user.name}</span>
                 <span className="dashboard-user-sub">{user.email}</span>
               </div>
-              <button 
-                onClick={logout} 
+              <button
+                onClick={logout}
                 className="btn btn-secondary btn-sm"
                 title="Sign Out"
                 style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
@@ -119,21 +133,25 @@ export const ActivityDashboard: React.FC = () => {
               {currentTab === 'advisor'
                 ? 'AI Paddy Field Advisor'
                 : currentTab === 'report'
-                ? 'Crop Activities Agronomic Report'
-                : (isOfficer ? 'All Farmers Crop Activities' : 'Record & Monitor Activities')}
+                  ? 'Crop Activities Agronomic Report'
+                  : currentTab === 'approvals'
+                    ? 'AI Recommendation Approvals'
+                    : (isOfficer ? 'All Farmers Crop Activities' : 'Record & Monitor Activities')}
             </h1>
             <p className="fc-page-sub" style={{ color: 'var(--ink-soft)', fontSize: '1.1rem', marginTop: '0.5rem' }}>
               {currentTab === 'advisor'
                 ? 'Evidence-based agronomic intelligence synthesizing field activities with RRDI guidelines & DOA safety standards.'
                 : currentTab === 'report'
-                ? 'Generate filtered, printable audit reports and export CSV spreadsheets across farmers, agrarian divisions, and time frames.'
-                : (isOfficer ? 'Monitor and review past agricultural operations logged by all farmers across cultivation cycles' : 'Record and monitor your agricultural operations')}
+                  ? 'Generate filtered, printable audit reports and export CSV spreadsheets across farmers, agrarian divisions, and time frames.'
+                  : currentTab === 'approvals'
+                    ? 'Review, approve, or reject Agentic AI crop recommendations before they are dispatched to farmers for execution.'
+                    : (isOfficer ? 'Monitor and review past agricultural operations logged by all farmers across cultivation cycles' : 'Record and monitor your agricultural operations')}
             </p>
           </div>
 
           {/* Navigation Tabs */}
           <div className="activity-nav-tabs">
-            <button 
+            <button
               type="button"
               className={`activity-nav-tab ${currentTab === 'history' ? 'active' : ''}`}
               onClick={() => handleTabChange('history')}
@@ -143,7 +161,27 @@ export const ActivityDashboard: React.FC = () => {
             </button>
 
             {isOfficer && (
-              <button 
+              <button
+                type="button"
+                className={`activity-nav-tab ${currentTab === 'approvals' ? 'active' : ''}`}
+                onClick={() => handleTabChange('approvals')}
+              >
+                <UserCheck size={18} color="#047857" />
+                <span>AI Approvals Queue</span>
+                {pendingApprovalsCount > 0 ? (
+                  <span className="report-tab-badge" style={{ background: '#f59e0b', color: '#78350f', fontWeight: 700 }}>
+                    {pendingApprovalsCount} Pending
+                  </span>
+                ) : (
+                  <span className="report-tab-badge" style={{ background: '#ecfdf5', color: '#065f46' }}>
+                    0 Pending
+                  </span>
+                )}
+              </button>
+            )}
+
+            {isOfficer && (
+              <button
                 type="button"
                 className={`activity-nav-tab ${currentTab === 'report' ? 'active' : ''}`}
                 onClick={() => handleTabChange('report')}
@@ -154,7 +192,7 @@ export const ActivityDashboard: React.FC = () => {
               </button>
             )}
 
-            <button 
+            <button
               type="button"
               className={`activity-nav-tab ${currentTab === 'advisor' ? 'active' : ''}`}
               onClick={() => handleTabChange('advisor')}
@@ -166,10 +204,15 @@ export const ActivityDashboard: React.FC = () => {
           </div>
 
           <div style={{ width: '100%' }}>
-            {currentTab === 'advisor' ? (
-              <AiAdvisorPanel 
-                cycles={cycles} 
-                selectedCycleId={selectedCycleId} 
+            {currentTab === 'approvals' && isOfficer ? (
+              <OfficerRecommendationQueue
+                officerName={user.name}
+                onReviewed={() => setRefreshTrigger(prev => prev + 1)}
+              />
+            ) : currentTab === 'advisor' ? (
+              <AiAdvisorPanel
+                cycles={cycles}
+                selectedCycleId={selectedCycleId}
                 onCycleSelect={(cycleId) => setSelectedCycleId(cycleId)}
               />
             ) : currentTab === 'report' && isOfficer ? (
@@ -190,9 +233,9 @@ export const ActivityDashboard: React.FC = () => {
                       <p style={{ color: 'var(--clay)', margin: 0 }}>No active or planned cycles found. Please create one in Field Management first.</p>
                     ) : (
                       <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                        <select 
-                          className="form-input" 
-                          value={selectedCycleId} 
+                        <select
+                          className="form-input"
+                          value={selectedCycleId}
                           onChange={e => setSelectedCycleId(e.target.value === 'all' ? 'all' : Number(e.target.value))}
                           style={{ maxWidth: '420px' }}
                         >
@@ -205,7 +248,7 @@ export const ActivityDashboard: React.FC = () => {
                         </select>
 
                         {selectedCycle && (
-                          <Link 
+                          <Link
                             to={`/cycles/${selectedCycle.id}/activities/new`}
                             className="fc-btn fc-btn-primary"
                             style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.7rem 1.25rem' }}
@@ -231,11 +274,11 @@ export const ActivityDashboard: React.FC = () => {
                   </div>
                 )}
 
-                <ActivityHistory 
-                  selectedCycleId={selectedCycleId} 
-                  cycles={cycles} 
-                  refreshTrigger={refreshTrigger} 
-                  userRole={user.role} 
+                <ActivityHistory
+                  selectedCycleId={selectedCycleId}
+                  cycles={cycles}
+                  refreshTrigger={refreshTrigger}
+                  userRole={user.role}
                 />
               </>
             )}

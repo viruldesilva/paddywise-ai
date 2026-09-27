@@ -26,6 +26,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<PestDiseaseKnowledge> PestDiseaseKnowledgeEntries => Set<PestDiseaseKnowledge>();//DOA-sourced reference data
     public DbSet<DiagnosisRunLog> DiagnosisRunLogs => Set<DiagnosisRunLog>();//audit trail of Crop Analysis agent runs
     public DbSet<CropActivity> CropActivities => Set<CropActivity>();//farmer crop activities
+    public DbSet<CropActivityRecommendation> CropActivityRecommendations => Set<CropActivityRecommendation>();//agent recommendations awaiting officer review / executed
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -162,6 +163,37 @@ public class ApplicationDbContext : DbContext
                 .HasForeignKey(a => a.LoggedByUserId)
                 .IsRequired()
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<CropActivityRecommendation>(entity =>
+        {
+            entity.HasIndex(r => r.CultivationCycleId);
+            entity.HasIndex(r => r.Status);
+            entity.HasIndex(r => r.OfficerId);
+            entity.Property(r => r.CitationsJson).HasColumnType("jsonb");
+            entity.Property(r => r.ExecutionPayloadJson).HasColumnType("jsonb");
+
+            entity.HasOne(r => r.CultivationCycle)
+                .WithMany()
+                .HasForeignKey(r => r.CultivationCycleId)
+                .IsRequired()
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(r => r.RequestedByUser)
+                .WithMany()
+                .HasForeignKey(r => r.RequestedByUserId)
+                .IsRequired()
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(r => r.Officer)
+                .WithMany()
+                .HasForeignKey(r => r.OfficerId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(r => r.ExecutedActivity)
+                .WithMany()
+                .HasForeignKey(r => r.ExecutedActivityId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<CropObservation>(entity =>
