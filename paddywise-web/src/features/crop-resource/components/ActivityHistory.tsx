@@ -1,9 +1,21 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { activityApi, type CropActivityDto } from '../services/activityApi';
 import type { CultivationCycle } from '../../field-cultivation/types';
 import { ActivityAnalytics } from './ActivityAnalytics';
 import { EditActivityModal } from './EditActivityModal';
-import { User, Search, Pencil, Trash2, CheckCircle2, AlertCircle, X } from 'lucide-react';
+import { 
+  User, 
+  Search, 
+  Pencil, 
+  Trash2, 
+  CheckCircle2, 
+  AlertCircle, 
+  X,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight
+} from 'lucide-react';
 import '../../field-cultivation/styles/fieldCultivation.css';
 
 interface ActivityHistoryProps {
@@ -28,6 +40,11 @@ export const ActivityHistory: React.FC<ActivityHistoryProps> = ({
   const [endDate, setEndDate] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
+  // Pagination states (Default 5 past activities per page as requested)
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [itemsPerPage, setItemsPerPage] = useState<number>(5);
+  const activitiesListRef = useRef<HTMLDivElement>(null);
+
   const [editingActivity, setEditingActivity] = useState<CropActivityDto | null>(null);
   const [deletingActivity, setDeletingActivity] = useState<CropActivityDto | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -43,7 +60,8 @@ export const ActivityHistory: React.FC<ActivityHistoryProps> = ({
       try {
         if (isOfficer) {
           const data = await activityApi.getAllActivities();
-          setActivities(data);
+          const sorted = [...data].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+          setActivities(sorted);
         } else {
           if (cycles.length === 0) {
             setActivities([]);
@@ -57,7 +75,8 @@ export const ActivityHistory: React.FC<ActivityHistoryProps> = ({
             setActivities(allActivities);
           } else {
             const data = await activityApi.getActivitiesForCycle(selectedCycleId);
-            setActivities(data);
+            const sorted = [...data].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            setActivities(sorted);
           }
         }
       } catch (err) {
@@ -69,6 +88,11 @@ export const ActivityHistory: React.FC<ActivityHistoryProps> = ({
     }
     fetchActivities();
   }, [selectedCycleId, cycles, refreshTrigger, isOfficer]);
+
+  // Reset pagination to page 1 whenever any filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [categoryFilter, startDate, endDate, searchQuery, selectedCycleId, itemsPerPage]);
 
   const handleUpdateSuccess = (updated: CropActivityDto) => {
     setActivities(prev => prev.map(a => a.id === updated.id ? updated : a));
@@ -201,6 +225,37 @@ export const ActivityHistory: React.FC<ActivityHistoryProps> = ({
     return true;
   });
 
+  // Calculate pagination parameters (5 activities per page)
+  const totalItems = filteredActivities.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const startIndex = (safeCurrentPage - 1) * itemsPerPage;
+  const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
+  const paginatedActivities = filteredActivities.slice(startIndex, endIndex);
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage < 1 || newPage > totalPages || newPage === safeCurrentPage) return;
+    setCurrentPage(newPage);
+    if (activitiesListRef.current) {
+      activitiesListRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  const getPageNumbers = (current: number, total: number) => {
+    if (total <= 7) {
+      return Array.from({ length: total }, (_, i) => i + 1);
+    }
+    const pages: (number | string)[] = [];
+    if (current <= 4) {
+      pages.push(1, 2, 3, 4, 5, '...', total);
+    } else if (current >= total - 3) {
+      pages.push(1, '...', total - 4, total - 3, total - 2, total - 1, total);
+    } else {
+      pages.push(1, '...', current - 1, current, current + 1, '...', total);
+    }
+    return pages;
+  };
+
   return (
     <div className="activity-history-wrapper" style={{ marginTop: '1rem' }}>
 
@@ -220,9 +275,17 @@ export const ActivityHistory: React.FC<ActivityHistoryProps> = ({
           <ActivityAnalytics activities={activities} />
 
           <div style={{ marginTop: '2.5rem' }}>
-            <h2 className="activity-title" style={{ fontSize: '1.25rem', marginBottom: '1rem' }}>
-              {isOfficer ? 'All Farmers Past Activities' : 'Past Activities'}
-            </h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+              <h2 className="activity-title" style={{ fontSize: '1.25rem', margin: 0 }}>
+                {isOfficer ? 'All Farmers Past Activities' : 'Past Activities'}
+              </h2>
+              {totalItems > 0 && (
+                <span style={{ fontSize: '0.875rem', color: 'var(--ink-soft)' }}>
+                  Showing <strong>{startIndex + 1}–{endIndex}</strong> of <strong>{totalItems}</strong> entries
+                </span>
+              )}
+            </div>
+
             <div className="activity-filters" style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap', background: 'var(--cream-deep)', padding: '1rem', borderRadius: '10px', border: '1px solid var(--line)' }}>
               {isOfficer && (
                 <div className="form-group" style={{ marginBottom: 0, flex: 2, minWidth: '220px' }}>
@@ -263,74 +326,179 @@ export const ActivityHistory: React.FC<ActivityHistoryProps> = ({
             {filteredActivities.length === 0 ? (
               <p style={{ color: 'var(--clay)' }}>No activities match the selected filters.</p>
             ) : (
-              <div className="activity-list">
-                {filteredActivities.map(activity => {
-                  const cycle = cycles.find(c => c.id === activity.cultivationCycleId);
-                  const displayFarmer = activity.farmerName || (activity.loggedByUserName && activity.loggedByUserName !== 'Unknown' ? activity.loggedByUserName : null);
-                  const displayField = activity.fieldName || cycle?.fieldName;
-                  const displayCycle = activity.cycleName || (cycle ? `${cycle.season} ${cycle.year}` : null);
+              <div ref={activitiesListRef} className="activity-list-container">
+                <div className="activity-list">
+                  {paginatedActivities.map(activity => {
+                    const cycle = cycles.find(c => c.id === activity.cultivationCycleId);
+                    const displayFarmer = activity.farmerName || (activity.loggedByUserName && activity.loggedByUserName !== 'Unknown' ? activity.loggedByUserName : null);
+                    const displayField = activity.fieldName || cycle?.fieldName;
+                    const displayCycle = activity.cycleName || (cycle ? `${cycle.season} ${cycle.year}` : null);
 
-                  return (
-                    <div key={activity.id} className="activity-card">
-                      <div className="activity-card-header">
-                        <div className="activity-card-title" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-                          <span className={`activity-badge badge-${activity.activityType.toLowerCase()}`}>
-                            {activity.activityType}
-                          </span>
-
-                          {displayFarmer && (
-                            <span style={{ 
-                              display: 'inline-flex', 
-                              alignItems: 'center', 
-                              gap: '0.35rem', 
-                              background: 'rgba(34, 57, 42, 0.08)', 
-                              color: 'var(--forest-deep)', 
-                              padding: '0.2rem 0.6rem', 
-                              borderRadius: '6px', 
-                              fontSize: '0.85rem', 
-                              fontWeight: 600 
-                            }}>
-                              <User size={13} /> {displayFarmer}
+                    return (
+                      <div key={activity.id} className="activity-card">
+                        <div className="activity-card-header">
+                          <div className="activity-card-title" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                            <span className={`activity-badge badge-${activity.activityType.toLowerCase()}`}>
+                              {activity.activityType}
                             </span>
-                          )}
 
-                          {displayField && (
-                            <span style={{ fontSize: '0.85rem', color: 'var(--ink-soft)', fontWeight: 500 }}>
-                              {displayField} {displayCycle ? `· ${displayCycle}` : ''}
-                            </span>
-                          )}
+                            {displayFarmer && (
+                              <span style={{ 
+                                display: 'inline-flex', 
+                                alignItems: 'center', 
+                                gap: '0.35rem', 
+                                background: 'rgba(34, 57, 42, 0.08)', 
+                                color: 'var(--forest-deep)', 
+                                padding: '0.2rem 0.6rem', 
+                                borderRadius: '6px', 
+                                fontSize: '0.85rem', 
+                                fontWeight: 600 
+                              }}>
+                                <User size={13} /> {displayFarmer}
+                              </span>
+                            )}
+
+                            {displayField && (
+                              <span style={{ fontSize: '0.85rem', color: 'var(--ink-soft)', fontWeight: 500 }}>
+                                {displayField} {displayCycle ? `· ${displayCycle}` : ''}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="activity-card-actions">
+                            <div className="activity-logger">Logged by: {activity.loggedByUserName}</div>
+                            {canModify && (
+                              <>
+                                <button 
+                                  type="button"
+                                  className="activity-action-btn edit" 
+                                  title="Edit Activity"
+                                  onClick={() => setEditingActivity(activity)}
+                                >
+                                  <Pencil size={13} /> Edit
+                                </button>
+                                <button 
+                                  type="button"
+                                  className="activity-action-btn delete" 
+                                  title="Delete Activity"
+                                  onClick={() => setDeletingActivity(activity)}
+                                >
+                                  <Trash2 size={13} /> Delete
+                                </button>
+                              </>
+                            )}
+                          </div>
                         </div>
-
-                        <div className="activity-card-actions">
-                          <div className="activity-logger">Logged by: {activity.loggedByUserName}</div>
-                          {canModify && (
-                            <>
-                              <button 
-                                type="button"
-                                className="activity-action-btn edit" 
-                                title="Edit Activity"
-                                onClick={() => setEditingActivity(activity)}
-                              >
-                                <Pencil size={13} /> Edit
-                              </button>
-                              <button 
-                                type="button"
-                                className="activity-action-btn delete" 
-                                title="Delete Activity"
-                                onClick={() => setDeletingActivity(activity)}
-                              >
-                                <Trash2 size={13} /> Delete
-                              </button>
-                            </>
-                          )}
+                        <div className="activity-card-details">
+                          {renderDetails(activity)}
                         </div>
                       </div>
-                      <div className="activity-card-details">
-                        {renderDetails(activity)}
+                    );
+                  })}
+                </div>
+
+                {/* Pagination Controls */}
+                {totalItems > 0 && (
+                  <div className="activity-pagination">
+                    <div className="activity-pagination-info">
+                      <span>
+                        Showing <strong>{startIndex + 1}–{endIndex}</strong> of <strong>{totalItems}</strong> {totalItems === 1 ? 'activity' : 'activities'}
+                      </span>
+                      <div className="activity-page-size-selector">
+                        <label htmlFor="items-per-page-select">Per page:</label>
+                        <select
+                          id="items-per-page-select"
+                          value={itemsPerPage}
+                          onChange={e => {
+                            setItemsPerPage(Number(e.target.value));
+                            setCurrentPage(1);
+                          }}
+                          className="page-size-select"
+                        >
+                          <option value={5}>5</option>
+                          <option value={10}>10</option>
+                          <option value={20}>20</option>
+                          <option value={50}>50</option>
+                        </select>
                       </div>
                     </div>
-                  );
-                })}
+
+                    {totalPages > 1 && (
+                      <div className="activity-pagination-controls">
+                        <button
+                          type="button"
+                          className="pagination-btn nav-btn"
+                          onClick={() => handlePageChange(1)}
+                          disabled={safeCurrentPage === 1}
+                          title="First Page"
+                          aria-label="First Page"
+                        >
+                          <ChevronsLeft size={16} />
+                        </button>
+
+                        <button
+                          type="button"
+                          className="pagination-btn nav-btn"
+                          onClick={() => handlePageChange(safeCurrentPage - 1)}
+                          disabled={safeCurrentPage === 1}
+                          title="Previous Page"
+                          aria-label="Previous Page"
+                        >
+                          <ChevronLeft size={16} />
+                          <span className="btn-label-desktop">Prev</span>
+                        </button>
+
+                        <div className="pagination-page-numbers">
+                          {getPageNumbers(safeCurrentPage, totalPages).map((p, idx) => {
+                            if (p === '...') {
+                              return (
+                                <span key={`ellipsis-${idx}`} className="pagination-ellipsis">
+                                  …
+                                </span>
+                              );
+                            }
+                            const pageNum = p as number;
+                            return (
+                              <button
+                                key={pageNum}
+                                type="button"
+                                className={`pagination-btn page-num-btn ${safeCurrentPage === pageNum ? 'active' : ''}`}
+                                onClick={() => handlePageChange(pageNum)}
+                                aria-label={`Page ${pageNum}`}
+                                aria-current={safeCurrentPage === pageNum ? 'page' : undefined}
+                              >
+                                {pageNum}
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        <button
+                          type="button"
+                          className="pagination-btn nav-btn"
+                          onClick={() => handlePageChange(safeCurrentPage + 1)}
+                          disabled={safeCurrentPage === totalPages}
+                          title="Next Page"
+                          aria-label="Next Page"
+                        >
+                          <span className="btn-label-desktop">Next</span>
+                          <ChevronRight size={16} />
+                        </button>
+
+                        <button
+                          type="button"
+                          className="pagination-btn nav-btn"
+                          onClick={() => handlePageChange(totalPages)}
+                          disabled={safeCurrentPage === totalPages}
+                          title="Last Page"
+                          aria-label="Last Page"
+                        >
+                          <ChevronsRight size={16} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>

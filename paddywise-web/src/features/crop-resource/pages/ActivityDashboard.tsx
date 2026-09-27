@@ -5,21 +5,28 @@ import { fieldApi } from '../../field-cultivation/services/fieldApi';
 import type { CultivationCycle } from '../../field-cultivation/types';
 import { ActivityHistory } from '../components/ActivityHistory';
 import { AiAdvisorPanel } from '../components/AiAdvisorPanel';
+import { ActivityReportGenerator } from '../components/ActivityReportGenerator';
+import { activityApi, type CropActivityDto } from '../services/activityApi';
 import { Sidebar } from '../../../components/Sidebar';
-import { Menu, Plus, LogOut, Sparkles, Activity as ActivityIcon } from 'lucide-react';
+import { Menu, Plus, LogOut, Sparkles, Activity as ActivityIcon, FileSpreadsheet } from 'lucide-react';
 import '../../../styles/Dashboard.css';
 import './ActivityDashboard.css';
 
 export const ActivityDashboard: React.FC = () => {
   const { user, logout } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
-  const currentTab = searchParams.get('tab') === 'advisor' ? 'advisor' : 'history';
+  const tabParam = searchParams.get('tab');
+  const currentTab = tabParam === 'advisor' ? 'advisor' : (tabParam === 'report' ? 'report' : 'history');
   
   const [cycles, setCycles] = useState<CultivationCycle[]>([]);
   const [selectedCycleId, setSelectedCycleId] = useState<number | 'all'>('all');
   const [isLoadingCycles, setIsLoadingCycles] = useState(true);
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [allActivities, setAllActivities] = useState<CropActivityDto[]>([]);
+  const [refreshTrigger] = useState(0);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  const isOfficer = user?.role === 'AgriculturalOfficer' || user?.role === 'FieldOfficer' || user?.role === 'Admin';
+  const selectedCycle = cycles.find(c => c.id === selectedCycleId) || null;
 
   useEffect(() => {
     async function loadCycles() {
@@ -41,12 +48,26 @@ export const ActivityDashboard: React.FC = () => {
     loadCycles();
   }, [user]);
 
-  const isOfficer = user?.role === 'AgriculturalOfficer' || user?.role === 'FieldOfficer' || user?.role === 'Admin';
-  const selectedCycle = cycles.find(c => c.id === selectedCycleId) || null;
+  // Load all activities for report generator when officer is viewing
+  useEffect(() => {
+    async function loadActivities() {
+      if (isOfficer) {
+        try {
+          const data = await activityApi.getAllActivities();
+          setAllActivities(data);
+        } catch (err) {
+          console.error("Failed to load all activities for reports", err);
+        }
+      }
+    }
+    loadActivities();
+  }, [isOfficer, refreshTrigger]);
 
-  const handleTabChange = (tab: 'history' | 'advisor') => {
+  const handleTabChange = (tab: 'history' | 'advisor' | 'report') => {
     if (tab === 'advisor') {
       setSearchParams({ tab: 'advisor' });
+    } else if (tab === 'report') {
+      setSearchParams({ tab: 'report' });
     } else {
       setSearchParams({});
     }
@@ -97,11 +118,15 @@ export const ActivityDashboard: React.FC = () => {
             <h1 className="fc-page-title" style={{ fontFamily: 'var(--font-heading)', fontSize: '2.5rem', color: 'var(--ink)', margin: 0 }}>
               {currentTab === 'advisor'
                 ? 'AI Paddy Field Advisor'
+                : currentTab === 'report'
+                ? 'Crop Activities Agronomic Report'
                 : (isOfficer ? 'All Farmers Crop Activities' : 'Record & Monitor Activities')}
             </h1>
             <p className="fc-page-sub" style={{ color: 'var(--ink-soft)', fontSize: '1.1rem', marginTop: '0.5rem' }}>
               {currentTab === 'advisor'
                 ? 'Evidence-based agronomic intelligence synthesizing field activities with RRDI guidelines & DOA safety standards.'
+                : currentTab === 'report'
+                ? 'Generate filtered, printable audit reports and export CSV spreadsheets across farmers, agrarian divisions, and time frames.'
                 : (isOfficer ? 'Monitor and review past agricultural operations logged by all farmers across cultivation cycles' : 'Record and monitor your agricultural operations')}
             </p>
           </div>
@@ -116,6 +141,19 @@ export const ActivityDashboard: React.FC = () => {
               <ActivityIcon size={18} />
               <span>Activity Log & History</span>
             </button>
+
+            {isOfficer && (
+              <button 
+                type="button"
+                className={`activity-nav-tab ${currentTab === 'report' ? 'active' : ''}`}
+                onClick={() => handleTabChange('report')}
+              >
+                <FileSpreadsheet size={18} color="#2563eb" />
+                <span>Generate Activity Report</span>
+                <span className="report-tab-badge">Report Generator</span>
+              </button>
+            )}
+
             <button 
               type="button"
               className={`activity-nav-tab ${currentTab === 'advisor' ? 'active' : ''}`}
@@ -133,6 +171,13 @@ export const ActivityDashboard: React.FC = () => {
                 cycles={cycles} 
                 selectedCycleId={selectedCycleId} 
                 onCycleSelect={(cycleId) => setSelectedCycleId(cycleId)}
+              />
+            ) : currentTab === 'report' && isOfficer ? (
+              <ActivityReportGenerator
+                activities={allActivities}
+                officerName={user.name}
+                officerRole={user.role}
+                officerEmail={user.email}
               />
             ) : (
               <>
@@ -172,6 +217,20 @@ export const ActivityDashboard: React.FC = () => {
                     )}
                   </div>
                 )}
+
+                {isOfficer && (
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1.25rem' }}>
+                    <button
+                      type="button"
+                      onClick={() => handleTabChange('report')}
+                      className="fc-btn fc-btn-primary"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.65rem 1.25rem', textDecoration: 'none' }}
+                    >
+                      <FileSpreadsheet size={16} /> Generate Activities Report
+                    </button>
+                  </div>
+                )}
+
                 <ActivityHistory 
                   selectedCycleId={selectedCycleId} 
                   cycles={cycles} 

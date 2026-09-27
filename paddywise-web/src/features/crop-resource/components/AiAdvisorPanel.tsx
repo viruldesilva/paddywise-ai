@@ -7,7 +7,6 @@ import {
   Leaf,
   ShieldAlert,
   Send,
-  HelpCircle,
   BookOpen,
   PhoneCall,
   Loader2,
@@ -17,8 +16,7 @@ import {
 } from 'lucide-react';
 import {
   cropAnalysisApi,
-  type CropActivityAnalysisOutput,
-  type ActivityRecommendation
+  type CropActivityAnalysisOutput
 } from '../services/cropAnalysisApi';
 import type { CultivationCycle } from '../../field-cultivation/types';
 import './AiAdvisorPanel.css';
@@ -32,7 +30,7 @@ interface AiAdvisorPanelProps {
 export const AiAdvisorPanel: React.FC<AiAdvisorPanelProps> = ({
   cycles,
   selectedCycleId,
-  onCycleSelect
+  onCycleSelect: _onCycleSelect
 }) => {
   const activeCycleId = selectedCycleId === 'all' ? cycles[0]?.id : selectedCycleId;
   const activeCycle = cycles.find(c => c.id === activeCycleId);
