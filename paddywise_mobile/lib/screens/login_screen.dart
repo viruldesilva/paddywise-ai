@@ -216,34 +216,42 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   // Error notification banner
                   if (_errorMessage != null) ...[
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: AppColors.errorBg,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: const Color(0xFFFCA5A5)),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Icon(
-                            Icons.error_outline_rounded,
-                            color: AppColors.errorText,
-                            size: 18,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              _errorMessage!,
-                              style: const TextStyle(
-                                color: AppColors.errorText,
-                                fontSize: 12.5,
-                                height: 1.35,
-                              ),
+                    Builder(
+                      builder: (context) {
+                        final isPending = _errorMessage!.toLowerCase().contains('pending admin verification');
+                        return Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: isPending ? const Color(0xFFFEF3C7) : AppColors.errorBg,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: isPending ? const Color(0xFFFDE68A) : const Color(0xFFFCA5A5),
                             ),
                           ),
-                        ],
-                      ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(
+                                isPending ? Icons.schedule_rounded : Icons.error_outline_rounded,
+                                color: isPending ? const Color(0xFFB45309) : AppColors.errorText,
+                                size: 18,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  _errorMessage!,
+                                  style: TextStyle(
+                                    color: isPending ? const Color(0xFF92400E) : AppColors.errorText,
+                                    fontSize: 12.5,
+                                    height: 1.35,
+                                    fontWeight: isPending ? FontWeight.w500 : FontWeight.normal,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
                     ),
                     const SizedBox(height: 16),
                   ],

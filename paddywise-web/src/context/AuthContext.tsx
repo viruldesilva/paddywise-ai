@@ -4,6 +4,7 @@ import type {
   AuthUser,
   LoginRequestDto,
   RegisterRequestDto,
+  RegisterResponseDto,
   UserRole,
 } from '../types/auth';
 import { authService } from '../services/authService';
@@ -15,8 +16,9 @@ export interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (emailOrDto: string | LoginRequestDto, password?: string) => Promise<AuthResponseDto>;
-  register: (data: RegisterRequestDto) => Promise<AuthResponseDto>;
-  logout: () => void;
+  register: (data: RegisterRequestDto) => Promise<RegisterResponseDto>;
+  logout: (shouldRedirect?: boolean) => void;
+  clearAuth: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -97,30 +99,36 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const register = async (data: RegisterRequestDto): Promise<AuthResponseDto> => {
+  const register = async (data: RegisterRequestDto): Promise<RegisterResponseDto> => {
     setIsLoading(true);
     try {
       const response = await authService.register(data);
-      const currentUser: AuthUser = {
-        name: response.name,
-        email: response.email,
-        role: response.role as UserRole,
-        phone: data.phone,
-      };
+      if (!response.requiresApproval && response.accessToken) {
+        const currentUser: AuthUser = {
+          name: response.name || data.name,
+          email: response.email || data.email,
+          role: (response.role as UserRole) || data.role,
+          phone: data.phone,
+        };
 
-      setUser(currentUser);
-      setToken(response.accessToken);
+        setUser(currentUser);
+        setToken(response.accessToken);
+      }
       return response;
     } finally {
       setIsLoading(false);
     }
   };
 
-  const logout = () => {
+  const clearAuth = () => {
     authService.logout();
     setUser(null);
     setToken(null);
-    if (window.location.pathname !== '/login') {
+  };
+
+  const logout = (shouldRedirect: boolean = true) => {
+    clearAuth();
+    if (shouldRedirect && !window.location.pathname.startsWith('/login')) {
       window.location.href = '/login';
     }
   };
@@ -135,6 +143,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         login,
         register,
         logout,
+        clearAuth,
       }}
     >
       {children}

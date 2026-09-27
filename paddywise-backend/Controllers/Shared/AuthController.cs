@@ -34,10 +34,15 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> Login(LoginRequestDto request)
     {
         var result = await _authService.LoginAsync(request);
-        if (result == null)
+        if (result.IsBlocked)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = result.BlockedMessage });
+        }
+
+        if (!result.IsSuccess || result.AuthResponse == null)
             return Unauthorized(new { message = "Invalid email or password." });
 
-        return Ok(result);
+        return Ok(result.AuthResponse);
     }
 
     [HttpPost("refresh")]

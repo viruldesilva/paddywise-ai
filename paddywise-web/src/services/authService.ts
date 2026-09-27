@@ -7,11 +7,12 @@ import type {
   LoginRequestDto,
   RefreshRequestDto,
   RegisterRequestDto,
+  RegisterResponseDto,
 } from '../types/auth';
 
 export interface IAuthService {
   login(dto: LoginRequestDto): Promise<AuthResponseDto>;
-  register(dto: RegisterRequestDto): Promise<AuthResponseDto>;
+  register(dto: RegisterRequestDto): Promise<RegisterResponseDto>;
   refreshToken(dto: RefreshRequestDto): Promise<AuthResponseDto>;
   getCurrentUser(): Promise<CurrentUserDto>;
   logout(): void;
@@ -33,11 +34,19 @@ export class AuthService implements IAuthService {
     return authData;
   }
 
-  async register(dto: RegisterRequestDto): Promise<AuthResponseDto> {
-    const response = await this.http.post<AuthResponseDto>('/auth/register', dto);
-    const authData = response.data;
-    this.storage.saveSession(authData);
-    return authData;
+  async register(dto: RegisterRequestDto): Promise<RegisterResponseDto> {
+    const response = await this.http.post<RegisterResponseDto>('/auth/register', dto);
+    const data = response.data;
+    if (!data.requiresApproval && data.accessToken && data.refreshToken) {
+      this.storage.saveSession({
+        accessToken: data.accessToken,
+        refreshToken: data.refreshToken,
+        name: data.name || '',
+        email: data.email || '',
+        role: data.role || '',
+      });
+    }
+    return data;
   }
 
   async refreshToken(dto: RefreshRequestDto): Promise<AuthResponseDto> {

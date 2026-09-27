@@ -1,6 +1,8 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Home from './pages/Home';
-import LoginPage from './pages/LoginPage';
+import LoginSelectionPage from './features/auth/pages/LoginSelectionPage';
+import AdminLoginPage from './features/auth/pages/AdminLoginPage';
+import OfficerLoginPage from './features/auth/pages/OfficerLoginPage';
 import RegisterPage from './pages/RegisterPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -9,6 +11,7 @@ import { getRoleDashboardRoute } from './utils/roleRoutes';
 import { ActivityDashboard } from './features/crop-resource/pages/ActivityDashboard';
 import DashboardPage from './pages/DashboardPage';
 import UserManagementPage from './pages/UserManagementPage';
+import OfficerApprovalPage from './pages/OfficerApprovalPage';
 import FieldsPage from './features/field-cultivation/pages/FieldsPage';
 import FieldDetailPage from './features/field-cultivation/pages/FieldDetailPage';
 import CycleDetailPage from './features/field-cultivation/pages/CycleDetailPage';
@@ -32,7 +35,9 @@ function AppContent() {
     <Router>
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/login" element={<LoginPage />} />
+        <Route path="/login" element={<LoginSelectionPage />} />
+        <Route path="/login/admin" element={<AdminLoginPage />} />
+        <Route path="/login/officer" element={<OfficerLoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
 
         {/* Generic dashboard route redirects to role-specific dashboard */}
@@ -73,8 +78,16 @@ function AppContent() {
         <Route
           path="/admin/users"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['Admin']}>
               <UserManagementPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/officer-requests"
+          element={
+            <ProtectedRoute allowedRoles={['Admin']}>
+              <OfficerApprovalPage />
             </ProtectedRoute>
           }
         />

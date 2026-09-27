@@ -21,6 +21,7 @@ import {
   MapPin,
   Camera,
   CheckCircle,
+  UserCheck,
   X,
   LogOut
 } from 'lucide-react';
@@ -59,6 +60,7 @@ export function Sidebar({ role, isOpen, onClose }: SidebarProps) {
   const adminLinks = [
     { name: 'Dashboard', path: '/dashboard/admin', icon: LayoutDashboard },
     { name: 'Past Crop Activities', path: '/activities', icon: Activity },
+    { name: 'Officer Approvals', path: '/admin/officer-requests', icon: UserCheck },
     { name: 'Manage Users', path: '/admin/users', icon: Users },
     { name: 'Manage Knowledge Base', path: '/pest-disease-knowledge', icon: Database },
     { name: 'System Settings & Audit Logs', path: '#settings', icon: Settings },
@@ -125,7 +127,7 @@ export function Sidebar({ role, isOpen, onClose }: SidebarProps) {
         <div className="sidebar-footer">
           <button
             type="button"
-            onClick={logout}
+            onClick={() => logout()}
             className="sidebar-logout-btn"
             title="Sign Out"
           >

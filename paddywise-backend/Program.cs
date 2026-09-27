@@ -12,6 +12,7 @@ using PaddyWise.Api.Services.FieldCultivation;
 using PaddyWise.Api.Services.PestDisease;
 using PaddyWise.Api.Services.ReportingApproval;
 using PaddyWise.Api.Services.Shared;
+using Resend;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -120,6 +121,18 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 // ============================================================
 
 builder.Services.AddScoped<IAuthService, AuthService>();
+
+
+// ============================================================
+// RESEND EMAIL SERVICE
+// ============================================================
+
+builder.Services.AddHttpClient<IResend, ResendClient>();
+builder.Services.Configure<ResendClientOptions>(options =>
+{
+    options.ApiToken = builder.Configuration["Resend:ApiKey"]!;
+});
+builder.Services.AddScoped<IEmailService, EmailService>();
 
 
 // ============================================================
