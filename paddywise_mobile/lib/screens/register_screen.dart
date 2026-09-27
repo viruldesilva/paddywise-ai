@@ -21,6 +21,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   UserRole _selectedRole = UserRole.farmer;
   bool _isLoading = false;
+  bool _isPendingApproval = false;
   String? _errorMessage;
   String? _successMessage;
 
@@ -71,7 +72,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     });
 
     try {
-      await AuthService.register(
+      final result = await AuthService.register(
         fullName: name,
         email: email,
         role: _selectedRole,
@@ -79,6 +80,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
         phone: phone.isNotEmpty ? phone : null,
         password: password,
       );
+
+      if (result.requiresApproval) {
+        setState(() {
+          _successMessage = result.message.isNotEmpty
+              ? result.message
+              : 'Your account is pending admin verification. You will be able to log in once approved.';
+          _isPendingApproval = true;
+        });
+        return;
+      }
 
       setState(() {
         _successMessage = 'Account created successfully! Redirecting...';
@@ -167,41 +178,92 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                     ),
 
-                  if (_successMessage != null)
+                  if (_isPendingApproval) ...[
                     Container(
-                      padding: const EdgeInsets.all(12),
-                      margin: const EdgeInsets.only(bottom: 18),
+                      padding: const EdgeInsets.all(24),
+                      margin: const EdgeInsets.only(bottom: 24),
                       decoration: BoxDecoration(
-                        color: AppColors.successBg,
-                        borderRadius: BorderRadius.circular(8),
+                        color: const Color(0xFFFEF3C7),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFFFDE68A)),
                       ),
-                      child: Row(
+                      child: Column(
                         children: [
-                          const Icon(Icons.check_circle_outline,
-                              color: AppColors.successText, size: 20),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              _successMessage!,
-                              style: const TextStyle(
-                                color: AppColors.successText,
-                                fontSize: 13,
+                          const Icon(Icons.schedule_rounded, color: Color(0xFFB45309), size: 48),
+                          const SizedBox(height: 14),
+                          const Text(
+                            'Account Pending Verification',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF92400E),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            _successMessage ?? 'Your account is pending admin verification. You will be able to log in once approved.',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: Color(0xFF78350F),
+                              fontSize: 13.5,
+                              height: 1.45,
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: () => context.go('/login'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.forest,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
                               ),
+                              child: const Text('Return to Sign In'),
                             ),
                           ),
                         ],
                       ),
                     ),
+                  ] else ...[
+                    if (_successMessage != null)
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        margin: const EdgeInsets.only(bottom: 18),
+                        decoration: BoxDecoration(
+                          color: AppColors.successBg,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.check_circle_outline,
+                                color: AppColors.successText, size: 20),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                _successMessage!,
+                                style: const TextStyle(
+                                  color: AppColors.successText,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
 
-                  // Full Name
-                  const Text(
-                    'Full Name *',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.ink,
+                    // Full Name
+                    const Text(
+                      'Full Name *',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.ink,
+                      ),
                     ),
-                  ),
                   const SizedBox(height: 6),
                   TextField(
                     controller: _nameController,
@@ -378,6 +440,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         : const Text('Create Account'),
                   ),
                   const SizedBox(height: 24),
+                ],
 
                   // Link to Login
                   Wrap(

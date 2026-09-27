@@ -168,13 +168,13 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.625rem',
-                backgroundColor: '#fee2e2',
-                color: '#991b1b',
+                backgroundColor: error.toLowerCase().includes('pending admin verification') ? '#fef3c7' : '#fee2e2',
+                color: error.toLowerCase().includes('pending admin verification') ? '#92400e' : '#991b1b',
                 padding: '0.875rem 1rem',
                 borderRadius: '8px',
                 fontSize: '0.875rem',
                 marginBottom: '1.25rem',
-                border: '1px solid #fecaca',
+                border: `1px solid ${error.toLowerCase().includes('pending admin verification') ? '#fde68a' : '#fecaca'}`,
               }}
             >
               <AlertCircle size={18} style={{ flexShrink: 0 }} />

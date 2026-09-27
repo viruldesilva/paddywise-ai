@@ -11,6 +11,7 @@ import { getRoleDashboardRoute } from './utils/roleRoutes';
 import { ActivityDashboard } from './features/crop-resource/pages/ActivityDashboard';
 import DashboardPage from './pages/DashboardPage';
 import UserManagementPage from './pages/UserManagementPage';
+import OfficerApprovalPage from './pages/OfficerApprovalPage';
 import FieldsPage from './features/field-cultivation/pages/FieldsPage';
 import FieldDetailPage from './features/field-cultivation/pages/FieldDetailPage';
 import CycleDetailPage from './features/field-cultivation/pages/CycleDetailPage';
@@ -76,8 +77,16 @@ function AppContent() {
         <Route
           path="/admin/users"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['Admin']}>
               <UserManagementPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/officer-requests"
+          element={
+            <ProtectedRoute allowedRoles={['Admin']}>
+              <OfficerApprovalPage />
             </ProtectedRoute>
           }
         />

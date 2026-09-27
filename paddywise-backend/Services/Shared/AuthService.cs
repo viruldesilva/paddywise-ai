@@ -21,7 +21,7 @@ public class AuthService : IAuthService
         _config = config;
     }
 
-    public async Task<AuthResponseDto> RegisterAsync(RegisterRequestDto request)
+    public async Task<RegisterResponseDto> RegisterAsync(RegisterRequestDto request)
     {
         if (await _context.Users.AnyAsync(u => u.Email == request.Email))
             throw new InvalidOperationException("A user with this email already exists.");
@@ -29,29 +29,75 @@ public class AuthService : IAuthService
         if (!Enum.TryParse<UserRole>(request.Role, true, out var role))
             throw new InvalidOperationException("Invalid role specified.");
 
+        var accountStatus = role == UserRole.AgriculturalOfficer
+            ? AccountStatus.PendingApproval
+            : AccountStatus.Approved;
+
         var user = new User
         {
             Name = request.Name,
             Email = request.Email,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
             Role = role,
+            AccountStatus = accountStatus,
             Phone = request.Phone
         };
 
         _context.Users.Add(user);
         await _context.SaveChangesAsync();
 
-        return await GenerateAuthResponseAsync(user);
+        if (role == UserRole.AgriculturalOfficer)
+        {
+            return new RegisterResponseDto
+            {
+                RequiresApproval = true,
+                Message = "Your account is pending admin verification. You will be able to log in once approved.",
+                AccessToken = null,
+                RefreshToken = null,
+                Name = user.Name,
+                Email = user.Email,
+                Role = user.Role.ToString()
+            };
+        }
+
+        var authResponse = await GenerateAuthResponseAsync(user);
+        return new RegisterResponseDto
+        {
+            RequiresApproval = false,
+            Message = "Account registered successfully.",
+            AccessToken = authResponse.AccessToken,
+            RefreshToken = authResponse.RefreshToken,
+            Name = authResponse.Name,
+            Email = authResponse.Email,
+            Role = authResponse.Role
+        };
     }
 
-    public async Task<AuthResponseDto?> LoginAsync(LoginRequestDto request)
+    public async Task<LoginResult> LoginAsync(LoginRequestDto request)
     {
         var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
 
         if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
-            return null;
+            return LoginResult.InvalidCredentials();
 
-        return await GenerateAuthResponseAsync(user);
+        if (user.AccountStatus == AccountStatus.PendingApproval)
+        {
+            return LoginResult.Blocked(
+                AccountStatus.PendingApproval,
+                "Your account is pending admin verification. Please check back later."
+            );
+        }
+
+        if (user.AccountStatus == AccountStatus.Rejected)
+        {
+            return LoginResult.Blocked(
+                AccountStatus.Rejected,
+                "Your account application was not approved. Please contact your administrator."
+            );
+        }
+
+        var authResponse = await GenerateAuthResponseAsync(user);
+        return LoginResult.Success(authResponse);
     }
 
     public async Task<AuthResponseDto?> RefreshAsync(string refreshToken)

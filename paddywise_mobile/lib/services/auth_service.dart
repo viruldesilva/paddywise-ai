@@ -11,6 +11,8 @@ class AuthResponse {
   final String name;
   final String email;
   final String role;
+  final bool requiresApproval;
+  final String message;
 
   const AuthResponse({
     required this.accessToken,
@@ -18,6 +20,8 @@ class AuthResponse {
     required this.name,
     required this.email,
     required this.role,
+    this.requiresApproval = false,
+    this.message = '',
   });
 
   factory AuthResponse.fromJson(Map<String, dynamic> json) {
@@ -27,8 +31,22 @@ class AuthResponse {
       name: json['name'] as String? ?? '',
       email: json['email'] as String? ?? '',
       role: json['role'] as String? ?? '',
+      requiresApproval: json['requiresApproval'] as bool? ?? false,
+      message: json['message'] as String? ?? '',
     );
   }
+}
+
+class RegisterResult {
+  final bool requiresApproval;
+  final String message;
+  final User? user;
+
+  const RegisterResult({
+    required this.requiresApproval,
+    required this.message,
+    this.user,
+  });
 }
 
 class AuthService {
@@ -306,7 +324,7 @@ class AuthService {
   }
 
   /// Register via backend API, with fallback to local storage if offline
-  static Future<User> register({
+  static Future<RegisterResult> register({
     required String fullName,
     required String email,
     required UserRole role,
@@ -345,6 +363,15 @@ class AuthService {
           jsonDecode(response.body) as Map<String, dynamic>;
       final authResponse = AuthResponse.fromJson(data);
 
+      if (authResponse.requiresApproval) {
+        return RegisterResult(
+          requiresApproval: true,
+          message: authResponse.message.isNotEmpty
+              ? authResponse.message
+              : 'Your account is pending admin verification. You will be able to log in once approved.',
+        );
+      }
+
       _accessToken = authResponse.accessToken;
       _refreshToken = authResponse.refreshToken;
 
@@ -365,7 +392,11 @@ class AuthService {
       await prefs.setString(_storageKeyAccessToken, _accessToken!);
       await prefs.setString(_storageKeyRefreshToken, _refreshToken!);
 
-      return _currentUser!;
+      return RegisterResult(
+        requiresApproval: false,
+        message: 'Account created successfully!',
+        user: _currentUser,
+      );
     }
 
     if (response != null) {
@@ -382,6 +413,13 @@ class AuthService {
 
       if (exists) {
         throw Exception('An account with this email address already exists.');
+      }
+
+      if (role == UserRole.extensionOfficer) {
+        return const RegisterResult(
+          requiresApproval: true,
+          message: 'Your account is pending admin verification. You will be able to log in once approved.',
+        );
       }
 
       final newUser = StoredUser(
@@ -412,7 +450,11 @@ class AuthService {
       await prefs.setString(
           _storageKeySession, jsonEncode(_currentUser!.toJson()));
 
-      return _currentUser!;
+      return RegisterResult(
+        requiresApproval: false,
+        message: 'Account created successfully!',
+        user: _currentUser,
+      );
     }
 
     throw Exception('Registration failed. Please try again.');
@@ -468,7 +510,7 @@ class AuthService {
       case 400:
         return 'Bad request. Please verify the input values.';
       case 403:
-        return 'Access forbidden.';
+        return 'Your account is pending admin verification. Please check back later.';
       case 404:
         return 'Authentication endpoint not found on server.';
       case 500:
