@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using PaddyWise.Api.DTOs.PestDisease;
 using PaddyWise.Api.Entities.Shared;
 using PaddyWise.Api.Services.PestDisease;
+using PaddyWise.Api.Services.ReportingApproval.Agents;
 using System.Security.Claims;
 
 namespace PaddyWise.Api.Controllers.PestDisease;
@@ -12,10 +13,14 @@ namespace PaddyWise.Api.Controllers.PestDisease;
 public class ObservationsController : ControllerBase
 {
     private readonly IObservationService _observationService;
+    private readonly IValidationAgentService _validationAgentService;
 
-    public ObservationsController(IObservationService observationService)
+    public ObservationsController(
+        IObservationService observationService,
+        IValidationAgentService validationAgentService)
     {
         _observationService = observationService;
+        _validationAgentService = validationAgentService;
     }
 
     /// <summary>A farmer's own reports, or every report for officers/admins.
@@ -121,6 +126,11 @@ public class ObservationsController : ControllerBase
             var result = await _observationService.RequestAnalysisAsync(id, farmerId.Value);
             if (result == null)
                 return NotFound(new { message = "Observation not found." });
+
+            foreach (var report in result.Reports)
+            {
+                await _validationAgentService.ValidatePestDiseaseReportAsync(report.Id);
+            }
 
             return Ok(result);
         }

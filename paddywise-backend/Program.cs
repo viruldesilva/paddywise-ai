@@ -10,6 +10,7 @@ using PaddyWise.Api.Services.CropResource;
 using PaddyWise.Api.Services.FieldCultivation;
 using PaddyWise.Api.Services.PestDisease;
 using PaddyWise.Api.Services.ReportingApproval;
+using PaddyWise.Api.Services.ReportingApproval.Agents;
 using PaddyWise.Api.Services.Shared;
 using System.Text;
 
@@ -151,6 +152,7 @@ builder.Services.AddScoped<IPestDiseaseKnowledgeService, PestDiseaseKnowledgeSer
 // ============================================================
 
 builder.Services.AddScoped<IRevisionDraftService, RevisionDraftService>();
+builder.Services.AddScoped<IValidationAgentService, ValidationAgentService>();
 
 
 // ============================================================
