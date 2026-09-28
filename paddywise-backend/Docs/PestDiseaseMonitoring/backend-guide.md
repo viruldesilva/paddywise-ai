@@ -322,9 +322,33 @@ Agent rules that apply here same as every component:
   content-type must start with `image/`. Missing `Storage:*` secrets surface as a distinct
   `StorageNotConfiguredException` → 500 (a setup problem) rather than the generic
   `InvalidOperationException` → 400 used for actual validation failures. The manual "paste a
-  URL" field on `ObservationForm.tsx` was kept as a fallback (user's choice) — so the SSRF
-  hardening item on `LoadImageAsync` (fetching a farmer-supplied `ImageUrl` with no host
-  allowlist) is unaffected by this change and remains open.
+  URL" field on `ObservationForm.tsx` was kept as a fallback (user's choice) — see below for
+  the SSRF hardening this required on `LoadImageAsync`.
+- **Fixed: SSRF hardening on `LoadImageAsync` (2026-09-28).** The manual "paste a photo URL"
+  field means `ImageUrl` is farmer-supplied free text; `LoadImageAsync` was making a server-side
+  GET to whatever URL came in, with no restriction — a farmer (or anyone with a valid JWT) could
+  point it at an internal service or a cloud metadata endpoint (e.g. `169.254.169.254`) and have
+  the backend fetch it on their behalf. Two changes:
+  - A scheme pre-check rejects anything but `http`/`https` before attempting a connection —
+    `HttpClient` itself throws `InvalidOperationException` for other schemes (e.g. `file://`),
+    which wasn't previously caught and would have failed the whole run instead of degrading to
+    text-only; that exception type is now also in the catch clause as defense in depth.
+  - `Agents/PestDisease/ObservationImageSsrfGuard.cs`, wired in as a `SocketsHttpHandler
+    .ConnectCallback` on a new named `HttpClient` (`CropAnalysisAgent.ImageDownloadHttpClientName`,
+    registered in `Program.cs`) used only for this fetch — not the plain default client. It
+    resolves the host itself and skips any resolved address in a private/loopback/link-local/
+    reserved range (RFC 1918, `169.254.0.0/16` including cloud metadata, `100.64.0.0/10`,
+    multicast/reserved, and the IPv6 equivalents), connecting only to the first address that
+    isn't blocked. Deliberately a `ConnectCallback` rather than a pre-check on the URL string:
+    a hostname check is bypassable by DNS rebinding (resolve to a public IP when checked, a
+    private one when connected) — `ConnectCallback` runs at the actual TCP connect, for the
+    initial request and every redirect hop, so there's no gap between validating an address and
+    using it.
+  - **Verified live**: an observation with `ImageUrl` set to `http://169.254.169.254/latest/
+    meta-data/` logged `Refusing to connect to '169.254.169.254': no public IP address
+    resolved.` and the run completed text-only, same as any other unreachable image. A second
+    observation with a real public image URL (`https://httpbin.org/image/jpeg`) downloaded
+    normally with no warning — confirming the guard doesn't regress legitimate photo URLs.
 - Not started: golden test cases (no test project exists yet).
 - **Knowledge base `Category` field + prompt filtering (2026-09-25).** The 25-entry knowledge
   base (up from the original 7) was making `CropAnalysisAgent`'s system prompt large enough
