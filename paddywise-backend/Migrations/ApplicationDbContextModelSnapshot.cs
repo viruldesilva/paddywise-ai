@@ -590,6 +590,9 @@ namespace PaddyWise.Api.Migrations
                     b.Property<string>("ImageUrl")
                         .HasColumnType("text");
 
+                    b.Property<DateTime?>("LastAnalyzedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<int>("ObservationType")
                         .HasColumnType("integer");
 
@@ -675,6 +678,9 @@ namespace PaddyWise.Api.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<int>("Category")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -714,6 +720,8 @@ namespace PaddyWise.Api.Migrations
                         new
                         {
                             Id = 1,
+                            Category = 0,
+                            CreatedAt = new DateTime(2026, 9, 27, 20, 23, 25, 604, DateTimeKind.Utc).AddTicks(1954),
                             CreatedAt = new DateTime(2026, 9, 27, 15, 17, 17, 161, DateTimeKind.Utc).AddTicks(8043),
                             CropStages = "Nursery, Tillering",
                             FavorableConditions = "Dry weather, drought-stressed nurseries.",
@@ -721,11 +729,14 @@ namespace PaddyWise.Api.Migrations
                             Name = "Thrips",
                             Source = "Sri Lanka Department of Agriculture",
                             Symptoms = "Silvery streaks and curling on young leaves; stunted growth in seedlings.",
+                            UpdatedAt = new DateTime(2026, 9, 27, 20, 23, 25, 604, DateTimeKind.Utc).AddTicks(1956)
                             UpdatedAt = new DateTime(2026, 9, 27, 15, 17, 17, 161, DateTimeKind.Utc).AddTicks(8047)
                         },
                         new
                         {
                             Id = 2,
+                            Category = 0,
+                            CreatedAt = new DateTime(2026, 9, 27, 20, 23, 25, 604, DateTimeKind.Utc).AddTicks(1960),
                             CreatedAt = new DateTime(2026, 9, 27, 15, 17, 17, 161, DateTimeKind.Utc).AddTicks(8067),
                             CropStages = "Tillering, PanicleInitiation",
                             FavorableConditions = "Dense planting, excess nitrogen, continuous flooding, high humidity.",
@@ -733,11 +744,14 @@ namespace PaddyWise.Api.Migrations
                             Name = "Brown Planthopper",
                             Source = "Sri Lanka Department of Agriculture",
                             Symptoms = "Yellowing and drying of leaves from the base upward (\"hopperburn\"); stunted, wilting tillers.",
+                            UpdatedAt = new DateTime(2026, 9, 27, 20, 23, 25, 604, DateTimeKind.Utc).AddTicks(1960)
                             UpdatedAt = new DateTime(2026, 9, 27, 15, 17, 17, 161, DateTimeKind.Utc).AddTicks(8067)
                         },
                         new
                         {
                             Id = 3,
+                            Category = 0,
+                            CreatedAt = new DateTime(2026, 9, 27, 20, 23, 25, 604, DateTimeKind.Utc).AddTicks(1962),
                             CreatedAt = new DateTime(2026, 9, 27, 15, 17, 17, 161, DateTimeKind.Utc).AddTicks(8069),
                             CropStages = "Tillering, Flowering",
                             FavorableConditions = "Continuous rice cropping without fallow, high nitrogen.",
@@ -745,11 +759,14 @@ namespace PaddyWise.Api.Migrations
                             Name = "Yellow Stem Borer",
                             Source = "Sri Lanka Department of Agriculture",
                             Symptoms = "Dead heart (dried central shoot) during vegetative growth; whitehead (empty, upright panicle) at the reproductive stage.",
+                            UpdatedAt = new DateTime(2026, 9, 27, 20, 23, 25, 604, DateTimeKind.Utc).AddTicks(1962)
                             UpdatedAt = new DateTime(2026, 9, 27, 15, 17, 17, 161, DateTimeKind.Utc).AddTicks(8070)
                         },
                         new
                         {
                             Id = 4,
+                            Category = 0,
+                            CreatedAt = new DateTime(2026, 9, 27, 20, 23, 25, 604, DateTimeKind.Utc).AddTicks(1963),
                             CreatedAt = new DateTime(2026, 9, 27, 15, 17, 17, 161, DateTimeKind.Utc).AddTicks(8071),
                             CropStages = "Tillering, PanicleInitiation",
                             FavorableConditions = "High nitrogen, dense canopy, high humidity.",
@@ -757,11 +774,14 @@ namespace PaddyWise.Api.Migrations
                             Name = "Rice Leaf Folder",
                             Source = "Sri Lanka Department of Agriculture",
                             Symptoms = "Leaves folded longitudinally and webbed together; white/transparent streaks where larvae scrape and feed inside the fold.",
+                            UpdatedAt = new DateTime(2026, 9, 27, 20, 23, 25, 604, DateTimeKind.Utc).AddTicks(1964)
                             UpdatedAt = new DateTime(2026, 9, 27, 15, 17, 17, 161, DateTimeKind.Utc).AddTicks(8072)
                         },
                         new
                         {
                             Id = 5,
+                            Category = 0,
+                            CreatedAt = new DateTime(2026, 9, 27, 20, 23, 25, 604, DateTimeKind.Utc).AddTicks(1965),
                             CreatedAt = new DateTime(2026, 9, 27, 15, 17, 17, 161, DateTimeKind.Utc).AddTicks(8074),
                             CropStages = "PanicleInitiation, Flowering",
                             FavorableConditions = "Warm, humid conditions and dense planting.",
@@ -769,11 +789,14 @@ namespace PaddyWise.Api.Migrations
                             Name = "Rice Sheath Mite",
                             Source = "Sri Lanka Department of Agriculture",
                             Symptoms = "Brown to black lesions on the leaf sheath near the waterline; can cause unfilled or discolored grains.",
+                            UpdatedAt = new DateTime(2026, 9, 27, 20, 23, 25, 604, DateTimeKind.Utc).AddTicks(1965)
                             UpdatedAt = new DateTime(2026, 9, 27, 15, 17, 17, 161, DateTimeKind.Utc).AddTicks(8074)
                         },
                         new
                         {
                             Id = 6,
+                            Category = 0,
+                            CreatedAt = new DateTime(2026, 9, 27, 20, 23, 25, 604, DateTimeKind.Utc).AddTicks(1966),
                             CreatedAt = new DateTime(2026, 9, 27, 15, 17, 17, 161, DateTimeKind.Utc).AddTicks(8076),
                             CropStages = "Nursery, Tillering",
                             FavorableConditions = "High humidity, shaded or low-lying fields, continuous rice cropping.",
@@ -781,11 +804,14 @@ namespace PaddyWise.Api.Migrations
                             Name = "Rice Gall Midge",
                             Source = "Sri Lanka Department of Agriculture",
                             Symptoms = "Affected tiller produces a tubular \"silvershoot\"/onion-leaf gall instead of a normal leaf whorl and no panicle.",
+                            UpdatedAt = new DateTime(2026, 9, 27, 20, 23, 25, 604, DateTimeKind.Utc).AddTicks(1966)
                             UpdatedAt = new DateTime(2026, 9, 27, 15, 17, 17, 161, DateTimeKind.Utc).AddTicks(8076)
                         },
                         new
                         {
                             Id = 7,
+                            Category = 1,
+                            CreatedAt = new DateTime(2026, 9, 27, 20, 23, 25, 604, DateTimeKind.Utc).AddTicks(1968),
                             CreatedAt = new DateTime(2026, 9, 27, 15, 17, 17, 161, DateTimeKind.Utc).AddTicks(8078),
                             CropStages = "PanicleInitiation, Flowering",
                             FavorableConditions = "High humidity, excess nitrogen, dense planting.",
@@ -793,6 +819,7 @@ namespace PaddyWise.Api.Migrations
                             Name = "Sheath Rot",
                             Source = "Sri Lanka Department of Agriculture",
                             Symptoms = "Reddish-brown lesions on the flag leaf sheath enclosing the panicle; panicle may fail to emerge fully or grains are discolored.",
+                            UpdatedAt = new DateTime(2026, 9, 27, 20, 23, 25, 604, DateTimeKind.Utc).AddTicks(1968)
                             UpdatedAt = new DateTime(2026, 9, 27, 15, 17, 17, 161, DateTimeKind.Utc).AddTicks(8078)
                         });
                 });
@@ -881,6 +908,11 @@ namespace PaddyWise.Api.Migrations
                         .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AccountStatus")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");

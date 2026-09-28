@@ -17,6 +17,10 @@ public class ObservationResponseDto
     public string Severity { get; set; } = string.Empty;
     public string? ImageUrl { get; set; }
 
+    /// <summary>Null when never analyzed. When set with an empty Reports list, the agent ran
+    /// and found no likely match — distinct from "not yet analyzed."</summary>
+    public DateTime? LastAnalyzedAt { get; set; }
+
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 

@@ -31,9 +31,11 @@ public class ApplicationDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<User>()
-            .HasIndex(u => u.Email)
-            .IsUnique();
+        modelBuilder.Entity<User>(entity =>
+        {
+            entity.HasIndex(u => u.Email).IsUnique();
+            entity.Property(u => u.AccountStatus).HasDefaultValue(AccountStatus.Approved);
+        });
 
         modelBuilder.Entity<RefreshToken>()
             .HasIndex(r => r.Token)
@@ -284,6 +286,7 @@ public class ApplicationDbContext : DbContext
             {
                 Id = 1,
                 Name = "Thrips",
+                Category = PestDiseaseCategory.Pest,
                 Symptoms = "Silvery streaks and curling on young leaves; stunted growth in seedlings.",
                 FavorableConditions = "Dry weather, drought-stressed nurseries.",
                 CropStages = "Nursery, Tillering",
@@ -294,6 +297,7 @@ public class ApplicationDbContext : DbContext
             {
                 Id = 2,
                 Name = "Brown Planthopper",
+                Category = PestDiseaseCategory.Pest,
                 Symptoms = "Yellowing and drying of leaves from the base upward (\"hopperburn\"); stunted, wilting tillers.",
                 FavorableConditions = "Dense planting, excess nitrogen, continuous flooding, high humidity.",
                 CropStages = "Tillering, PanicleInitiation",
@@ -304,6 +308,7 @@ public class ApplicationDbContext : DbContext
             {
                 Id = 3,
                 Name = "Yellow Stem Borer",
+                Category = PestDiseaseCategory.Pest,
                 Symptoms = "Dead heart (dried central shoot) during vegetative growth; whitehead (empty, upright panicle) at the reproductive stage.",
                 FavorableConditions = "Continuous rice cropping without fallow, high nitrogen.",
                 CropStages = "Tillering, Flowering",
@@ -314,6 +319,7 @@ public class ApplicationDbContext : DbContext
             {
                 Id = 4,
                 Name = "Rice Leaf Folder",
+                Category = PestDiseaseCategory.Pest,
                 Symptoms = "Leaves folded longitudinally and webbed together; white/transparent streaks where larvae scrape and feed inside the fold.",
                 FavorableConditions = "High nitrogen, dense canopy, high humidity.",
                 CropStages = "Tillering, PanicleInitiation",
@@ -324,6 +330,7 @@ public class ApplicationDbContext : DbContext
             {
                 Id = 5,
                 Name = "Rice Sheath Mite",
+                Category = PestDiseaseCategory.Pest,
                 Symptoms = "Brown to black lesions on the leaf sheath near the waterline; can cause unfilled or discolored grains.",
                 FavorableConditions = "Warm, humid conditions and dense planting.",
                 CropStages = "PanicleInitiation, Flowering",
@@ -334,6 +341,7 @@ public class ApplicationDbContext : DbContext
             {
                 Id = 6,
                 Name = "Rice Gall Midge",
+                Category = PestDiseaseCategory.Pest,
                 Symptoms = "Affected tiller produces a tubular \"silvershoot\"/onion-leaf gall instead of a normal leaf whorl and no panicle.",
                 FavorableConditions = "High humidity, shaded or low-lying fields, continuous rice cropping.",
                 CropStages = "Nursery, Tillering",
@@ -344,6 +352,7 @@ public class ApplicationDbContext : DbContext
             {
                 Id = 7,
                 Name = "Sheath Rot",
+                Category = PestDiseaseCategory.Disease,
                 Symptoms = "Reddish-brown lesions on the flag leaf sheath enclosing the panicle; panicle may fail to emerge fully or grains are discolored.",
                 FavorableConditions = "High humidity, excess nitrogen, dense planting.",
                 CropStages = "PanicleInitiation, Flowering",

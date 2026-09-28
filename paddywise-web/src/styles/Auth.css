@@ -199,3 +199,142 @@
 .auth-link:hover {
   color: var(--shoot);
 }
+
+/* Role Portal Badges */
+.auth-role-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 1.25rem;
+  width: fit-content;
+}
+
+.auth-role-badge-admin {
+  background-color: rgba(166, 105, 63, 0.15);
+  color: var(--clay);
+  border: 1px solid rgba(166, 105, 63, 0.3);
+}
+
+.auth-role-badge-officer {
+  background-color: rgba(127, 166, 108, 0.18);
+  color: var(--forest);
+  border: 1px solid rgba(127, 166, 108, 0.35);
+}
+
+/* Switch & Navigation Links */
+.auth-nav-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.875rem;
+  color: var(--ink-soft);
+  margin-bottom: 1.5rem;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.auth-nav-back:hover {
+  color: var(--forest);
+}
+
+.auth-portal-switch {
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--line);
+  font-size: 0.875rem;
+  text-align: center;
+  color: var(--ink-soft);
+}
+
+/* Portal Selection Grid & Cards */
+.auth-selection-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  margin-top: 1.75rem;
+  margin-bottom: 1.75rem;
+}
+
+.auth-selection-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.25rem;
+  padding: 1.5rem;
+  border-radius: 12px;
+  background-color: #ffffff;
+  border: 1px solid var(--line);
+  text-decoration: none;
+  color: var(--ink);
+  cursor: pointer;
+  outline: none;
+  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+
+.auth-selection-card:hover,
+.auth-selection-card:focus-visible {
+  transform: translateY(-2px);
+  border-color: var(--shoot);
+  box-shadow: 0 8px 24px rgba(33, 45, 30, 0.08);
+}
+
+.auth-selection-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.auth-selection-icon-admin {
+  background-color: rgba(166, 105, 63, 0.12);
+  color: var(--clay);
+}
+
+.auth-selection-icon-officer {
+  background-color: rgba(127, 166, 108, 0.15);
+  color: var(--forest);
+}
+
+.auth-selection-card-content {
+  flex: 1;
+}
+
+.auth-selection-card-title {
+  font-family: var(--font-heading);
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 0.35rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.auth-selection-card-desc {
+  font-size: 0.875rem;
+  color: var(--ink-soft);
+  line-height: 1.45;
+  margin-bottom: 1rem;
+}
+
+.auth-notice-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 8px;
+  background-color: rgba(75, 86, 69, 0.06);
+  border: 1px dashed var(--line);
+  font-size: 0.8125rem;
+  color: var(--ink-soft);
+  line-height: 1.45;
+}
+

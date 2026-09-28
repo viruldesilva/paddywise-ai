@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Http;
 using PaddyWise.Api.DTOs.PestDisease;
 using PaddyWise.Api.Entities.Shared;
 
@@ -20,4 +21,9 @@ public interface IObservationService
     /// observation that has none yet, and persists one PestDiseaseReport per candidate issue
     /// it returns.</summary>
     Task<ObservationResponseDto?> RequestAnalysisAsync(int observationId, int farmerId);
+
+    /// <summary>Uploads a photo for an observation that has no diagnosis yet, and sets its
+    /// ImageUrl to the stored file's public URL — same ownership/edit-lock rules as
+    /// UpdateAsync. Null when no observation has this id.</summary>
+    Task<ObservationResponseDto?> SetPhotoAsync(int observationId, int farmerId, IFormFile file);
 }

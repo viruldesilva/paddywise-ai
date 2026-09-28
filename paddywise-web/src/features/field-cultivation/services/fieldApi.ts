@@ -5,29 +5,17 @@
  */
 import { axiosInstance } from '../../../api/axiosInstance';
 import type {
-  CreateCycleRequest,
-  CreateFieldRequest,
   CultivationCycle,
   CultivationPlan,
-  CycleStatus,
   Division,
   Field,
   LogStageRequest,
   PendingPlanSummary,
-  RequestPlanRequest,
   ReviewPlanRequest,
-  UpdateCycleStatusRequest,
-  UpdateFieldRequest,
   Variety,
 } from '../types';
 
 /* ------------------------------------------------------------------ fields */
-
-/** GET /api/fields — the caller's own active fields. Farmer only. */
-export async function getMyFields(): Promise<Field[]> {
-  const response = await axiosInstance.get<Field[]>('/fields');
-  return response.data;
-}
 
 /**
  * GET /api/fields/division/{divisionId} — every active field in a division.
@@ -38,27 +26,10 @@ export async function getFieldsByDivision(divisionId: number): Promise<Field[]> 
   return response.data;
 }
 
-/** GET /api/fields/{id} — a farmer may read only their own field. */
+/** GET /api/fields/{id}. */
 export async function getFieldById(id: number): Promise<Field> {
   const response = await axiosInstance.get<Field>(`/fields/${id}`);
   return response.data;
-}
-
-/** POST /api/fields. Farmer only; the owner comes from the access token. */
-export async function createField(request: CreateFieldRequest): Promise<Field> {
-  const response = await axiosInstance.post<Field>('/fields', request);
-  return response.data;
-}
-
-/** PUT /api/fields/{id} — a full replace of every editable value. */
-export async function updateField(id: number, request: UpdateFieldRequest): Promise<Field> {
-  const response = await axiosInstance.put<Field>(`/fields/${id}`, request);
-  return response.data;
-}
-
-/** DELETE /api/fields/{id} — a soft delete; the row stays, IsActive goes false. */
-export async function deleteField(id: number): Promise<void> {
-  await axiosInstance.delete<void>(`/fields/${id}`);
 }
 
 /* --------------------------------------------------------------- divisions */
@@ -79,7 +50,10 @@ export async function getVarieties(): Promise<Variety[]> {
 
 /* ------------------------------------------------------------------ cycles */
 
-/** GET /api/cycles — the caller's cycles, optionally narrowed to one field. */
+/**
+ * GET /api/cycles — a farmer's own cycles, optionally narrowed to one field.
+ * Officers must pass fieldId; the backend answers 400 without it.
+ */
 export async function getMyCycles(fieldId?: number): Promise<CultivationCycle[]> {
   const response = await axiosInstance.get<CultivationCycle[]>('/cycles', {
     params: fieldId === undefined ? undefined : { fieldId },
@@ -90,21 +64,6 @@ export async function getMyCycles(fieldId?: number): Promise<CultivationCycle[]>
 /** GET /api/cycles/{id}. */
 export async function getCycleById(id: number): Promise<CultivationCycle> {
   const response = await axiosInstance.get<CultivationCycle>(`/cycles/${id}`);
-  return response.data;
-}
-
-/**
- * POST /api/fields/{fieldId}/start-cultivation — Start Cultivation Cycle.
- * The route is the authority on the field, so fieldId is not in the body.
- */
-export async function startCultivation(
-  fieldId: number,
-  request: CreateCycleRequest
-): Promise<CultivationCycle> {
-  const response = await axiosInstance.post<CultivationCycle>(
-    `/fields/${fieldId}/start-cultivation`,
-    request
-  );
   return response.data;
 }
 
@@ -120,36 +79,9 @@ export async function logStage(
   return response.data;
 }
 
-/** PATCH /api/cycles/{id}/status. Farmer only. */
-export async function updateCycleStatus(
-  cycleId: number,
-  status: CycleStatus
-): Promise<CultivationCycle> {
-  const body: UpdateCycleStatusRequest = { status };
-  const response = await axiosInstance.patch<CultivationCycle>(
-    `/cycles/${cycleId}/status`,
-    body
-  );
-  return response.data;
-}
-
 /* ------------------------------------------------------------------- plans */
 
-/**
- * POST /api/cycles/{cycleId}/plans — ask the Cultivation Planning Agent for a
- * plan. Farmer only, and slow: the agent's tool loop plus the deterministic
- * validator take 20–40 seconds, so the caller must keep its UI honest for that
- * long. axiosInstance sets no timeout, which is what lets the request stand.
- *
- * 400 when the cycle already has a plan awaiting approval or approved.
- */
-export async function requestPlan(cycleId: number, objective: string): Promise<CultivationPlan> {
-  const body: RequestPlanRequest = { objective };
-  const response = await axiosInstance.post<CultivationPlan>(`/cycles/${cycleId}/plans`, body);
-  return response.data;
-}
-
-/** GET /api/plans/{id} — the plan with its agent runs. A farmer reads only their own. */
+/** GET /api/plans/{id} — the plan with its agent runs. */
 export async function getPlan(id: number): Promise<CultivationPlan> {
   const response = await axiosInstance.get<CultivationPlan>(`/plans/${id}`);
   return response.data;
@@ -187,20 +119,13 @@ export async function reviewPlan(
 }
 
 export const fieldApi = {
-  getMyFields,
   getFieldsByDivision,
   getFieldById,
-  createField,
-  updateField,
-  deleteField,
   getDivisions,
   getVarieties,
   getMyCycles,
   getCycleById,
-  startCultivation,
   logStage,
-  updateCycleStatus,
-  requestPlan,
   getPlan,
   getPlansForCycle,
   getPendingPlans,

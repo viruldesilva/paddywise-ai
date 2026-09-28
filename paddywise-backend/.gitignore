@@ -9,6 +9,7 @@ appsettings.Development.json
 appsettings.Local.json
 Logs/
 *.log
+sixlabors.lic
 
 # ===================================
 # Node / React (paddywise-web)

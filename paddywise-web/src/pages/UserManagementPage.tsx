@@ -1,9 +1,10 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Sidebar } from '../components/Sidebar';
 import { useAuth } from '../hooks/useAuth';
-import { Menu, LogOut, Search, Plus, Filter, MoreVertical, Edit2, Trash2 } from 'lucide-react';
+import { Menu, LogOut, Search, Plus, Filter, MoreVertical, Edit2, Trash2, UserCheck } from 'lucide-react';
 import '../styles/Dashboard.css';
-import '../styles/UserManagement.css'; // Let's create a small CSS file for any specific additions
+import '../styles/UserManagement.css';
 
 export default function UserManagementPage() {
   const { user, logout } = useAuth();
@@ -90,10 +91,20 @@ export default function UserManagementPage() {
               <h1 className="dashboard-welcome-title">Manage System Users</h1>
               <p className="dashboard-welcome-desc">View, edit, and control access for all farmers, officers, and administrators.</p>
             </div>
-            <button className="btn btn-primary" onClick={() => alert('Add User UI modal would open here.')}>
-              <Plus size={18} style={{ marginRight: '0.5rem' }} />
-              Add New User
-            </button>
+            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+              <Link
+                to="/admin/officer-requests"
+                className="btn btn-secondary"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', textDecoration: 'none' }}
+              >
+                <UserCheck size={18} />
+                <span>Officer Approvals</span>
+              </Link>
+              <button className="btn btn-primary" onClick={() => alert('Add User UI modal would open here.')}>
+                <Plus size={18} style={{ marginRight: '0.5rem' }} />
+                Add New User
+              </button>
+            </div>
           </div>
 
           <div className="dashboard-panel">

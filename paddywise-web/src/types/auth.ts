@@ -32,6 +32,24 @@ export interface AuthResponseDto {
   role: string;
 }
 
+export interface RegisterResponseDto {
+  requiresApproval: boolean;
+  message: string;
+  accessToken?: string | null;
+  refreshToken?: string | null;
+  name?: string | null;
+  email?: string | null;
+  role?: string | null;
+}
+
+export interface OfficerRequestDto {
+  id: number;
+  name: string;
+  email: string;
+  phone?: string | null;
+  createdAt: string;
+}
+
 export interface CurrentUserDto {
   name: string | null;
   role: string | null;

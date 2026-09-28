@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'theme/app_theme.dart';
 import 'services/auth_service.dart';
-import 'screens/login_screen.dart';
-import 'screens/dashboard_screen.dart';
+import 'core/router/app_router.dart';
 
 import 'services/notification_service.dart';
 
@@ -12,23 +11,20 @@ void main() async {
   await NotificationService.init();
   final currentUser = AuthService.getCurrentUser();
 
-  runApp(PaddyWiseApp(initialUser: currentUser));
+  runApp(const PaddyWiseApp());
 }
 
 class PaddyWiseApp extends StatelessWidget {
-  final dynamic initialUser;
-
-  const PaddyWiseApp({super.key, this.initialUser});
+  const PaddyWiseApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return MaterialApp.router(
       title: 'Kumburu - PaddyWise AI',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.theme,
-      home: initialUser != null
-          ? DashboardScreen(user: initialUser)
-          : const LoginScreen(),
+      routerConfig: appRouter,
     );
   }
 }
+
