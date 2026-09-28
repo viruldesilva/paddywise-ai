@@ -88,20 +88,6 @@ export interface Field {
   updatedAt: string;
 }
 
-/** DTOs/FieldCultivation/CreateFieldRequestDto.cs */
-export interface CreateFieldRequest {
-  name: string;
-  area: number;
-  soilType: string;
-  irrigationType: string;
-  divisionId: number;
-  latitude: number | null;
-  longitude: number | null;
-}
-
-/** DTOs/FieldCultivation/UpdateFieldRequestDto.cs — a full replace, same shape. */
-export type UpdateFieldRequest = CreateFieldRequest;
-
 /** DTOs/FieldCultivation/StageWindowDto.cs — one planned stage of the timeline. */
 export interface StageWindow {
   stage: GrowthStage;
@@ -146,59 +132,12 @@ export interface CultivationCycle {
   stageLogs: StageLog[];
 }
 
-/**
- * DTOs/FieldCultivation/CreateCycleRequestDto.cs
- * fieldId is omitted: POST /api/fields/{fieldId}/start-cultivation takes the
- * field from the route and overwrites whatever the body carries.
- */
-export interface CreateCycleRequest {
-  varietyId: number;
-  season: Season;
-  year: number;
-  method: CultivationMethod;
-  sowingDate: IsoDate;
-  notes: string | null;
-}
-
 /** DTOs/FieldCultivation/LogStageRequestDto.cs */
 export interface LogStageRequest {
   stage: GrowthStage;
   observedOn: IsoDate;
   notes: string | null;
 }
-
-/** DTOs/FieldCultivation/UpdateCycleStatusRequestDto.cs */
-export interface UpdateCycleStatusRequest {
-  status: CycleStatus;
-}
-
-/**
- * The validation attributes on CreateFieldRequestDto / UpdateFieldRequestDto,
- * so the client can reject the same values the server would.
- */
-export const FIELD_RULES = {
-  nameMaxLength: 100,
-  areaMin: 0.01,
-  areaMax: 1000,
-  soilTypeMaxLength: 50,
-  irrigationTypeMaxLength: 50,
-  latitudeMin: -90,
-  latitudeMax: 90,
-  longitudeMin: -180,
-  longitudeMax: 180,
-} as const;
-
-/**
- * CreateCycleRequestDto's Year [Range(2000, 2100)] and the calendar window
- * CycleService enforces around the sowing date.
- */
-export const CYCLE_RULES = {
-  yearMin: 2000,
-  yearMax: 2100,
-  notesMaxLength: 1000,
-  maxBackdateDays: 30,
-  maxLookaheadDays: 365,
-} as const;
 
 /** LogStageRequestDto's Notes [MaxLength(1000)]. */
 export const STAGE_LOG_RULES = {
@@ -325,16 +264,6 @@ export interface CultivationPlan {
   createdAt: string;
   agentRuns: AgentRunSummary[];
 }
-
-/** DTOs/FieldCultivation/RequestPlanDto.cs */
-export interface RequestPlanRequest {
-  objective: string;
-}
-
-/** RequestPlanDto's Objective [Required] [MaxLength(1000)]. */
-export const PLAN_RULES = {
-  objectiveMaxLength: 1000,
-} as const;
 
 export const PLAN_STATUS_LABELS: Record<PlanStatus, string> = {
   Draft: 'Draft',

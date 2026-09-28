@@ -8,19 +8,14 @@ import {
   Layers,
   MapPin,
   Menu,
-  Pencil,
-  Plus,
   Ruler,
   Sprout,
-  X,
   LogOut,
 } from 'lucide-react';
 import { Sidebar } from '../../../components/Sidebar';
 import { useAuth } from '../../../hooks/useAuth';
 import { extractApiErrorMessage } from '../../../services/authService';
-import { CycleForm } from '../components/CycleForm';
 import { CycleStatusBadge } from '../components/CycleStatusBadge';
-import { FieldForm } from '../components/FieldForm';
 import { getFieldById, getMyCycles } from '../services/fieldApi';
 import { CULTIVATION_METHOD_LABELS, GROWTH_STAGE_LABELS } from '../types';
 import type { CultivationCycle, Field } from '../types';
@@ -50,13 +45,9 @@ export default function FieldDetailPage() {
   const fieldId = Number(id);
   const isValidId = Number.isInteger(fieldId) && fieldId > 0;
 
-  const isFarmer = user?.role === 'Farmer';
-
   const [loaded, setLoaded] = useState<FieldLoad | null>(null);
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isEditOpen, setIsEditOpen] = useState(false);
-  const [isCycleFormOpen, setIsCycleFormOpen] = useState(false);
 
   // Bumped to ask the effect below for a fresh read after a failure.
   const [reloadToken, setReloadToken] = useState(0);
@@ -118,22 +109,6 @@ export default function FieldDetailPage() {
     setReloadToken((previous) => previous + 1);
   }, []);
 
-  const handleFieldSaved = (saved: Field) => {
-    setIsEditOpen(false);
-    setLoaded((previous) =>
-      previous === null ? previous : { ...previous, field: saved, error: null }
-    );
-  };
-
-  const handleCycleCreated = (created: CultivationCycle) => {
-    setIsCycleFormOpen(false);
-    setLoaded((previous) =>
-      previous === null
-        ? previous
-        : { ...previous, cycles: [created, ...previous.cycles].sort(byNewestFirst) }
-    );
-  };
-
   if (!user) return null;
 
   return (
@@ -159,7 +134,7 @@ export default function FieldDetailPage() {
                 <span className="dashboard-user-sub">{user.email}</span>
               </div>
               <button 
-                onClick={logout} 
+                onClick={() => logout()} 
                 className="btn btn-secondary btn-sm"
                 title="Sign Out"
                 style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
@@ -172,12 +147,13 @@ export default function FieldDetailPage() {
         </header>
 
         <main className="dashboard-content container">
-          {isFarmer && (
-            <Link className="fc-back" to="/fields">
-              <ArrowLeft size={16} />
-              All fields
-            </Link>
-          )}
+          <Link
+            className="fc-back"
+            to={field ? `/officer/fields?division=${field.divisionId}` : '/officer/fields'}
+          >
+            <ArrowLeft size={16} />
+            {field?.divisionName ? `Fields in ${field.divisionName}` : 'All fields'}
+          </Link>
 
           {isLoading && (
             <div className="fc-state">
@@ -207,13 +183,6 @@ export default function FieldDetailPage() {
                     {field.divisionName || 'No division recorded'} · farmed by {field.farmerName}
                   </p>
                 </div>
-
-                {isFarmer && (
-                  <button className="fc-btn fc-btn-outline" onClick={() => setIsEditOpen(true)}>
-                    <Pencil size={16} />
-                    Edit field
-                  </button>
-                )}
               </div>
 
               <section className="fc-summary">
@@ -269,16 +238,6 @@ export default function FieldDetailPage() {
                     <h2 className="fc-section-title">Cultivation cycles</h2>
                     <p className="fc-section-sub">Newest season first.</p>
                   </div>
-
-                  {isFarmer && (
-                    <button
-                      className="fc-btn fc-btn-primary"
-                      onClick={() => setIsCycleFormOpen(true)}
-                    >
-                      <Plus size={18} />
-                      Start new cycle
-                    </button>
-                  )}
                 </div>
 
                 {cyclesError && (
@@ -293,19 +252,8 @@ export default function FieldDetailPage() {
                     <Sprout size={28} className="fc-state-icon" />
                     <h3 className="fc-state-title">No cycles on this field yet</h3>
                     <p className="fc-state-text">
-                      {isFarmer
-                        ? 'Start a cultivation cycle to get a stage-by-stage plan from the sowing date.'
-                        : 'Cycles appear here once the farmer starts one.'}
+                      Cycles appear here once the farmer starts one in the mobile app.
                     </p>
-                    {isFarmer && (
-                      <button
-                        className="fc-btn fc-btn-primary"
-                        onClick={() => setIsCycleFormOpen(true)}
-                      >
-                        <Plus size={18} />
-                        Start the first cycle
-                      </button>
-                    )}
                   </div>
                 )}
 
@@ -352,66 +300,6 @@ export default function FieldDetailPage() {
           )}
         </main>
       </div>
-
-      {isEditOpen && field && (
-        <div
-          className="fc-modal-backdrop"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="fc-edit-title"
-        >
-          <div className="fc-modal">
-            <header className="fc-modal-head">
-              <h2 className="fc-modal-title" id="fc-edit-title">
-                Edit field
-              </h2>
-              <button
-                className="fc-modal-close"
-                onClick={() => setIsEditOpen(false)}
-                aria-label="Close"
-              >
-                <X size={20} />
-              </button>
-            </header>
-
-            <FieldForm
-              field={field}
-              onSaved={handleFieldSaved}
-              onCancel={() => setIsEditOpen(false)}
-            />
-          </div>
-        </div>
-      )}
-
-      {isCycleFormOpen && field && (
-        <div
-          className="fc-modal-backdrop"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="fc-cycle-title"
-        >
-          <div className="fc-modal">
-            <header className="fc-modal-head">
-              <h2 className="fc-modal-title" id="fc-cycle-title">
-                Start a cultivation cycle
-              </h2>
-              <button
-                className="fc-modal-close"
-                onClick={() => setIsCycleFormOpen(false)}
-                aria-label="Close"
-              >
-                <X size={20} />
-              </button>
-            </header>
-
-            <CycleForm
-              fieldId={field.id}
-              onCreated={handleCycleCreated}
-              onCancel={() => setIsCycleFormOpen(false)}
-            />
-          </div>
-        </div>
-      )}
     </div>
   );
 }

@@ -12,7 +12,7 @@ import { ActivityDashboard } from './features/crop-resource/pages/ActivityDashbo
 import DashboardPage from './pages/DashboardPage';
 import UserManagementPage from './pages/UserManagementPage';
 import OfficerApprovalPage from './pages/OfficerApprovalPage';
-import FieldsPage from './features/field-cultivation/pages/FieldsPage';
+import DivisionFieldsPage from './features/field-cultivation/pages/DivisionFieldsPage';
 import FieldDetailPage from './features/field-cultivation/pages/FieldDetailPage';
 import CycleDetailPage from './features/field-cultivation/pages/CycleDetailPage';
 import PlanApprovalPage from './features/field-cultivation/pages/PlanApprovalPage';
@@ -100,10 +100,10 @@ function AppContent() {
         />
 
         <Route
-          path="/fields"
+          path="/officer/fields"
           element={
-            <ProtectedRoute allowedRoles={['Farmer']}>
-              <FieldsPage />
+            <ProtectedRoute allowedRoles={['AgriculturalOfficer', 'Admin']}>
+              <DivisionFieldsPage />
             </ProtectedRoute>
           }
         />
@@ -111,7 +111,7 @@ function AppContent() {
         <Route
           path="/fields/:id"
           element={
-            <ProtectedRoute allowedRoles={['Farmer', 'AgriculturalOfficer', 'FieldOfficer']}>
+            <ProtectedRoute allowedRoles={['AgriculturalOfficer', 'Admin']}>
               <FieldDetailPage />
             </ProtectedRoute>
           }
@@ -120,7 +120,7 @@ function AppContent() {
         <Route
           path="/cycles/:id"
           element={
-            <ProtectedRoute allowedRoles={['Farmer', 'AgriculturalOfficer', 'FieldOfficer']}>
+            <ProtectedRoute allowedRoles={['AgriculturalOfficer', 'Admin']}>
               <CycleDetailPage />
             </ProtectedRoute>
           }

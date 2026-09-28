@@ -11,7 +11,6 @@ import {
   Bug,
   Cloud,
   Brain,
-  FileText,
   CheckSquare,
   MessageSquare,
   BarChart2,
@@ -40,7 +39,6 @@ export function Sidebar({ role, isOpen, onClose }: SidebarProps) {
   const farmerLinks = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { name: 'Manage Profile', path: '#profile', icon: User },
-    { name: 'Fields & Cultivation Cycles', path: '/fields', icon: Map },
     { name: 'Record Activities', path: '/activities', icon: Activity },
     { name: 'Report Pests/Diseases', path: '/observations', icon: Bug },
     { name: 'Weather & History', path: '#weather', icon: Cloud },
@@ -50,7 +48,7 @@ export function Sidebar({ role, isOpen, onClose }: SidebarProps) {
   const agriculturalOfficerLinks = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { name: 'Past Crop Activities', path: '/activities', icon: Activity },
-    { name: 'View Farmer Fields & Reports', path: '#fields', icon: FileText },
+    { name: 'View Farmer Fields & Cycles', path: '/officer/fields', icon: Map },
     { name: 'Review AI Recommendations', path: '/plans/pending', icon: CheckSquare },
     { name: 'Review Pest/Disease Reports', path: '/pest-disease-reports', icon: Bug },
     { name: 'Add Expert Recommendations', path: '#expert', icon: MessageSquare },

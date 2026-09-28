@@ -43,7 +43,10 @@ public class PlansController : ControllerBase
 
             await _validationAgentService.ValidateCultivationPlanAsync(result.Id);
 
-            return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
+            // The validation pass can change status, errors and comment, so return the stored plan.
+            var validated = await _planService.GetByIdAsync(result.Id, farmerId.Value, UserRole.Farmer) ?? result;
+
+            return CreatedAtAction(nameof(GetById), new { id = validated.Id }, validated);
         }
         catch (InvalidOperationException ex)
         {

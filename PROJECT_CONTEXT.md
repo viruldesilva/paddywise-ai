@@ -1,42 +1,47 @@
-# PaddyWise-AI ("Kumburu") — Full Project Context Document
+# PaddyWise-AI ("Kumburu") — Full Project Context
 
-> Generated 2026-09-16 from a full read of the repository at branch `feature/field-cultivation`
-> (16 commits ahead of `origin/develop`).
-> Purpose: paste this into an LLM chat as complete context before planning a new feature.
+> Regenerated **2026-09-23** from a full read of the repository at branch
+> `feature/field-cultivation` (commit `251e45e`, 32 commits ahead of `origin/main`).
+> Purpose: paste this into an LLM chat as complete context before planning or debugging.
+> Everything below was verified against the code on that commit, not against older docs.
 
 ---
 
-## 1. What this project is
+## 1. What the product is
 
-**PaddyWise-AI** (product name in the UI: **Kumburu**) is an academic/capstone-style
-**agentic AI decision-support platform for Sri Lankan paddy (rice) farmers**, connecting
-farmers and agricultural/field officers on one system.
+**PaddyWise-AI** (UI name **Kumburu**) is an academic/capstone **agentic-AI decision-support
+platform for Sri Lankan paddy (rice) farmers**, putting farmers and agricultural/field officers
+on one system.
 
-The pitch (from the landing page copy, which is still the clearest statement of product intent):
+The intended core loop, from the landing page (`WorkflowSection.tsx`):
 
-> "Kumburu connects farmers, extension officers and buyers on one system — so a pest report
-> gets answered in hours, not weeks, and the harvest finds a fair price."
+```
+01 Report  →  02 Analyze (AI agent)  →  03 Recommend (dosage-checked)
+           →  04 Approve (officer sign-off)  →  05 Act (farmer gets plan)
+```
 
-The intended **5-step core workflow** (from `WorkflowSection.tsx`):
-`01 Report → 02 Analyze (AI agent) → 03 Recommend (dosage-checked) → 04 Approve (officer sign-off) → 05 Act (farmer gets plan)`
+The governing design principle throughout the codebase: **no LLM output reaches a human or the
+database without passing deterministic C# validation, and no plan reaches a farmer without an
+officer approving it.** Every agent run is audit-logged whether it succeeds or fails.
 
-### The four business components, one per team member
+### Four business components, one per team member, each with one agent
 
-Each component owns one AI agent. This is the structure the backend folders, the DI keys in
-`AgentNames` and the web `features/` directories are all organised around.
+| # | Component | Agent | Owner area | Real code today? |
+|---|---|---|---|---|
+| **1** | **Field & Cultivation Management** — fields, cycles, growth stages, cultivation plans | **Cultivation Planning Agent** (workflow coordinator) | `FieldCultivation/`, `features/field-cultivation/` | **Yes — complete end to end** |
+| **2** | Crop Activity & Resource Management — irrigation/fertilizer/pesticide logging, fertilizer rules | Resource Analysis & Action Agent | `CropResource/`, `features/crop-resource/` | **Yes — backend + UI, but mostly rule-based, not LLM-driven** |
+| **3** | Pest & Disease Monitoring — problem reports, photo upload, diagnosis | Pest & Disease Diagnosis Agent (class: `CropAnalysisAgent`) | `PestDisease/` | **Backend yes (with vision). No web UI at all.** |
+| **4** | Reporting, Dashboards & Approval — officer/admin dashboards, approval mgmt, audit | Scheduling, Validation & Approval Agent | `Reporting/` | **No — a stub class and a hardcoded dashboard** |
 
-| # | Component | Agent | Built? |
-|---|---|---|---|
-| **1** | **Field & Cultivation Management** — fields, cultivation cycles, growth stages, cultivation plans | **Cultivation Planning Agent** (the workflow coordinator) | **Yes — end to end** |
-| **2** | Crop Activity & Resource Management — irrigation/fertilizer/pesticide logging, fertilizer rules | Resource Analysis & Action Agent | No — stub agent, client-side mock UI |
-| **3** | Pest & Disease Monitoring — problem reports, photo upload, diagnosis | Pest & Disease Diagnosis Agent | No — stub agent, no UI beyond `alert()` |
-| **4** | Reporting, Dashboards & Approval — officer/admin dashboards, approval management, audit | Scheduling, Validation & Approval Agent | No — stub agent; the *plan* approval queue in §4 belongs to component 1 |
+**Nuran owns Component 1 only.** Ownership boundaries are enforced socially via `CLAUDE.md`:
+do not create/edit/delete files under `features/crop-resource/**` or any backend
+`Entities|DTOs|Services|Controllers|Agents/<Component>/` for components 2–4. Shared files
+(`App.tsx`, `Sidebar.tsx`, `Program.cs`, `ApplicationDbContext.cs`, `DashboardPage.tsx`) may be
+touched only for the minimal lines a task explicitly names.
 
-**Reality check: component 1 is the only one that exists in code.** Components 2–4 exist as
-three `IAgent` stubs in `Agents/Shared/StubAgents.cs` that return a "to be implemented" note,
-plus one client-side mock feature module (`features/crop-resource/`). The landing page's older
-four-feature pitch (cultivation / pest advisory / **harvest & market** / **weather**) is
-marketing copy — harvest, market, buyers and weather have no code anywhere in the repo.
+**Marketing copy that has no code behind it:** the landing page still pitches *harvest & market*,
+*buyers/millers* and *weather*. There is no harvest-sales, buyer, market-price or weather code
+anywhere in the repo, and no Buyer role on the backend. Treat those as out of scope.
 
 ---
 
@@ -44,31 +49,182 @@ marketing copy — harvest, market, buyers and weather have no code anywhere in 
 
 ```
 paddywise-ai/
-├── README.md                  # team setup guide (prerequisites, secrets, run commands)
-├── CLAUDE.md                  # working rules: ownership boundaries, conventions, guardrails
+├── README.md                  # team setup guide
+├── CLAUDE.md                  # working rules: ownership, conventions, guardrails
 ├── PROJECT_CONTEXT.md         # this file
-├── .gitattributes
-├── package-lock.json          # empty stub, no root package.json (vestigial)
-├── database/
-│   └── schema.sql             # HAND-WRITTEN Postgres schema — DIVERGES from the EF model (see §6)
-├── docs/
-│   └── cultivation-planning-agent.md   # component 1's agent: tools, validation rules, states
-├── paddywise-backend/         # ASP.NET Core 8 Web API  (project name: PaddyWise.Api)
+├── database/schema.sql        # HAND-WRITTEN, obsolete, incompatible with EF — see §9
+├── docs/cultivation-planning-agent.md   # component 1's agent, in full detail
+├── paddywise-backend/         # ASP.NET Core 8 Web API (assembly: PaddyWise.Api)
+│   └── Docs/PestDiseaseMonitoring/      # component 3's own guide
 ├── paddywise-web/             # React 19 + TypeScript + Vite SPA
-└── paddywise_mobile/          # Flutter app (Dart 3.9)
+└── paddywise_mobile/          # Flutter app (Dart 3.9) — fully offline, no backend
 ```
 
-Three independent tech stacks, no shared contract/codegen, no monorepo tooling, no CI, no Docker,
-no tests beyond one Flutter smoke test.
+Three independent stacks. **No monorepo tooling, no shared contract/codegen, no CI, no Docker,
+no backend or web tests.** The only automated gates are `dotnet build` and `npm run build`.
 
 ---
 
-## 3. Backend — `paddywise-backend` (ASP.NET Core 8)
+## 3. THE WORKFLOW — what actually happens end to end
 
-**Project**: `PaddyWise.Api.csproj`, `net8.0`, nullable + implicit usings enabled,
-`UserSecretsId` set.
+This is the spine of the system. Follow it in order.
 
-### Packages
+### 3.1 Registration and auth
+
+1. `POST /api/auth/register` — name, email, password, **role as a string**, optional phone.
+   Password is BCrypt-hashed. Returns an access token + refresh token immediately.
+2. `POST /api/auth/login` → same pair. Access token ~20 min, refresh token 7 days.
+3. Access token claims: `NameIdentifier` (user id), `Name`, `Email`, `Role`.
+   **Every controller reads the caller's id from `ClaimTypes.NameIdentifier`** — never from the
+   request body.
+4. `POST /api/auth/refresh` rotates: the old refresh token is revoked, a new pair issued.
+5. The web SPA stores both tokens (`tokenStorage`) and `axiosInstance` handles bearer injection,
+   401 → single-flight refresh → retry, and redirect to `/login` on failure.
+
+Roles, canonical and exact: `Farmer, AgriculturalOfficer, Admin, FieldOfficer`.
+`UserRole` is an **enum stored as an int** (Farmer=0, AgriculturalOfficer=1, Admin=2,
+FieldOfficer=3). The API accepts the string name (case-insensitive) or the number.
+
+### 3.2 Component 1 — the main flow (fully working)
+
+```
+Farmer registers a Field
+   ↓  POST /api/fields          (name, area in acres, soil, irrigation, divisionId, lat/lng)
+Farmer starts a Cultivation Cycle on that field
+   ↓  POST /api/fields/{fieldId}/start-cultivation
+       (varietyId, season Yala|Maha, year, method, sowingDate, notes)
+   → CycleService computes ExpectedHarvestDate = SowingDate + Variety.DurationDays and
+     STORES it. Status = Planned if sowing is in the future, else Active.
+   → StageTimelineCalculator derives 6 contiguous growth-stage windows from
+     (sowingDate, durationDays) using fixed fractions of the season:
+       Nursery 0.00 | Tillering 0.15 | PanicleInitiation 0.40 |
+       Flowering 0.55 | GrainFilling 0.70 | Harvest 0.95 → 1.00
+Farmer asks the agent for a plan
+   ↓  POST /api/cycles/{cycleId}/plans   { objective: "free text in the farmer's own words" }
+   → A CultivationPlan row is saved FIRST with Status=Draft, so the audit log can point at it
+     no matter what happens next.
+   → CultivationPlanningAgent runs (Gemini + 4 read-only tools, 20–40 s).
+   → CultivationPlanValidator.Validate() — pure C#, no DB, no LLM — collects ALL failures.
+       valid   → Status = PendingOfficerApproval, delegations dispatched to other agents
+       invalid → Status = ValidationFailed, errors stored verbatim and shown to the farmer
+   → An AgentRunLog row is written either way, plus one per delegation, all under one
+     correlation id.
+Officer reviews
+   ↓  GET  /api/plans/pending?divisionId=   (AgriculturalOfficer only)
+   ↓  POST /api/plans/{id}/review  { decision: Approve|Reject|RequestRevision, comment }
+   → Reject / RequestRevision REQUIRE a comment.
+   → Approve runs in ONE transaction: plan → Approved AND cycle Planned → Active together.
+Farmer logs progress
+   ↓  POST /api/cycles/{id}/stages  { stage, observedOn, notes }
+   → Sets CurrentStage; stage == Harvest also sets Status=Harvested + ActualHarvestDate.
+```
+
+**Plan state machine** (`PlanStatus`):
+
+```
+Draft ──► ValidationFailed        (agent failed, or a rule broke)  → farmer may retry
+      └─► PendingOfficerApproval ──► Approved          (cycle Planned → Active)
+                                ├─► Rejected           (comment required)
+                                └─► RevisionRequested  (comment required) → farmer may retry
+```
+
+A cycle may hold **only one** plan in `PendingOfficerApproval` or `Approved` at a time, so a
+plan already sitting with an officer is never silently replaced.
+
+### 3.3 Component 2 — crop activity logging + analysis
+
+```
+Farmer logs an activity against a cycle
+   ↓  POST /api/cycles/{cycleId}/activities
+       { activityType: Irrigation|Fertilizer|Pesticide|Other, date, detailsJson }
+   → detailsJson is a jsonb blob whose required keys depend on activityType:
+       Fertilizer : type, quantity, cropStage, region, method
+       Irrigation : waterLevel, duration, source
+       Pesticide  : product, targetPest, quantity, method
+       Other      : specificActivity
+   → Date rules: not future, not older than 7 days, not before sowing, not after harvest.
+Farmer/officer asks for analysis
+   ↓  POST /api/cycles/{cycleId}/analysis   (or GET .../analysis/latest — which re-runs it)
+   → ResourceAnalysisAgent builds a CycleActivityBundle (parses every activity's JSON),
+     computes DAS, estimates the stage, then runs four deterministic diagnostics
+     (Water / Fertilizer / Pest / Other), generates rule-based recommendations WITH dosages
+     and DOA citations, then runs ActivitySafetyValidator, then asks the LLM for a
+     two-sentence executive summary only.
+   ↓  POST /api/cycles/{cycleId}/ai-chat    { question }
+   → Free-text Q&A grounded in the same bundle; falls back to a deterministic canned answer
+     if the LLM call throws.
+```
+
+`ActivitySafetyValidator` is the real safety gate here, and it is the strongest piece of
+component 2. It: flags 11 Sri Lanka ROP banned/restricted substances found in logged pesticide
+history; enforces a 14-day pre-harvest interval by **stripping** any fertilizer/pesticide
+recommendation and replacing it with a stop-order; flags >65 kg/ha urea in 10 days and
+suppresses any "apply fertilizer" recommendation; and forces an irrigation recommendation on
+moisture stress at Flowering. Any of these can set `RequiresOfficerReview = true` — **but
+nothing in the system currently acts on that flag** (see §11).
+
+### 3.4 Component 3 — pest & disease diagnosis (backend only)
+
+```
+Farmer files an observation
+   ↓  POST /api/observations
+       { cultivationCycleId, observationType: Pest|Disease|Unknown, symptoms,
+         severity: Low|Moderate|Severe, imageUrl? }
+   → CropStage is SNAPSHOTTED from the cycle at report time (the cycle moves on; the stage
+     relevant to the diagnosis must not).
+Farmer requests analysis
+   ↓  POST /api/observations/{id}/request-analysis   (once only — refuses if reports exist)
+   → CropAnalysisAgent downloads the image (if any), base64-encodes it, and calls Gemini
+     with vision + one tool: get_pest_knowledge.
+   → The agent MUST look up every candidate name against the PestDiseaseKnowledge table.
+   → CropAnalysisValidator rejects any candidate that was never confirmed by a successful
+     get_pest_knowledge lookup, any confidence outside 0.00–1.00, any missing source, and a
+     missing recommendedNextStep. One retry prompt is allowed.
+   → Each surviving candidate becomes a PestDiseaseReport row, Status = PendingOfficerReview.
+   → A DiagnosisRunLog row is written either way.
+Officer reviews
+   ↓  GET  /api/pest-disease-reports?status=&observationId=&cultivationCycleId=
+   ↓  POST /api/pest-disease-reports/{id}/review  (AgriculturalOfficer only)
+   → PestDiseaseReportStatus: PendingOfficerReview | Approved | Rejected | RevisionRequested
+```
+
+Seed knowledge base: 7 entries (Thrips, Brown Planthopper, Yellow Stem Borer, Rice Leaf Folder,
+Rice Sheath Mite, Rice Gall Midge, Sheath Rot), each with symptoms, favourable conditions, crop
+stages, management guidance and a DOA source string.
+
+### 3.5 Component 4 — does not exist
+
+`SchedulingValidationAgentStub` returns `"stub — to be implemented by the Reporting,
+Dashboards & Approval owner"`. There is no `Reporting/` folder in the backend and no
+`features/reporting/` in the web app. The dashboards that exist today are hardcoded HTML.
+
+### 3.6 The delegation mechanism (how the four agents connect)
+
+This is the only cross-component coupling, and it is deliberately one-way and opaque.
+
+- The Cultivation Planning Agent's output includes `delegations[]`, each with
+  `targetAgent` (one of three `AgentNames` constants), `instruction`, and a free-form `payload`.
+- After validation passes, `CultivationPlanService.DispatchDelegationsAsync` maps each one onto
+  the shared `DelegatedTask` (`TaskType` = the instruction, `PayloadJson` = serialised payload)
+  and resolves the receiving agent **by DI key** (`_services.GetKeyedService<...>(targetAgent)`).
+- `PayloadJson` is intentionally opaque — the receiving component owns the shape it expects.
+- A delegation that fails is logged as its own failed `AgentRunLog` row and **does not** change
+  the plan's status: the plan itself passed validation, so it still belongs in the queue.
+
+```
+CultivationPlanningAgent
+   ├─ delegation → ResourceAnalysisAgent        (real: runs a full activity analysis)
+   ├─ delegation → PestDiseaseDiagnosisAgent    (real: CropAnalysisAgent, but expects a
+   │                                             diagnosis payload, not a plan delegation)
+   └─ delegation → SchedulingValidationAgent    (stub: returns a note)
+```
+
+---
+
+## 4. Backend — `paddywise-backend` (ASP.NET Core 8)
+
+`net8.0`, nullable + implicit usings enabled, `UserSecretsId` set.
+
 | Package | Version | Purpose |
 |---|---|---|
 | `Microsoft.AspNetCore.Authentication.JwtBearer` | 8.0.10 | JWT bearer auth |
@@ -76,669 +232,609 @@ no tests beyond one Flutter smoke test.
 | `Microsoft.EntityFrameworkCore.Design` | 8.0.10 | migrations |
 | `Microsoft.AspNetCore.OpenApi` | 8.0.22 | OpenAPI metadata |
 | `BCrypt.Net-Next` | 4.2.0 | password hashing |
-| `Swashbuckle.AspNetCore` | 6.6.2 | Swagger UI with Bearer scheme |
+| `Swashbuckle.AspNetCore` | 6.6.2 | Swagger UI with a Bearer scheme |
 
-No LLM SDK: the Gemini client is hand-written over `HttpClient` (§7).
+**No LLM SDK.** `GeminiLlmClient` is hand-written over `HttpClient`.
 
-### Folder layout (the convention every new feature follows)
+### Folder layout (every new feature follows this)
 
 ```
-Agents/Shared/            IAgent, AgentContext, ToolCallRecord, DelegatedTask, AgentNames,
-                          ILlmClient, GeminiLlmClient, LlmToolDefinition, LlmException, StubAgents
-Agents/FieldCultivation/  CultivationPlanningAgent, CultivationPlanModels
+Agents/Shared/            IAgent, AgentResult, AgentContext, ToolCallRecord, DelegatedTask,
+                          DelegatedTaskResult, AgentNames, ILlmClient, GeminiLlmClient,
+                          LlmToolDefinition, LlmImagePart, LlmException, StubAgents
+Agents/<Component>/       the component's agent + its models/tools
 Controllers/<Component>/  [ApiController] [Route("api/<plural>")]
-DTOs/<Component>/         XDto.cs, with DataAnnotations
+DTOs/<Component>/         XDto.cs with DataAnnotations
 Entities/<Component>/     X.cs
 Services/<Component>/     IXService.cs + XService.cs
+Shared/                   cross-cutting: User, UserRole, RefreshToken, auth
 Data/ApplicationDbContext.cs
 Migrations/
 ```
 
-`Shared/` holds cross-cutting types (User, UserRole, RefreshToken, auth). Component 1 lives
-under `FieldCultivation/`. Components 2–4 create `CropResource/`, `PestDisease/`, `Reporting/`.
+### Entities (14 DbSets)
 
-### `Program.cs` — what is wired
-- Controllers + Swagger (Bearer security definition; token entered without the `Bearer ` prefix).
-- **Startup guard**: throws if `Jwt:Key` is missing or under 32 characters, naming the
-  `dotnet user-secrets` command to fix it.
-- Scoped services: `IAuthService`, `IFieldService`, `ICycleService`, `ICultivationPlanService`.
-- `IHttpClientFactory` client named `"Gemini"` with a 60-second timeout; `ILlmClient → GeminiLlmClient`.
-- `IAgent<PlanAgentInput, CultivationPlanOutput> → CultivationPlanningAgent` — a unique closed
-  generic, so it needs no DI key.
-- Three **keyed** registrations of `IAgent<DelegatedTask, DelegatedTaskResult>` under the
-  `AgentNames` constants, all pointing at stubs. Components 2–4 replace the implementation and
-  keep the key.
-- `ApplicationDbContext` on Npgsql, connection string `ConnectionStrings:DefaultConnection`.
-- JWT bearer validation: issuer, audience, lifetime, signing key (HMAC-SHA256).
-- `AddAuthorization()` with no custom policies — role checks are `[Authorize(Roles = "...")]`
-  attributes on the controllers.
-- CORS policy `AllowReactApp` → **hard-coded to `http://localhost:5173`** only.
-- Pipeline: Swagger (Dev only) → HttpsRedirection → CORS → Authentication → Authorization → MapControllers.
-- The `/weatherforecast` template endpoint is **gone** from `Program.cs`. `PaddyWise.Api.http`
-  still calls it and is now dead scratch.
+**Shared:** `User`, `RefreshToken`.
+**FieldCultivation:** `Division`, `Field`, `Variety`, `CultivationCycle`, `GrowthStageLog`,
+`CultivationPlan`, `AgentRunLog`.
+**CropResource:** `CropActivity` (+ `CropActivityType` enum).
+**PestDisease:** `CropObservation`, `PestDiseaseReport`, `PestDiseaseKnowledge`, `DiagnosisRunLog`.
 
-### Entities
+Enums: `Season {Yala, Maha}`, `CultivationMethod {Broadcasting, Transplanting, DirectSeeding}`,
+`GrowthStage {Nursery, Tillering, PanicleInitiation, Flowering, GrainFilling, Harvest}`,
+`CycleStatus {Planned, Active, Harvested, Abandoned}`,
+`PlanStatus {Draft, ValidationFailed, PendingOfficerApproval, Approved, Rejected, RevisionRequested}`,
+`CropActivityType {Irrigation, Fertilizer, Pesticide, Other}`,
+`ObservationType {Pest, Disease, Unknown}`, `ObservationSeverity {Low, Moderate, Severe}`,
+`PestDiseaseReportStatus {PendingOfficerReview, Approved, Rejected, RevisionRequested}`.
 
-**`Entities/Shared/`**
-```csharp
-class User         { int Id; string Name, Email, PasswordHash; UserRole Role; string? Phone;
-                     DateTime CreatedAt, UpdatedAt; }
-enum UserRole      { Farmer=0, AgriculturalOfficer=1, Admin=2, FieldOfficer=3 }   // int in DB
-class RefreshToken { int Id; int UserId; string Token; DateTime ExpiresAt; bool IsRevoked;
-                     DateTime CreatedAt; }
-// RefreshToken.UserId is still a plain int — NO navigation property, NO FK constraint.
-```
+Notable model configuration in `ApplicationDbContext.OnModelCreating`:
 
-**`Entities/FieldCultivation/` — component 1**
-```csharp
-class Division        { int Id; string Name, District, Province; }
-class Field           { int Id; string Name; decimal Area /*acres*/; string SoilType, IrrigationType;
-                        double? Latitude, Longitude; int FarmerId, DivisionId; bool IsActive;
-                        DateTime CreatedAt, UpdatedAt; User Farmer; Division Division; }
-class Variety         { int Id; string Name; int DurationDays; string AgeGroup; string? Notes; }
-class CultivationCycle{ int Id, FieldId, VarietyId; Season Season; int Year; CultivationMethod Method;
-                        DateOnly SowingDate, ExpectedHarvestDate; DateOnly? ActualHarvestDate;
-                        GrowthStage CurrentStage; CycleStatus Status; string? Notes;
-                        DateTime CreatedAt, UpdatedAt; Field Field; Variety Variety; }
-class GrowthStageLog  { int Id, CultivationCycleId; GrowthStage Stage; DateOnly ObservedOn;
-                        string? Notes; int LoggedByUserId; DateTime CreatedAt; }
-class CultivationPlan { int Id, CultivationCycleId, RequestedByUserId; string Objective;
-                        string PlanJson /*jsonb*/; PlanStatus Status;
-                        string? ValidationErrorsJson /*jsonb*/; int? OfficerId;
-                        string? OfficerComment; DateTime? ReviewedAt, CreatedAt, UpdatedAt; }
-class AgentRunLog     { int Id; int? CultivationPlanId; string AgentName, CorrelationId;
-                        string InputJson /*jsonb*/, ToolCallsJson /*jsonb*/, RawOutput;
-                        bool Success; string? Error; int DurationMs; DateTime CreatedAt; }
+- All agent-output columns are **`jsonb`**, not text: `PlanJson`, `ValidationErrorsJson`,
+  `InputJson`, `ToolCallsJson`, `DetailsJson`.
+- Unique indexes: `User.Email`, `RefreshToken.Token`, `Variety.Name`,
+  `PestDiseaseKnowledge.Name`, and `(FieldId, Season, Year)` on `CultivationCycle` —
+  one cycle per field per season per year.
+- Check constraint `CK_Fields_Area_Positive` on `"Area" > 0` (quoted so Postgres keeps casing).
+- Delete behaviour is deliberate: `Restrict` on user FKs so deleting a user cannot erase an
+  audit trail; `Cascade` from cycle → logs/plans/activities/observations; `SetNull` from plan →
+  `AgentRunLog` and observation → `DiagnosisRunLog`, so deleting the subject never erases the
+  record that an agent ran.
+- Seed data: 5 divisions, 8 varieties, 7 pest/disease knowledge entries. **Both the variety
+  durations and the knowledge text carry in-code comments saying they are working values that
+  MUST be verified against current DOA publications before being relied on.**
 
-enum Season            { Yala=0, Maha=1 }
-enum CultivationMethod { Broadcasting=0, Transplanting=1, DirectSeeding=2 }
-enum CycleStatus       { Planned=0, Active=1, Harvested=2, Abandoned=3 }
-enum GrowthStage       { Nursery=0, Tillering=1, PanicleInitiation=2, Flowering=3,
-                         GrainFilling=4, Harvest=5 }
-enum PlanStatus        { Draft=0, ValidationFailed=1, PendingOfficerApproval=2, Approved=3,
-                         Rejected=4, RevisionRequested=5 }
-```
+### API surface — 40 endpoint attributes across 10 controllers
 
-`ExpectedHarvestDate` is **stored, not computed**: `CycleService` sets it to
-`SowingDate + Variety.DurationDays` at creation, so editing a variety's duration later cannot
-silently move an existing cycle's plan.
-
-### `ApplicationDbContext` — model configuration
-
-DbSets: `Fields`, `Divisions`, `Users`, `RefreshTokens`, `Varieties`, `CultivationCycles`,
-`GrowthStageLogs`, `CultivationPlans`, `AgentRunLogs`.
-
-`OnModelCreating` configures:
-- Unique indexes on `User.Email` and `RefreshToken.Token`.
-- `Field`: `Area` precision (10,2), `IsActive` default true, index on `FarmerId`, required FKs to
-  `User` and `Division` with `Restrict`, and a check constraint `CK_Fields_Area_Positive` (`"Area" > 0`).
-- `Variety`: unique index on `Name`.
-- `CultivationCycle`: **unique index on `(FieldId, Season, Year)`** — one cycle per field per
-  season per year — plus an index on `Status`, and `Restrict` FKs to Field and Variety.
-- `GrowthStageLog`: Cascade from the cycle, `Restrict` on the user so deleting a user cannot
-  erase the observation trail.
-- `CultivationPlan`: `PlanJson` / `ValidationErrorsJson` as **jsonb**, indexes on
-  `CultivationCycleId` and `Status`, Cascade from the cycle, `Restrict` on both user FKs.
-- `AgentRunLog`: `InputJson` / `ToolCallsJson` as jsonb, indexes on `CultivationPlanId` and
-  `CorrelationId`, and **`SetNull`** on the plan FK so deleting a plan cannot erase the record
-  that an agent ran.
-- **Seed data**: 5 `Division` rows (Medirigiriya/Polonnaruwa, Nuwaragam Palatha & Tambuttegama/
-  Anuradhapura, Ampara Central, Kurunegala West) and 8 `Variety` rows (Bg 300, Bg 352, Bg 360,
-  At 362, Bg 94-1, Bg 359, At 307, Bw 367). ⚠ The seeded `DurationDays` / `AgeGroup` values are
-  **working values, not verified DOA data** — the entity's own comment says so, and harvest-date
-  planning currently rests on them.
-
-### Migrations — five, all applied via `dotnet ef database update`
-
-| Migration | Adds |
+| Controller | Endpoints |
 |---|---|
-| `20260909130307_InitialCreate` | `Fields` |
-| `20260910105145_AddUsersAndRefreshTokens` | `Users`, `RefreshTokens` + unique indexes |
-| `20260916115824_AddDivisionsAndFieldOwnership` | `Divisions` (+5 seed rows), `Field.FarmerId/DivisionId/IsActive/CreatedAt/UpdatedAt`, the area check constraint |
-| `20260916123714_AddCultivationCycles` | `Varieties` (+8 seed rows), `CultivationCycles`, `GrowthStageLogs` |
-| `20260916141243_AddCultivationPlansAndAgentLogs` | `CultivationPlans`, `AgentRunLogs` |
+| `AuthController` | `POST /api/auth/register`, `/login`, `/refresh`, `GET /api/auth/me` |
+| `FieldsController` | `GET /api/fields` (Farmer), `GET /api/fields/division/{id}` (Officer/Admin), `GET/POST/PUT/DELETE /api/fields/{id}` (Farmer; delete is soft) |
+| `DivisionsController` | `GET /api/divisions` |
+| `VarietiesController` | `GET /api/varieties` |
+| `CyclesController` | `GET /api/cycles?fieldId=`, `GET /api/cycles/{id}`, `POST /api/fields/{fieldId}/start-cultivation` (Farmer), `POST /api/cycles/{id}/stages`, `PATCH /api/cycles/{id}/status` (Farmer) |
+| `PlansController` | `POST /api/cycles/{cycleId}/plans` (Farmer), `GET /api/cycles/{cycleId}/plans`, `GET /api/plans/{id}`, `GET /api/plans/pending?divisionId=` (Officer), `POST /api/plans/{id}/review` (Officer) |
+| `CropActivitiesController` | `GET/POST /api/cycles/{cycleId}/activities`, `GET /api/activities?farmerId=&cycleId=&activityType=`, `PUT/DELETE /api/activities/{id}` |
+| `CropActivityAnalysisController` | `POST /api/cycles/{cycleId}/analysis`, `GET /api/cycles/{cycleId}/analysis/latest`, `POST /api/cycles/{cycleId}/ai-chat` |
+| `ObservationsController` | `GET /api/observations?cultivationCycleId=&fieldId=`, `GET /api/observations/{id}`, `POST /api/observations` (Farmer), `PUT /api/observations/{id}` (Farmer), `POST /api/observations/{id}/request-analysis` (Farmer) |
+| `PestDiseaseReportsController` | `GET /api/pest-disease-reports?status=&observationId=&cultivationCycleId=`, `GET /api/pest-disease-reports/{id}`, `POST /api/pest-disease-reports/{id}/review` (Officer) |
 
-Rule in force: **never edit or delete an existing migration — always add a new one.**
+**Controller error pattern in use everywhere:**
+`InvalidOperationException` → `BadRequest(new { message })`;
+`UnauthorizedAccessException` → `403 + { message }`;
+null result → `NotFound(new { message })` / `Unauthorized(new { message })`.
+Keep the `{ message }` shape — the web's `extractApiErrorMessage` depends on it.
 
-### API surface — 22 endpoints
+### Business rules worth knowing
 
-Base: `http://localhost:5164/api` (http profile; the https profile also binds `https://localhost:7188`).
-Every 4xx keeps the `{ message }` shape the web's `extractApiErrorMessage` depends on.
-
-| Method | Route | Roles | Notes |
-|---|---|---|---|
-| POST | `/api/auth/register` | anon | `{name,email,password,role,phone?}` → `AuthResponseDto`; 400 on duplicate email |
-| POST | `/api/auth/login` | anon | 401 `{message}` on bad credentials |
-| POST | `/api/auth/refresh` | anon | rotates the pair; 401 if missing/revoked/expired |
-| GET | `/api/auth/me` | any authenticated | `{name, role}` |
-| GET | `/api/divisions` | any authenticated | component 1 |
-| GET | `/api/varieties` | any authenticated | component 1 |
-| GET | `/api/fields` | **Farmer** | the caller's own active fields |
-| GET | `/api/fields/division/{divisionId}` | **AgriculturalOfficer, FieldOfficer, Admin** | every active field in a division |
-| GET | `/api/fields/{id}` | any authenticated | a Farmer who is not the owner gets 403 |
-| POST | `/api/fields` | **Farmer** | owner comes from the token, not the body |
-| PUT | `/api/fields/{id}` | **Farmer** (owner) | full replace of every editable value |
-| DELETE | `/api/fields/{id}` | **Farmer** (owner) | **soft** delete → `IsActive = false`, 204 |
-| POST | `/api/fields/{fieldId}/start-cultivation` | **Farmer** (owner) | "Start Cultivation Cycle"; declared on `CyclesController` because everything it creates is a cycle |
-| GET | `/api/cycles?fieldId=` | any authenticated | a Farmer gets their own; an officer/admin **must** pass `fieldId` or gets 400 |
-| GET | `/api/cycles/{id}` | any authenticated | Farmer scoped to their own, else 403 |
-| POST | `/api/cycles/{id}/stages` | **Farmer, AgriculturalOfficer, FieldOfficer** | logging `Harvest` also sets the cycle `Harvested` + `ActualHarvestDate` |
-| PATCH | `/api/cycles/{id}/status` | **Farmer** (owner) | Planned / Active / Harvested / Abandoned |
-| POST | `/api/cycles/{cycleId}/plans` | **Farmer** (owner) | runs the planning agent; **20–40 s**; declared on `PlansController` |
-| GET | `/api/cycles/{cycleId}/plans` | any authenticated | every plan for a cycle, newest first; Farmer scoped |
-| GET | `/api/plans/{id}` | any authenticated | plan + its agent runs; Farmer scoped |
-| GET | `/api/plans/pending?divisionId=` | **AgriculturalOfficer** | the approval queue, newest first |
-| POST | `/api/plans/{id}/review` | **AgriculturalOfficer** | Approve / Reject / RequestRevision |
-
-Authorization pattern: `[Authorize(Roles = "...")]` on the action, caller id from
-`ClaimTypes.NameIdentifier`, caller role from `ClaimTypes.Role`, then a second **ownership**
-check inside the service that throws `UnauthorizedAccessException` → 403. Errors:
-`InvalidOperationException` → 400, null → 404, `UnauthorizedAccessException` → 403.
-
-### Business rules enforced in `CycleService`
-- Field must exist **and** be active, and belong to the caller.
-- A field may hold only one `Planned` or `Active` cycle at a time.
-- Sowing date: no more than **30 days back**, no more than **365 days forward**.
-- No duplicate `(field, season, year)`.
-- `ExpectedHarvestDate = SowingDate + Variety.DurationDays`, frozen at creation.
-- `CycleResponseDto` carries both `currentStage` (what the farmer reported) and
-  `expectedStageToday` (what the timeline says) — the two differing is the signal the agent acts on.
-
-### `StageTimelineCalculator` (component 1, pure arithmetic, no DB)
-Turns sowing date + duration into six contiguous inclusive stage windows at cumulative
-fractions of the season: Nursery 0.00, Tillering 0.15, PanicleInitiation 0.40, Flowering 0.55,
-GrainFilling 0.70, Harvest 0.95. Also `ExpectedStageOn(date, …)`. Shared by `CycleService`
-and the agent's `get_stage_timeline` tool, so the API and the model see the same calendar.
-
-### Auth behaviour (`Services/Shared/AuthService.cs`) — unchanged, still the most finished layer
-- **Register**: rejects duplicate email; `Enum.TryParse<UserRole>(role, ignoreCase: true)`, so
-  the client sends the member name or the numeric value. BCrypt hash. Auto-login on register.
-- **Login**: email lookup with a case-sensitive `==` (no `.ToLower()`), BCrypt verify.
-- **Refresh**: rejects missing/revoked/expired, then **rotates** (old marked revoked, new pair
-  issued). Old rows are never deleted or pruned.
-- **Access token claims**: `NameIdentifier`, `Name`, `Email`, `Role`. 20 minutes.
-- **Refresh token**: 64 random bytes, Base64, 7 days.
+- `CycleService`: sowing date no more than **30 days back** or **365 days forward**; a field may
+  hold only one `Planned`/`Active` cycle; one cycle per field per season per year; a
+  soft-deleted field is a 404.
+- Existing cycles read their **stored** `SowingDate`/`ExpectedHarvestDate`, never the variety's
+  current duration — editing a variety must not move a running cycle's timeline.
+- `CropActivityService`: the 7-day back-dating window (above) plus per-type `detailsJson` key
+  validation.
 
 ### Configuration
-`appsettings.json` is tracked and holds **no secrets** — `Jwt:Key` and
-`ConnectionStrings:DefaultConnection` are deliberately empty strings that document the shape.
-Supply them from `dotnet user-secrets` locally or `Jwt__Key` / `ConnectionStrings__DefaultConnection`
-in deployment. `Gemini:ApiKey` is per-developer and follows the same route
-(`Gemini__ApiKey`). `paddywise-backend/README.md` documents all of it.
-Non-secret JWT settings (`Issuer`, `Audience`, `AccessTokenExpiryMinutes`,
-`RefreshTokenExpiryDays`) stay in `appsettings.json`.
 
-### Not present in the backend
-No controllers/services for: activities, fertilizer rules, pests/diseases, image upload,
-weather, harvest, buyers/offers, notifications, knowledge base, admin user management,
-audit/reporting endpoints. No global exception handler, no rate limiting, no health checks,
-no request logging beyond defaults, **no tests**.
+Three secrets, none in the repo *by design* (see §12 for the current violation):
+`Jwt:Key` (shared, ≥32 chars — the app throws at startup otherwise),
+`ConnectionStrings:DefaultConnection` (shared Neon Postgres),
+`Gemini:ApiKey` (per-developer), plus optional `Gemini:PestDiseaseApiKey` for component 3 and
+`Gemini:Model` to override the model. Deployment uses `Jwt__Key`,
+`ConnectionStrings__DefaultConnection`, `Gemini__ApiKey`.
+
+CORS policy `AllowReactApp` allows exactly `http://localhost:5173`. The API listens on **5164**
+(https profile 7188). Both ports are hard-coded on both sides.
 
 ---
 
-## 4. Web frontend — `paddywise-web` (React 19 + TS + Vite)
+## 5. The agent framework (`Agents/Shared/`)
 
-### Stack
-React `19.2`, react-dom, `react-router-dom` 7, `axios` 1.20, `lucide-react`, TypeScript ~6.0,
-Vite 8, ESLint 10. **No UI framework, no Tailwind** — hand-written CSS with custom properties.
-No state library (Context only). No test runner.
-
-Scripts: `npm run dev` (Vite, 5173), `build` (`tsc -b && vite build`), `lint`, `preview`.
-
-### Directory map
-```
-src/
-├── main.tsx, App.tsx
-├── api/axiosInstance.ts          # axios + JWT interceptors  ← all HTTP goes through this
-├── services/authService.ts       # AuthService + extractApiErrorMessage()
-├── services/tokenStorage.ts      # localStorage wrapper behind ITokenStorage
-├── context/AuthContext.tsx       # AuthProvider + useAuth
-├── hooks/{useAuth,useReveal}.ts
-├── types/auth.ts                 # UserRole union + DTO types
-├── utils/roleRoutes.ts           # role → dashboard path map
-├── components/                   # ProtectedRoute, Sidebar + 8 landing-page sections
-├── pages/                        # Home, Login, Register, DashboardPage, UserManagementPage
-├── features/field-cultivation/   # COMPONENT 1 — real, wired to the API
-├── features/crop-resource/       # COMPONENT 2 — client-side mock
-└── styles/                       # global.css, Auth.css, Dashboard.css, Sidebar.css, UserManagement.css
+```csharp
+interface IAgent<TInput, TOutput> {
+    string Name { get; }
+    Task<AgentResult<TOutput>> RunAsync(TInput input, AgentContext ctx, CancellationToken ct);
+}
+class AgentResult<T> { bool Success; T? Output; string? Error;
+                       List<ToolCallRecord> ToolCalls; TimeSpan Duration; }
+class AgentContext   { int RequestedByUserId; string CorrelationId; }
+class ToolCallRecord { string Tool, ArgsJson, ResultJson; DateTime At; }
+static class AgentNames {
+    CultivationPlanning = "CultivationPlanningAgent";
+    ResourceAnalysis    = "ResourceAnalysisAgent";
+    PestDiseaseDiagnosis= "PestDiseaseDiagnosisAgent";
+    SchedulingValidation= "SchedulingValidationAgent";
+}
 ```
 
-Two conventions coexist: page-based for auth + landing, feature-sliced for component work.
-**New features follow `features/<name>/{pages,components,services,types,utils,styles}/`.**
+`ILlmClient` is the **only** place the provider is known — swapping vendors is one class. It
+exposes `CompleteJsonAsync` and `CompleteJsonWithImagesAsync`; both take a tool list and a
+`toolExecutor` callback and run the function-calling loop internally.
 
-### Routing (`App.tsx`)
-| Path | Guard | Component |
-|---|---|---|
-| `/` | public | `Home` (landing page) |
-| `/login`, `/register` | public | `LoginPage`, `RegisterPage` |
-| `/dashboard` | `ProtectedRoute` | `RoleRedirect` → role-specific path |
-| `/dashboard/farmer` \| `/officer` \| `/admin` \| `/field-officer` | `ProtectedRoute` (no roles) | `DashboardPage roleView=…` |
-| `/admin/users` | `ProtectedRoute` (no roles) | `UserManagementPage` |
-| `/activities` | `ProtectedRoute` (no roles) | `ActivityDashboard` (component 2) |
-| **`/fields`** | `allowedRoles={['Farmer']}` | `FieldsPage` |
-| **`/fields/:id`** | `allowedRoles={['Farmer','AgriculturalOfficer','FieldOfficer']}` | `FieldDetailPage` |
-| **`/cycles/:id`** | `allowedRoles={['Farmer','AgriculturalOfficer','FieldOfficer']}` | `CycleDetailPage` |
-| **`/plans/pending`** | `allowedRoles={['AgriculturalOfficer']}` | `PlanApprovalPage` |
+`GeminiLlmClient` details that matter:
 
-✅ Component 1's four routes **do** pass `allowedRoles`. ⚠ The dashboard, admin and activities
-routes still do not, so any logged-in user can open any role's dashboard by typing the URL, and
-`DashboardPage` renders whatever `roleView` the *route* names rather than the user's own role.
-That remains an open authorization gap for components 2–4 to close on their own routes.
+- Endpoint `https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent`.
+- Default model `gemini-3.6-flash`, overridable via `Gemini:Model`. `NormalizeModel` strips a
+  leading `models/` so pasting a `models.list` name verbatim doesn't 404.
+- API key travels in the **`x-goog-api-key` header**, never the URL, and is never logged.
+- Tool loop capped at `MaxToolIterations = 8`, then it takes whatever text came back.
+- It round-trips Gemini 3.x's `thoughtSignature` on function-call parts — without it the next
+  call fails with *"Function call is missing a thought_signature"*.
+- Non-2xx (including **429**) throws `LlmException`; **never silently retried** — the caller
+  decides.
+- Per-instance API key config: keyed DI gives component 3 its own `Gemini:PestDiseaseApiKey`,
+  falling back to `Gemini:ApiKey` when unset.
 
-### Auth plumbing (genuinely well built, unchanged)
-- **`axiosInstance.ts`** — request interceptor attaches the bearer token; response interceptor
-  catches 401, skips auth endpoints, guards with `_retry`, queues concurrent 401s behind a
-  single refresh, calls `/auth/refresh` with a *raw* axios instance, replays the original
-  request, and on failure clears storage and hard-redirects to `/login`. No timeout is set,
-  which is what lets the 20–40 s plan request stand.
-- **`tokenStorage.ts`** — `ITokenStorage` + `LocalStorageTokenStorage`, keys
-  `paddywise_access_token` / `paddywise_refresh_token` / `paddywise_user`; the constructor
-  scrubs legacy `kumburu_*` keys. ⚠ localStorage tokens are XSS-exposed; httpOnly cookies are
-  a future hardening story.
-- **`authService.ts`** — `extractApiErrorMessage(err, fallback)` unwraps `{message}`,
-  `ValidationProblemDetails.errors` and `title`. **Every API call in the app reuses it.**
-- **`AuthContext.tsx`** — rehydrates from localStorage on mount, then verifies against
-  `GET /auth/me`.
-- ⚠ `API_BASE_URL` is still a hard-coded const `http://localhost:5164/api` — it should become
-  `import.meta.env.VITE_API_BASE_URL`.
+**The four house rules for agents** (from `CLAUDE.md`, and actually honoured in components 1
+and 3):
 
-### `features/field-cultivation/` — component 1, the real module
+1. An agent's tools are **read-only** and **scoped to the run's own records**.
+2. No LLM output reaches a human or the DB without a **deterministic validator**.
+3. Every run writes an audit-log row — success or failure.
+4. User text goes in the **user** prompt inside a delimited block, never the system prompt.
 
-**`types.ts` (434 lines)** — hand-maintained TS mirrors of every component-1 DTO, each with the
-C# file it mirrors named in a comment: the enum unions (`Season`, `CultivationMethod`,
-`CycleStatus`, `GrowthStage`, `PlanStatus`, `PlanStepCategory`, `DelegationTargetAgent`,
-`PlanReviewDecision`), the entity shapes (`Field`, `Division`, `Variety`, `CultivationCycle`,
-`StageWindow`, `StageLog`, `CultivationPlan`, `CultivationPlanOutput`, `PlanStep`,
-`PlanDelegation`, `AgentRunSummary`, `ToolCallRecord`, `PendingPlanSummary`), the validation
-constants that mirror the server's DataAnnotations (`FIELD_RULES`, `CYCLE_RULES`,
-`STAGE_LOG_RULES`, `PLAN_RULES`, `PLAN_REVIEW_RULES`), and label maps + safe label functions
-(`agentLabel`, `growthStageLabel`, `planStepCategoryLabel`) that tolerate the out-of-set values
-a `ValidationFailed` plan can contain, because such a plan is stored verbatim.
+### 5.1 Cultivation Planning Agent (component 1) — the reference implementation
 
-**`services/fieldApi.ts`** — one typed function per endpoint, all through `axiosInstance`,
-no React: `getMyFields`, `getFieldsByDivision`, `getFieldById`, `createField`, `updateField`,
-`deleteField`, `getDivisions`, `getVarieties`, `getMyCycles`, `getCycleById`,
-`startCultivation`, `logStage`, `updateCycleStatus`, `requestPlan`, `getPlan`,
-`getPlansForCycle`, `getPendingPlans`, `reviewPlan`.
+**Input** `PlanAgentInput { cycleId, objective }`.
+**Output** `CultivationPlanOutput`, stored verbatim in `PlanJson`, so its property names *are*
+the API contract:
 
-**Pages**
-- `FieldsPage` (`/fields`) — the farmer's field list + create form.
-- `FieldDetailPage` (`/fields/:id`) — field detail, edit, the field's cycles, "start cultivation".
-- `CycleDetailPage` (`/cycles/:id`) — cycle detail, stage timeline, plan request, plan view,
-  agent activity. Cycle and plan reads are tracked separately so a failed plan read costs the
-  page its plan section, not the cycle.
-- `PlanApprovalPage` (`/plans/pending`) — the officer's queue with a division filter, sort,
-  the full plan, the agent trail and the review form.
+| Field | Shape |
+|---|---|
+| `summary` | two or three sentences for the farmer |
+| `steps[]` | `stage`, `windowStart`, `windowEnd` (`YYYY-MM-DD`), `task`, `rationale`, `category` |
+| `delegations[]` | `targetAgent`, `instruction`, `payload` (opaque object) |
+| `assumptions[]` | everything filled in because the data didn't say |
 
-**Components**
-- `FieldForm`, `CycleForm` — typed string-draft forms that re-check the server's own rules
-  client-side (`FIELD_RULES`, `CYCLE_RULES`) before posting.
-- `StageTimeline` — draws the six inclusive windows as a proportional bar with a "today"
-  marker, and logs a stage observation.
-- `CycleStatusBadge`, `PlanStatusBadge` — one CSS class per status.
-- `PlanRequestPanel` — the objective box (two example objectives, 1000-char limit) and the
-  in-flight experience. ⚠ Its progress list is **a description, not progress**: nothing in it
-  is reported by the server; it advances on a 9-second timer and holds on the last message
-  until the real request settles, so it can never claim the plan is ready before it is.
-- `PlanView` — summary, steps grouped by stage, delegations, assumptions, validation errors,
-  officer comment.
-- `AgentActivity` — every agent run behind a plan: name, success, duration, and each tool call's
-  args and result pretty-printed.
-- `PlanReviewForm` — Approve / Reject / RequestRevision, enforcing the server's rule that
-  everything but Approve needs a comment.
-- `PendingPlansCard` — the officer dashboard tile with the **live** pending count from
-  `GET /api/plans/pending`; on a 403 (any non-officer previewing the officer dashboard) it shows
-  "—" rather than a wrong number.
+`category` ∈ `LandPrep, Water, Nutrient, Protection, Monitoring, Harvest`.
+The JSON Schema for this shape is embedded in the system prompt (`CultivationPlanJson.JsonSchema`).
 
-`styles/fieldCultivation.css` uses only the `global.css` tokens.
-
-### `features/crop-resource/` — component 2, still a client-side mock
-Route `/activities` → `ActivityDashboard`, tabs Irrigation | Fertilizer | Pesticide | Other.
-`ActivityForm.tsx` still uses `useState<any>({})`, has no validation and **makes no API call**;
-non-fertilizer submissions just `alert('… recorded successfully!')` and nothing is persisted.
-Fertilizer submissions open `FertilizerValidationFlow.tsx`, a fake 4-step "agent" animation
-(1 s per step) that then compares against `data/fertilizerRules.ts` — **19 hard-coded rules in a
-browser TS array**, self-described as "mocked ranges for simulation", keyed by
-region × cropStage × type — and returns accept / officer-review / reject. This is still the
-closest thing to a fertilizer knowledge base in the project, and it lives in the browser.
-`ActivityDashboard.css` uses a **different variable set** (`--primary-dark`, `--text-muted`,
-`glass-panel`), so the module is visually off-system. **Not Nuran's to edit.**
-
-### Pages outside the feature modules
-- **`Home.tsx`** — 8 marketing sections. Fully styled, static, no data.
-- **`LoginPage` / `RegisterPage`** — real and wired. Register offers Farmer /
-  AgriculturalOfficer / FieldOfficer / Admin (**no Buyer**).
-- **`DashboardPage.tsx` (439 lines)** — still **almost entirely hard-coded mock data**: the
-  farmer's "Yala 2026 / Day 45", "3.5 Acres / Bg 352", "14.0 MT", the photo-upload box whose
-  button only fires `alert()`, the static schedule, the officer's fake approval card with
-  `alert()` buttons, the field-officer visit route, and the admin block that renders the API's
-  own config as content. **The one live thing on it is `PendingPlansCard`** in the officer view.
-- **`UserManagementPage.tsx`** — UI only, over a hard-coded `mockUsers` array; there is no
-  admin user API.
-- **`Sidebar.tsx`** — per-role nav. Real links now: `/fields` (farmer),
-  `/plans/pending` (officer, "Review AI Recommendations"), `/admin/users` and
-  `/dashboard/admin` (admin). Everything else is still a dead `#anchor` — `#profile`,
-  `#activities`, `#report`, `#weather`, `#ai`, `#fields` (officer), `#expert`, `#stats`,
-  `#knowledge`, `#settings`, `#inspections`, `#upload`, `#feedback`. **The sidebar is still the
-  product backlog**; note the farmer's "Record Activities" points at `#activities` even though
-  `/activities` exists.
-
-### Design system (`styles/global.css`)
-`--cream #F6F1E3`, `--cream-deep #EDE5CF`, `--ink #212D1E`, `--ink-soft #4B5645`,
-`--forest #22392A`, `--forest-deep #182A1E`, `--shoot #7FA66C`, `--shoot-light #B4CB9C`,
-`--gold #E1A63B`, `--gold-deep #C48A28`, `--clay #A6693F`, `--line rgba(33,45,30,.14)`,
-plus `--line-dark`, `--font-heading: 'Fraunces', serif`, `--font-body: 'Work Sans', sans-serif`.
-Shared 1:1 with the Flutter theme — keep them in sync. **Do not create new tokens.**
-
----
-
-## 5. Mobile — `paddywise_mobile` (Flutter)
-
-Unchanged since the last pass. Dart SDK `^3.9.2`. Dependencies: **only** `cupertino_icons` and
-`shared_preferences`. **No `http`/`dio` — the mobile app cannot talk to the backend at all.**
-
-```
-lib/
-├── main.dart                    AuthService.init() then Login or Dashboard
-├── models/user.dart             UserRole enum + User + StoredUser
-├── services/auth_service.dart   100% LOCAL MOCK AUTH
-├── screens/{login,register,dashboard}_screen.dart
-└── theme/app_theme.dart         AppColors mirroring the web palette
-test/widget_test.dart            one smoke test
-```
-
-Still on a **different auth system and role model**: static `AuthService` over
-`shared_preferences` (`kumburu_users` / `kumburu_session`) with 4 seeded demo accounts whose
-passwords are stored in plaintext (`passwordHash: 'Password123!'`), and
-`UserRole = {farmer, extensionOfficer, buyer, admin}` against the backend's
-`{Farmer, AgriculturalOfficer, Admin, FieldOfficer}`. The dashboard has a **Buyer** panel that
-exists nowhere else in the system.
-
-**Implication for planning:** the Flutter app is a UI prototype that was never migrated when the
-web app moved to the real JWT API. Mobile feature work should start with "add `dio`/`http`, port
-`tokenStorage` + `authService` + the refresh-interceptor pattern from the web app, align the
-role enum, delete the seed users."
-
----
-
-## 6. Database
-
-Still **two conflicting sources of truth**, and the gap is now much wider.
-
-### (a) EF Core migrations — what actually exists in the Postgres database
-`Fields`, `Divisions`, `Users`, `RefreshTokens`, `Varieties`, `CultivationCycles`,
-`GrowthStageLogs`, `CultivationPlans`, `AgentRunLogs`. Int identity PKs. `Users.Role` is an
-**int** (enum ordinal). Real FKs with explicit delete behaviour everywhere in component 1;
-jsonb columns on the plan and the run log; seeded divisions and varieties.
-**Exception: `RefreshTokens.UserId` is still an unconstrained int with no FK.**
-
-### (b) `database/schema.sql` — hand-written, incompatible, and now badly out of date
-154 lines covering only `roles`, `divisions`, `users`, `refresh_tokens`, with **UUID** PKs, a
-`roles` table (`farmer`, `extension_officer`, `buyer`, `admin`), `full_name`, `role_id` /
-`division_id` FKs, `is_active`, an `updated_at` trigger, and the same 4 demo accounts as the
-Flutter app (with placeholder hashes that are not valid BCrypt). It knows nothing about fields,
-cycles, stage logs, plans or agent logs.
-
-**It is not applied by the backend and does not match the EF model.** It should be deleted, or
-demoted to a documentation artefact — evolving the schema through EF migrations is the working
-practice and there is no path back.
-
----
-
-## 7. Agents
-
-The agent layer is component 1's work and the contract the other three components implement
-against. Full detail lives in `docs/cultivation-planning-agent.md`.
-
-### Shared contracts — `Agents/Shared/`
-- **`IAgent<TInput,TOutput>`** — `Name` + `RunAsync(input, ctx, ct)` returning
-  `AgentResult<T> { Success, Output, Error, List<ToolCallRecord> ToolCalls, TimeSpan Duration }`.
-- **`AgentContext`** — `RequestedByUserId` + `CorrelationId` (ties every log line of one request).
-- **`ToolCallRecord`** — `Tool`, `ArgsJson`, `ResultJson`, `At`.
-- **`DelegatedTask` / `DelegatedTaskResult`** — the one cross-component contract.
-  `PayloadJson` is deliberately opaque; the receiving component owns the shape.
-- **`AgentNames`** — the DI keys: `CultivationPlanningAgent`, `ResourceAnalysisAgent`,
-  `PestDiseaseDiagnosisAgent`, `SchedulingValidationAgent`.
-- **`ILlmClient`** — one method, `CompleteJsonAsync(systemPrompt, userPrompt, tools, toolExecutor, ct)`.
-  **The only place the provider is known — swapping vendors is one class.**
-- **`GeminiLlmClient`** (345 lines) — the Gemini REST `generateContent` call and the
-  function-calling loop: `functionCall {id,name,args}` in, `functionResponse {id,name,response}`
-  back, at most **8 tool rounds** before it takes whatever text came back. Default model
-  `gemini-3.6-flash`, overridable with `Gemini:Model`; API key from `Gemini:ApiKey`, with a
-  clear throw naming the user-secrets command when it is missing.
-- **`LlmException`** — a non-2xx from the provider, carrying status and raw body. **429 is never
-  retried silently** — the caller decides.
-- **`StubAgents.cs`** — `ResourceAnalysisAgentStub`, `PestDiseaseDiagnosisAgentStub`,
-  `SchedulingValidationAgentStub`. Each returns `Success = true` with a "stub — to be
-  implemented by the … owner" note. **Components 2–4 replace these by registering a real
-  implementation under the same `AgentNames` key.**
-
-### `CultivationPlanningAgent` (component 1, 525 lines)
-Turns a farmer's objective into a stage-by-stage plan for one cycle and delegates everything
-outside its authority. Its four tools are **all read-only** (`AsNoTracking`, no writes ever) and
-**scoped to the run's own cycle** — a `cycleId` that is not the run's cycle is refused with
-`"Only cycle N can be read during this run."`:
+**Tools — all read-only `AsNoTracking`, all scoped to the run's cycle.** A `cycleId` that isn't
+the run's cycle is refused with `"Only cycle N can be read during this run."`, so an objective
+crafted to steer the model at another farmer's data gets nothing back.
 
 | Tool | Returns | Scoping |
 |---|---|---|
-| `get_cycle` | the cycle with field, division and variety; plus `today` and `expectedStageToday` | run's cycle only |
-| `get_stage_timeline` | the six stage windows, from the cycle's **stored** dates | run's cycle only |
-| `get_variety` | name, duration, age group, notes | unscoped — public reference data |
-| `get_previous_cycles` | the last three earlier cycles on the field, with their stage logs | the run cycle's own field only |
+| `get_cycle` | cycle + field + division + variety, `today`, `expectedStageToday` | run's cycle only |
+| `get_stage_timeline` | the six stage windows from the cycle's **stored** dates | run's cycle only |
+| `get_variety` | name, duration, age group, notes | unscoped (public reference data) |
+| `get_previous_cycles` | last 3 earlier cycles on this field + their stage logs | run cycle's own field only |
 
-`get_cycle` and `get_stage_timeline` are mandatory before the model answers.
+`get_cycle` and `get_stage_timeline` are mandatory before the model may answer.
 
-**Prompt safety**: the farmer's objective is data, not instructions. It goes in the **user**
-prompt inside a `<farmer_objective>` block, never the system prompt, and any attempt to close
-that block early is neutralised. The system prompt tells the model to plan the cycle anyway and
-note it in `assumptions` if the objective asks for something else. The system prompt also
-forbids the agent from deciding dosages: Nutrient steps must refer the farmer to the
-ResourceAnalysisAgent and contain no numbers or units at all.
+**Prompt-injection handling:** the objective is inserted into a `<farmer_objective>` block in
+the *user* prompt, and any literal `</farmer_objective>` in the farmer's text is rewritten to
+`[/farmer_objective]` so the block cannot be closed early. The system prompt explicitly says the
+objective is data, not instructions.
 
-**Output** — `CultivationPlanOutput { summary, steps[], delegations[], assumptions[] }`, whose
-JSON Schema is embedded in the system prompt and whose property names are also the API's
-contract, since it is stored verbatim in `CultivationPlan.PlanJson`. A step carries
-`stage`, `windowStart`, `windowEnd`, `task`, `rationale`, `category`
-(LandPrep | Water | Nutrient | Protection | Monitoring | Harvest). A parse failure is a **failed
-run, not a crashed request**: the raw reply is kept in `AgentRunLog.RawOutput` and `Error`.
+**Validation rules** (`CultivationPlanValidator.Validate` — plain code, no DB, no LLM, collects
+*all* failures rather than stopping at the first):
 
-### `CultivationPlanValidator` — the deterministic gate
-Plain code: no database, no LLM. It collects **all** failures rather than stopping at the first,
-so the reasons can be shown to the farmer verbatim:
-1. at least one step and a non-empty summary; 2. every `stage` parses to a `GrowthStage`;
-3. every `category` is one of the six; 4. `windowStart <= windowEnd`;
-5. each window sits inside its own stage's timeline window **±3 days** (the boundaries come from
-fractions of the season, so a couple of days either side is judgement, not error);
-6. every window sits inside `[sowingDate, expectedHarvestDate]`; 7. no step's `windowEnd` is
-before `requestedOn`; 8. steps are non-decreasing by `windowStart`; 9. every delegation targets
-an `AgentNames` constant and carries an instruction; 10. **no step's `task` text matches
-`\d+(\.\d+)?\s?(kg|g|ml|l|litre|liter|bag|bags)\b|\d+(\.\d+)?\s?%`** — a quantity in a task is a
-dosage decision out of scope.
+1. At least one step, and a non-empty summary.
+2. Every `step.stage` parses to a `GrowthStage`.
+3. Every `step.category` is one of the six categories.
+4. `windowStart <= windowEnd` on every step.
+5. Every step's window lies inside its own stage's timeline window, **±3 days** (stage
+   boundaries come from fractions of the season, so a couple of days either side is an agronomic
+   judgement call, not a mistake).
+6. Every window lies inside `[sowingDate, expectedHarvestDate]`.
+7. No step's `windowEnd` is before `requestedOn` — "step is in the past".
+8. Steps are ordered non-decreasing by `windowStart`.
+9. Every delegation targets one of the three `AgentNames` constants and carries a non-empty
+   instruction.
+10. **No step's `task` matches** `\d+(\.\d+)?\s?(kg|g|ml|l|litre|liter|bag|bags)\b|\d+(\.\d+)?\s?%`
+    — a quantity in a task text means the planning agent decided a dosage it has no authority
+    over. That authority belongs to the Resource Analysis agent.
 
-This is the pattern components 2–4 must follow: **no LLM output reaches a human or the database
-without passing a deterministic validator.**
+Error handling: provider failure (incl. 429) → run logged failed, plan → `ValidationFailed` with
+a farmer-readable message; unparseable reply → the raw text is kept in `AgentRunLog.RawOutput`
+and `Error`; unknown tool / bad args → `{"error": "..."}` returned to the model so it can
+recover within the same run.
 
-### Plan lifecycle and officer approval
-`CultivationPlanService.RequestPlanAsync` writes the `Draft` row **before** the agent runs, so
-the run log can point at a plan whatever happens. Then:
+Full detail lives in **`docs/cultivation-planning-agent.md`**.
+
+### 5.2 Resource Analysis Agent (component 2)
+
+Implements **both** `IAgent<DelegatedTask, DelegatedTaskResult>` (for delegation) and
+`ICropActivityAnalysisService` (for the direct API). Architecturally it is *not* an LLM agent:
+diagnostics and recommendations are hand-written C# rules; the LLM is used only for (a) a
+two-sentence executive summary and (b) free-text chat, both with deterministic fallbacks. It
+has no `LlmToolDefinition` tools and no tool loop.
+
+It **is** the component that legitimately states dosages ("Apply 1st Top Dressing of Urea at
+50 kg/ha") — that is exactly the authority component 1's validator refuses to exercise.
+
+### 5.3 Crop Analysis Agent (component 3)
+
+The closest sibling to component 1's agent: one read-only tool (`get_pest_knowledge`), vision
+support via `CompleteJsonWithImagesAsync`, a deterministic validator
+(`CropAnalysisValidator`) that **rejects any candidate the model did not confirm against the
+knowledge base**, one retry prompt on a bad parse, and a `DiagnosisRunLog` row every run.
+
+### 5.4 Scheduling & Validation Agent (component 4)
+
+`SchedulingValidationAgentStub` — returns a note, does nothing.
+
+---
+
+## 6. Web frontend — `paddywise-web` (React 19 + TS + Vite)
+
+React 19.2, react-router-dom 7.18, axios 1.20, lucide-react icons, TypeScript ~6.0, Vite 8.
+**No state library, no data-fetching library, no component library, no tests.**
 
 ```
-Draft ──valid──> PendingOfficerApproval ──officer──> Approved | Rejected | RevisionRequested
-  └──agent failed / rule broken──> ValidationFailed
+src/
+├── api/axiosInstance.ts        ALL HTTP goes through this — bearer, 401 handler, refresh queue
+├── components/                 landing-page sections + Navbar, Sidebar, ProtectedRoute
+├── context/AuthContext.tsx     + hooks/useAuth.ts
+├── features/
+│   ├── field-cultivation/      component 1 — the real module (~3,270 lines)
+│   │   ├── pages/              FieldsPage, FieldDetailPage, CycleDetailPage, PlanApprovalPage
+│   │   ├── components/         FieldForm, CycleForm, StageTimeline, PlanRequestPanel,
+│   │   │                       PlanView, PlanReviewForm, AgentActivity, PendingPlansCard,
+│   │   │                       CycleStatusBadge
+│   │   ├── services/fieldApi.ts   every /fields /divisions /cycles /varieties /plans route, typed
+│   │   ├── types.ts            TS mirrors of the backend DTOs + validation constants + labels
+│   │   ├── utils/dates.ts
+│   │   └── styles/fieldCultivation.css
+│   ├── crop-resource/          component 2 (~3,520 lines) — ActivityDashboard, ActivityForm,
+│   │                           ActivityHistory, ActivityAnalytics, EditActivityModal,
+│   │                           AiAdvisorPanel, FertilizerValidationFlow, fertilizerRules.ts
+│   └── (no pest-disease, no reporting)
+├── pages/                      Home, LoginPage, RegisterPage, DashboardPage, UserManagementPage
+├── services/                   authService.ts (extractApiErrorMessage), tokenStorage.ts
+├── styles/                     global.css (the design tokens), Auth, Dashboard, Sidebar, UserManagement
+└── utils/roleRoutes.ts
 ```
 
-- A cycle may hold only **one** plan that is `PendingOfficerApproval` or `Approved` at a time, so
-  a plan already with an officer is never replaced behind their back (400 otherwise).
-- An `LlmException` (including 429) is caught and recorded as a failed run with a
-  farmer-readable message; the plan lands in `ValidationFailed`.
-- Only a plan that **passed** the validator dispatches its delegations, each mapped onto the
-  shared `DelegatedTask` and sent to the keyed agent it names. A delegation that fails or throws
-  gets its own failed `AgentRunLog` row and **does not** change the plan's status.
-- **Every run writes an `AgentRunLog` row, successful or not**, under one correlation id.
-- Reject and RequestRevision **require a comment**; Approve does not.
-- Approval is one database transaction: the plan becomes `Approved` and a cycle still `Planned`
-  becomes `Active` together, or neither does.
+### Routing (`App.tsx`)
 
-**Honest limits of the agent layer today:** components 2–4's agents are stubs, so every
-delegation currently returns a placeholder note; the officer approval that exists is for
-*cultivation plans* only (component 1) and is not the general approval module component 4 owns;
-there is **no validator test suite** — the rules above are enforced but unverified by any
-automated test; and the seeded variety durations the whole timeline rests on are still
-unverified against DOA data.
+| Path | Guard |
+|---|---|
+| `/`, `/login`, `/register` | public |
+| `/dashboard` | authed → redirects by role |
+| `/dashboard/farmer`, `/dashboard/officer`, `/dashboard/admin`, `/dashboard/field-officer` | **authed only — NO role check** |
+| `/admin/users` | **authed only — NO role check** |
+| `/fields` | `allowedRoles={['Farmer']}` |
+| `/fields/:id`, `/cycles/:id` | Farmer, AgriculturalOfficer, FieldOfficer |
+| `/cycles/:id/activities/new` | Farmer |
+| `/plans/pending` | AgriculturalOfficer |
+| `/activities` | **authed only — NO role check** |
 
----
+### Design system (`styles/global.css`) — the only tokens that exist
 
-## 8. Cross-cutting inconsistencies (read this before designing anything)
+```
+--cream #F6F1E3   --cream-deep #EDE5CF   --ink #212D1E    --ink-soft #4B5645
+--forest #22392A  --forest-deep #182A1E  --shoot #7FA66C  --shoot-light #B4CB9C
+--gold #E1A63B    --gold-deep #C48A28    --clay #A6693F
+--line rgba(33,45,30,.14)   --line-dark rgba(246,241,227,.16)
+--font-heading 'Fraunces' (serif)   --font-body 'Work Sans'
+```
 
-| # | Issue | Where |
-|---|---|---|
-| 1 | **Role model differs 3 ways**: backend/web `{Farmer, AgriculturalOfficer, Admin, FieldOfficer}`; mobile `{farmer, extensionOfficer, buyer, admin}`; schema.sql `{farmer, extension_officer, buyer, admin}` | everywhere |
-| 2 | **Buyer/Miller role** exists on the landing page, in the mobile app and in schema.sql, but not in the backend enum or the web register form — and nothing in the codebase serves it | product-level |
-| 3 | Mobile uses local mock auth and cannot reach the API at all (no HTTP package) | `auth_service.dart` |
-| 4 | `schema.sql` (UUID, roles table, 4 tables) vs EF migrations (int, enum, 9 tables) — the gap is now unbridgeable | `database/` |
-| 5 | Role enforcement is complete on component 1's endpoints and routes, absent on every dashboard route and on components 2–4 | web + API |
-| 6 | API base URL hard-coded in the web app; CORS hard-coded to `:5173` | `axiosInstance.ts`, `Program.cs` |
-| 7 | The activity forms still collect data that is never sent anywhere | `ActivityForm.tsx` |
-| 8 | The fertilizer "knowledge base" is still 19 rules in a browser TS array, not a DB table | `fertilizerRules.ts` |
-| 9 | Two CSS design systems in the web app | `global.css` vs `ActivityDashboard.css` |
-| 10 | `DashboardPage` and `UserManagementPage` are mock data with no backing API | web |
-| 11 | `RefreshToken.UserId` has no FK and rows accumulate forever (no cleanup) | `AuthService`, DbContext |
-| 12 | Seeded `Variety.DurationDays` / `AgeGroup` are unverified working values that the whole stage timeline and every plan rest on | `ApplicationDbContext` |
-| 13 | Zero backend and web tests — including none for `CultivationPlanValidator`; one Flutter smoke test | repo-wide |
-| 14 | No CI, no Dockerfile, no `.env.example`, no API client codegen (`types.ts` is mirrored by hand) | repo-wide |
-| 15 | `PaddyWise.Api.http` still calls the deleted `/weatherforecast` endpoint | backend |
-| 16 | The farmer sidebar's "Record Activities" is a dead `#activities` anchor although `/activities` exists | `Sidebar.tsx` |
+`CLAUDE.md` forbids inventing new tokens and forbids the crop-resource variable set
+(`--primary-dark`, `--text-muted`, `glass-panel`). Those names no longer appear in `src/` — that
+divergence has been cleaned up.
 
 ---
 
-## 9. Git state
+## 7. Mobile — `paddywise_mobile` (Flutter, Dart 3.9)
 
-- Current branch: **`feature/field-cultivation`**, **16 commits ahead of `origin/develop`** and
-  nothing behind it. The last five commits are component 1's agent work:
-  `8407043` agent contracts → `b18112a` planning agent + tools + plan API →
-  `fa16470` deterministic validation, officer review, pending queue →
-  `a77855f` plan request/view/agent activity on the cycle page →
-  `540235e` officer approval queue + live pending count.
-- Uncommitted: `CLAUDE.md` (modified).
-- `origin/develop` and `origin/CropActivity` are both at `7815243`/`5a85e98` (27 commits) — the
-  CropActivity work, including `UserManagementPage`, is already **merged** into this branch.
-- `origin/main` is at 9 commits, far behind develop.
-- **`origin/PestDiseaseMonitoring` and `origin/Reporting` are still at the initial commit
-  (1 commit each) — empty placeholders for components 3 and 4.**
-- Convention: branch per feature, PR into **`develop`**. Repo origin
-  `github.com/viruldesilva/paddywise-ai`; commit messages are informal.
+`lib/{main,models/user,screens/{login,register,dashboard},services/auth_service,theme/app_theme}.dart`.
+
+**It talks to no backend at all.** `AuthService` is a `shared_preferences`-backed fake with four
+hard-coded demo users and **plaintext passwords** (`'Password123!'` stored as `passwordHash`).
+Its role enum includes `buyer` and `extensionOfficer` — names that do not exist on the backend.
+`flutter analyze` and `flutter test` (one widget smoke test) are available. It is a UI
+prototype, unrelated to Component 1 work.
 
 ---
 
-## 10. How to run it
+## 8. Database
+
+### (a) EF Core migrations — what actually exists in Postgres (Neon)
+
+| Migration | Adds |
+|---|---|
+| `20260909130307_InitialCreate` | Fields |
+| `20260910105145_AddUsersAndRefreshTokens` | Users, RefreshTokens |
+| `20260916115824_AddDivisionsAndFieldOwnership` | Divisions, Field.FarmerId/DivisionId |
+| `20260916123714_AddCultivationCycles` | Varieties, CultivationCycles, GrowthStageLogs |
+| `20260916141243_AddCultivationPlansAndAgentLogs` | CultivationPlans, AgentRunLogs |
+| `20260917163455_AddPestDiseaseMonitoring` | CropObservations, PestDiseaseReports, PestDiseaseKnowledge |
+| `20260919121027_AddCropActivities` | CropActivities |
+| `20260920094801_AddDiagnosisRunLog` | DiagnosisRunLogs |
+
+Apply with `dotnet ef database update`. **Never edit or delete an existing migration — always
+add a new one.**
+
+### (b) `database/schema.sql` — obsolete, do not use
+
+154 lines of hand-written SQL that **contradicts the EF model**: `snake_case` table names, a
+separate `roles` table with `'farmer' | 'extension_officer' | 'buyer' | 'admin'` (there is no
+Buyer role and no roles table on the backend), a `Colombo HQ` division that isn't seeded, and
+nothing at all for cycles, plans, activities, observations or agent logs. It is dead weight kept
+in the repo. The EF migrations are the single source of truth.
+
+---
+
+## 9. Build status scoreboard (verified 2026-09-23)
+
+| Check | Result |
+|---|---|
+| `dotnet build` in `paddywise-backend` | ✅ **Build succeeded. 0 warnings, 0 errors.** |
+| `npm run build` in `paddywise-web` | ❌ **FAILS — 10 TypeScript errors** (all in `features/crop-resource/`) |
+| `npm run lint` in `paddywise-web` | eslint available, not run here |
+| Backend tests | none exist |
+| Web tests | none exist |
+| Mobile | `flutter analyze` / `flutter test` (one smoke test) |
+
+The 10 build errors, all component 2:
+
+```
+ActivityForm.tsx(96,119,129,162)  TS2367  comparing number to '' — 'number' and 'string'
+                                          have no overlap (the `=== ''` guards are dead code)
+AiAdvisorPanel.tsx(10)            TS6133  'HelpCircle' declared but never read
+AiAdvisorPanel.tsx(21)            TS6133  'ActivityRecommendation' declared but never read
+AiAdvisorPanel.tsx(35)            TS6133  'onCycleSelect' declared but never read
+AiAdvisorPanel.tsx(344,108)       TS2551  'TotalUreaKgPerHa' does not exist — meant
+                                          'totalUreaKgPerHa'  ← real runtime bug, PascalCase
+                                          fallback never matches the camelCase wire format
+ActivityDashboard.tsx(21)         TS6133  'setRefreshTrigger' declared but never read
+NewActivityPage.tsx(16)           TS6133  'navigate' declared but never read
+```
+
+---
+
+## 10. WHAT NEEDS TO BE BUILT
+
+Ordered by how much the product depends on it.
+
+### A. Component 4 — Reporting, Dashboards & Approval (nothing exists)
+
+1. **A real dashboard.** `DashboardPage.tsx` is ~600 lines of hardcoded demo content: "Yala 2026,
+   Day 45", "3.5 Acres", "14.0 MT", "42 approved treatments", "186 registered farmers", a fake
+   pending-approval card, and buttons wired to `alert()`. The *only* live element is
+   `<PendingPlansCard />`. Every role's dashboard needs real aggregate endpoints.
+2. **`UserManagementPage.tsx` is 100% mock** — five hardcoded users, no API. There is **no
+   users/admin controller on the backend at all**. Needs `GET/PUT/DELETE /api/users` with
+   `[Authorize(Roles="Admin")]`.
+3. **The Scheduling, Validation & Approval Agent** — currently a stub that every cultivation
+   plan delegates to and gets a placeholder back from.
+4. **An audit/reporting view** over `AgentRunLog` and `DiagnosisRunLog`. The data is all there
+   and nothing reads it.
+
+### B. Component 3 — the entire web UI
+
+The backend is done (observations, vision diagnosis, knowledge base, officer review queue), and
+**not one line of React consumes it.** There is no `features/pest-disease/` directory. The
+farmer dashboard's "Upload Leaf or Pest Photo" box calls
+`alert('Photo diagnosis is connected to the backend API & AI agent pipeline.')` — it is not.
+Needed: a report form, photo upload, an observation list, a diagnosis view showing candidates
+with confidence and source, and an officer review queue.
+
+### C. Image storage
+
+`CropObservation.ImageUrl` is a bare string and `CropAnalysisAgent` **downloads it over HTTP**.
+There is no upload endpoint, no blob/file storage, no validation of where the URL points.
+A real upload path is a prerequisite for B.
+
+### D. Cross-cutting gaps
+
+5. **Nothing consumes `RequiresOfficerReview`.** Component 2's safety validator can flag a banned
+   pesticide or a PHI breach, sets the flag, and then nothing routes it to an officer. It needs
+   to become a queue row like `CultivationPlan` and `PestDiseaseReport` already are.
+6. **Delegation results are logged and discarded.** `DispatchDelegationsAsync` writes the
+   receiving agent's output into `AgentRunLog.RawOutput` and never surfaces it. A farmer who gets
+   a plan saying "see the Resource Analysis agent's recommendation for quantities" has no way to
+   see that recommendation next to the plan.
+7. **The delegation payload contract is unenforced.** `PayloadJson` is opaque by design, but
+   `CropAnalysisAgent` expects a `CropAnalysisAgentInput` and the planning agent will hand it a
+   free-form payload. A delegation to `PestDiseaseDiagnosisAgent` will parse to nothing useful.
+8. **No notifications.** Officer approval, rejection and safety alerts all happen silently.
+9. **Officer division scoping.** `GET /api/plans/pending` takes an optional `divisionId` query
+   param and returns *every* division's plans when it's omitted. Officers have no division
+   assignment on `User` at all.
+10. **No seed/demo data script.** Onboarding a teammate means hand-creating a farmer, a field, a
+    cycle and a plan through Swagger.
+
+---
+
+## 11. WHAT NEEDS TO BE FIXED
+
+Ordered by severity. Items 1–2 are the ones to do today.
+
+### 🔴 1. A live database credential is committed to git
+
+`paddywise-backend/appsettings.json` contains the **full Neon Postgres connection string
+including the password**, in the tracked file, on `HEAD`.
+
+The history shows this was already fixed once and then regressed:
+
+```
+88584a3  Move secrets to user-secrets, add JWT key startup check   ← removed it
+4828fc3  crop activity form backend and finalize ui                ← put it back
+```
+
+Both `CLAUDE.md` and `Docs/PestDiseaseMonitoring/backend-guide.md` state that `appsettings.json`
+holds no secrets "by design". It currently does.
+
+**Fix:** rotate the Neon password, blank the value in `appsettings.json`, move it to
+`dotnet user-secrets`, and tell the team to re-set their local secret. The credential is in git
+history, so rotation is not optional — removing the line is not enough.
+
+### 🔴 2. Privilege escalation via self-registration
+
+`POST /api/auth/register` is anonymous and takes the role as a free string:
+
+```csharp
+if (!Enum.TryParse<UserRole>(request.Role, true, out var role))
+    throw new InvalidOperationException("Invalid role specified.");
+```
+
+Anyone can register as `Admin` or `AgriculturalOfficer` and immediately receive a token with
+that role claim — which grants the plan approval queue, `POST /api/plans/{id}/review`,
+`POST /api/pest-disease-reports/{id}/review`, and every officer read path.
+
+**Fix:** public registration should hard-code `Farmer`. Officer/Admin accounts get created by an
+Admin through an authenticated endpoint (which doesn't exist yet — see §10 A2).
+
+### 🟠 3. The web app does not build
+
+10 TypeScript errors, all in `features/crop-resource/` — listed in §9. Nine are dead
+code/unused-import noise; one (`TotalUreaKgPerHa`) is a real display bug. **This is component 2's
+code, so it is not Nuran's to fix under the ownership rules** — it needs raising with that
+owner, or an explicit hand-off.
+
+### 🟠 4. IDOR on the crop-activity analysis endpoints
+
+`CropActivityAnalysisController` is `[Authorize]` with **no role restriction and no ownership
+check**, and `ResourceAnalysisAgent.AnalyzeActivitiesAsync` takes a `userId` and never uses it
+for authorization. Any authenticated user — including a self-registered Farmer — can call
+`POST /api/cycles/{anyCycleId}/analysis` and `POST /api/cycles/{anyCycleId}/ai-chat` and read
+another farmer's full activity history, diagnostics and field details. Every other controller in
+the codebase does check ownership; these three endpoints are the exception.
+
+### 🟠 5. Unrestricted cross-farmer reads on `GET /api/activities`
+
+`CropActivitiesController.GetAllActivities` pins `farmerId` to the caller **only when the role
+is exactly `"Farmer"`**. Any other role — `FieldOfficer`, `Admin`, or a forged-role token —
+gets every activity in the database with no division scoping.
+
+### 🟠 6. SSRF via `CropObservation.ImageUrl`
+
+`CropAnalysisAgent.LoadImageAsync` does `httpClient.GetAsync(imageUrl)` on a farmer-supplied
+URL with no scheme/host/IP validation. It checks the content type and a size cap *after* the
+request, so an attacker can still make the server issue arbitrary outbound GETs — including to
+cloud metadata endpoints and internal addresses. Response bodies aren't returned to the caller
+unless they're a valid image, which limits it, but the request itself is the problem.
+
+**Fix:** allow-list the scheme (https only) and the storage host, and block private/link-local
+ranges. Properly solved by §10 C — take an uploaded file instead of a URL.
+
+### 🟡 7. Frontend role guards are missing on four routes
+
+`/dashboard/admin`, `/dashboard/officer`, `/dashboard/field-officer`, `/admin/users` and
+`/activities` are wrapped in a bare `<ProtectedRoute>` with **no `allowedRoles`**, and
+`DashboardPage` renders whichever view its `roleView` *prop* names — not the user's actual role.
+A logged-in Farmer can navigate straight to `/dashboard/admin` and see the admin console, and to
+`/admin/users` and see the user-management screen. Both are currently mock UI so nothing real
+leaks, but the guard must exist before they're wired to real endpoints. `ProtectedRoute` already
+supports `allowedRoles` — the routes just don't pass it. (Client-side guards are UX, not
+security; the server-side `[Authorize(Roles=...)]` is what actually protects data, and it is
+mostly correct.)
+
+### 🟡 8. `GET /analysis/latest` re-runs the analysis
+
+It is a `GET` that executes the full agent pipeline and **writes an `AgentRunLog` row** — a GET
+with side effects, extra LLM cost, and no caching. There is no stored analysis to fetch; the
+name is a lie. Either persist analyses and read them back, or make it a POST.
+
+### 🟡 9. Component 2's `AgentRunLog` rows are dishonest
+
+`ResourceAnalysisAgent` writes `DurationMs = 150` hard-coded, `Success = true` unconditionally,
+and a synthetic `ToolCallsJson` describing tools that don't exist. The audit trail for component
+2 is decorative. Components 1 and 3 do this correctly — copy their pattern.
+
+### 🟡 10. Two divergent growth-stage models
+
+Component 1 uses the `GrowthStage` enum and `StageTimelineCalculator` fractions
+(0.15 / 0.40 / 0.55 / 0.70 / 0.95). Component 2's `CropActivityTools.CalculateCurrentStage`
+returns **strings** from **different** thresholds (0.45 / 0.65 / 0.80) with different names
+(`"Nursery / Establishment"`, `"Grain Filling / Ripening"`, `"Harvest Ready"`). The same cycle on
+the same day can be reported as two different stages by two parts of the same product.
+
+### 🟡 11. Agronomic constants are unverified
+
+Both `Variety.DurationDays` and the `PestDiseaseKnowledge` seed text carry in-code comments
+saying they are working values that must be checked against current Department of Agriculture
+publications. `fertilizerRules.ts` says "mocked ranges for simulation". Component 2's
+recommendations state kg/ha figures with DOA citations attached. **Nothing in the product has
+been agronomically verified**, and the citations imply an authority the data doesn't have.
+
+### 🟡 12. Mobile app stores plaintext passwords
+
+`paddywise_mobile/lib/services/auth_service.dart` keeps `passwordHash: 'Password123!'` in
+`shared_preferences`. It's a demo with no backend, but it should not ship in that shape, and its
+role enum (`buyer`, `extensionOfficer`) doesn't match the backend's.
+
+### 🟢 13. Smaller items
+
+- `database/schema.sql` is obsolete and contradicts the EF model — delete it or mark it dead.
+- `package-lock.json` at the repo root is an empty stub with no `package.json` — vestigial.
+- `PATCH /api/cycles/{id}/status` accepts any `CycleStatus` with no transition rules: a
+  `Harvested` cycle can be moved back to `Planned`.
+- `Sidebar.tsx` has 12 links pointing at `#profile`, `#report`, `#weather`, `#fields`, `#expert`,
+  `#stats`, `#knowledge`, `#settings`, `#inspections`, `#upload`, `#feedback` — dead anchors.
+- `CropActivitiesController.UpdateActivity`/`DeleteActivity` carry **two** `[HttpPut]`/
+  `[HttpDelete]` attributes each (`/api/activities/{id}` and `{id}` relative to the cycle route),
+  which registers each action at two URLs.
+- Component 2 checks roles by comparing **magic strings** (`userRole == "Farmer"`) rather than
+  parsing `UserRole`, unlike components 1 and 3.
+
+---
+
+## 12. Conventions any new work must follow
+
+**Backend**
+
+- Folder layout per component: `Entities/<C>/`, `DTOs/<C>/`, `Services/<C>/{IX,X}Service.cs`,
+  `Controllers/<C>/XController.cs` with `[ApiController]` + `[Route("api/<plural>")]`.
+- Keep the `{ message }` shape on **every** 4xx — the web's `extractApiErrorMessage` unwraps
+  `{ message }`, `ValidationProblemDetails.errors` and `title`.
+- `[Authorize]` always, and `Roles = "..."` for anything role-scoped.
+- Caller id from `ClaimTypes.NameIdentifier`, never the request body.
+- Register services as `AddScoped` in `Program.cs`, add the `DbSet<X>`, configure it in
+  `OnModelCreating`, then `dotnet ef migrations add <Name>`.
+- **Never** put a secret in `appsettings.json`. **Never** edit or delete an existing migration.
+- `dotnet build` before finishing. Report the result.
+
+**Web**
+
+- New feature → `src/features/<name>/{pages,components,services,types}/`.
+- **All HTTP through `src/api/axiosInstance.ts`** — never bare `axios`.
+- Reuse `extractApiErrorMessage(err, fallback)` for every API error.
+- Register routes in `App.tsx` inside `<ProtectedRoute allowedRoles={[...]}>`.
+- Type state properly; avoid `useState<any>`.
+- Use only the `global.css` tokens listed in §6. Do not create new design tokens.
+- Fonts: Fraunces (headings), Work Sans (body).
+- `npm run build` before finishing. Report the result.
+
+**Agents**
+
+- Tools read-only and scoped to the run's own records.
+- A deterministic validator between every LLM output and any human or database.
+- One audit-log row per run, success or failure, under one correlation id.
+- User text in the user prompt inside a delimited block, never the system prompt.
+- `ILlmClient` stays the only place the provider is named.
+
+**Ask before touching** `App.tsx`, `Sidebar.tsx`, `Program.cs` or `ApplicationDbContext.cs`
+beyond the single minimal line needed to register a route, service or DbSet.
+
+---
+
+## 13. How to run it
 
 ```bash
-# Backend  → http://localhost:5164  (Swagger at /swagger; https profile also on 7188)
+# one-time, per machine, from paddywise-backend/
+dotnet user-secrets set "Jwt:Key" "<shared-team-secret, >=32 chars>"
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "<shared Neon string>"
+dotnet user-secrets set "Gemini:ApiKey" "<your own key from aistudio.google.com/apikey>"
+
 cd paddywise-backend && dotnet restore && dotnet ef database update && dotnet run
+#   → http://localhost:5164   (Swagger at /swagger; https profile also on 7188)
 
-# Web      → http://localhost:5173
 cd paddywise-web && npm install && npm run dev
+#   → http://localhost:5173
 
-# Mobile
 cd paddywise_mobile && flutter pub get && flutter run
 ```
 
-The backend needs three secrets set first — `Jwt:Key`, `ConnectionStrings:DefaultConnection`
-and `Gemini:ApiKey` — via `dotnet user-secrets`. See `README.md` and
-`paddywise-backend/README.md`. The web app reaches the API only when the backend is on **5164**
-and the dev server on **5173** (both hard-coded). Mobile talks to no backend.
+The web app reaches the API **only** on 5164 ↔ 5173 — both hard-coded (`axiosInstance.ts`
+`API_BASE_URL`, and the `AllowReactApp` CORS policy in `Program.cs`). The backend throws at
+startup if `Jwt:Key` is missing or under 32 characters. Mobile talks to no backend.
 
-**Always build before finishing a task**: `dotnet build` in `paddywise-backend`,
-`npm run build` in `paddywise-web`.
-
----
-
-## 11. Build-status scoreboard
-
-| Capability | Component | Backend | Web | Mobile | DB |
-|---|---|---|---|---|---|
-| Register / Login / JWT / refresh rotation | shared | ✅ | ✅ | ❌ local mock | ✅ |
-| `GET /me` session verify | shared | ✅ | ✅ | ❌ | – |
-| Role-based **routing** | shared | – | 🟡 enforced on component-1 routes only | 🟡 panel switch | – |
-| Role-based **authorization** | shared | ✅ on every component-1 endpoint | 🟡 `allowedRoles` on 4 routes | ❌ | – |
-| Landing / marketing site | – | – | ✅ complete | – | – |
-| Dashboards | 4 | ❌ | 🟡 static mock (one live tile) | 🟡 static mock | – |
-| Admin user management | 4 | ❌ | 🟡 UI over a mock array | 🟡 lists local users | ❌ |
-| **Divisions** (seeded reference data) | 1 | ✅ | ✅ used by the field form | ❌ | ✅ 5 rows |
-| **Varieties** (seeded reference data) | 1 | ✅ | ✅ used by the cycle form | ❌ | 🟡 8 rows, durations unverified |
-| **Fields CRUD + ownership + soft delete** | 1 | ✅ | ✅ | ❌ | ✅ |
-| **Cultivation cycles** (start, list, detail, status) | 1 | ✅ | ✅ | ❌ | ✅ |
-| **Growth stage logging + stage timeline** | 1 | ✅ | ✅ proportional timeline UI | ❌ | ✅ |
-| **Cultivation Planning Agent** (Gemini, 4 read-only tools) | 1 | ✅ | ✅ request + view + agent trail | ❌ | ✅ `AgentRunLogs` |
-| **Deterministic plan validation** | 1 | ✅ 10 rules, no tests | ✅ errors shown verbatim | ❌ | ✅ `ValidationErrorsJson` |
-| **Officer plan approval queue + review** | 1 | ✅ | ✅ `/plans/pending` + live count | ❌ | ✅ |
-| **Agent run audit log** | 1 | ✅ every run, success or fail | ✅ `AgentActivity` | ❌ | ✅ |
-| Activity logging (irrigation/fertilizer/pesticide) | 2 | ❌ | 🟡 forms submit to nothing | ❌ | ❌ |
-| Fertilizer rule validation | 2 | ❌ | 🟡 client-side mock "agent" | ❌ | ❌ |
-| Resource Analysis & Action Agent | 2 | 🟡 stub returns a note | ❌ | ❌ | – |
-| Pest/disease report + image upload | 3 | ❌ | ❌ (`alert()` stub) | ❌ | ❌ |
-| Pest & Disease Diagnosis Agent | 3 | 🟡 stub returns a note | ❌ | ❌ | – |
-| Reporting / dashboards over real data | 4 | ❌ | ❌ | ❌ | ❌ |
-| Scheduling, Validation & Approval Agent | 4 | 🟡 stub returns a note | ❌ | ❌ | – |
-| Weather, harvest, buyers/offers, notifications | – | ❌ | ❌ | 🟡 mock buyer panel | ❌ |
-| Knowledge base / pesticide allow-list | 2/4 | ❌ | 🟡 19 hard-coded rules | ❌ | ❌ |
-| Tests / CI / Docker | – | ❌ | ❌ | 🟡 1 smoke test | – |
-
-Legend: ✅ working · 🟡 partial/mock/stub · ❌ nothing.
-
-**One-line summary: component 1 is a complete vertical slice — entities, migrations, role-scoped
-API, a real LLM agent with read-only scoped tools, a deterministic validator, an officer
-approval workflow and the UI for all of it — and components 2, 3 and 4 are three registered
-stubs and one clickable mock.**
-
----
-
-## 12. Conventions a new feature must follow
-
-**Ownership** — Nuran owns component 1 only. Do not create, edit or delete files under
-`paddywise-web/src/features/crop-resource/**`, or any backend
-`Entities|DTOs|Services|Controllers|Agents/<Component>/` folder or web `src/features/<name>/`
-belonging to components 2–4. Shared files (`App.tsx`, `Sidebar.tsx`, `Program.cs`,
-`ApplicationDbContext.cs`, `DashboardPage.tsx`) may be touched only for the minimal lines a
-task explicitly names — **ask first if it needs more.**
-
-**Backend**
-- `Entities/<Component>/X.cs`, `DTOs/<Component>/XDto.cs`,
-  `Services/<Component>/{IXService,XService}.cs`,
-  `Controllers/<Component>/XController.cs` with `[ApiController] [Route("api/<plural>")]`.
-- Register the service in `Program.cs` as `AddScoped`, add `DbSet<X>` to
-  `ApplicationDbContext`, configure it in `OnModelCreating`, then `dotnet ef migrations add <Name>`.
-  **Never edit or delete an existing migration.**
-- Controller error pattern: try/catch `InvalidOperationException` → `BadRequest(new { message })`;
-  null → `NotFound(new { message })` / `Unauthorized(new { message })`;
-  `UnauthorizedAccessException` → 403 with the same shape. **Keep `{ message }` on every 4xx.**
-- `[Authorize]` always, with `Roles = "..."` for anything role-scoped, plus an ownership check
-  in the service. Caller id from `ClaimTypes.NameIdentifier`, role from `ClaimTypes.Role`.
-- **Never put secrets in `appsettings.json`** — it is tracked. Use `dotnet user-secrets` or
-  environment variables.
-
-**Agents**
-- Live in `Agents/<Component>/`, implement `IAgent<TInput,TOutput>`, register under the existing
-  `AgentNames` key (replacing the stub).
-- Tools are **read-only and scoped to the run's own records**.
-- **No LLM output reaches a human or the database without a deterministic validator** — follow
-  `Services/FieldCultivation/CultivationPlanValidator.cs`.
-- **Every run writes an `AgentRunLog` row**, success or failure, under one correlation id.
-- **User text goes in the user prompt inside a delimited block, never the system prompt.**
-- `ILlmClient` is the only place the provider is known.
-
-**Web**
-- New feature → `src/features/<name>/{pages,components,services,types}/`.
-- **All HTTP through `src/api/axiosInstance.ts`** (never bare axios), so the bearer token, the
-  401 handler and the single-flight refresh queue apply.
-- Reuse `extractApiErrorMessage(err, fallback)` from `src/services/authService.ts` for every
-  API error.
-- Register routes in `App.tsx` inside `<ProtectedRoute allowedRoles={[...]}>`.
-- Type state properly — avoid the `useState<any>` pattern in `ActivityForm`.
-- Style with the `global.css` custom properties; **never** the crop-resource variable set
-  (`--primary-dark`, `--text-muted`, `glass-panel`). **Do not create new design tokens.**
-- Fonts: **Fraunces** for headings, **Work Sans** for body.
-
-**Mobile** — needs the HTTP + real-auth foundation before feature work is meaningful.
-
-**Every task** — build before finishing (`dotnet build` / `npm run build`) and report the result.
+**Branching:** feature branch off `develop`, PR back into `develop`. Current branch
+`feature/field-cultivation` is 32 commits ahead of `origin/main`. Active remote branches:
+`CropActivity`, `PestDiseaseMonitoring`, `Reporting`, `feature/dashboard`,
+`feature/userValidation`, `login`, `mobile`, `develop`, `main`.
