@@ -4,9 +4,12 @@ import 'services/auth_service.dart';
 import 'screens/login_screen.dart';
 import 'screens/dashboard_screen.dart';
 
+import 'services/notification_service.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await AuthService.init();
+  await NotificationService.init();
   final currentUser = AuthService.getCurrentUser();
 
   runApp(PaddyWiseApp(initialUser: currentUser));

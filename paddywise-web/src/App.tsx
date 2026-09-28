@@ -7,6 +7,8 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { useReveal } from './hooks/useReveal';
 import { getRoleDashboardRoute } from './utils/roleRoutes';
 import { ActivityDashboard } from './features/crop-resource/pages/ActivityDashboard';
+import { OfficerApprovalsPage } from './features/crop-resource/pages/OfficerApprovalsPage';
+import { OfficerActivityReportPage } from './features/crop-resource/pages/OfficerActivityReportPage';
 import DashboardPage from './pages/DashboardPage';
 import UserManagementPage from './pages/UserManagementPage';
 import FieldsPage from './features/field-cultivation/pages/FieldsPage';
@@ -135,6 +137,24 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <ActivityDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/officer/approvals"
+          element={
+            <ProtectedRoute allowedRoles={['AgriculturalOfficer', 'FieldOfficer', 'Admin']}>
+              <OfficerApprovalsPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/officer/reports"
+          element={
+            <ProtectedRoute allowedRoles={['AgriculturalOfficer', 'FieldOfficer', 'Admin']}>
+              <OfficerActivityReportPage />
             </ProtectedRoute>
           }
         />

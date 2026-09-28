@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../models/user.dart';
+import '../models/notification_item.dart';
 import '../services/auth_service.dart';
+import '../services/notification_service.dart';
 import 'login_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -16,6 +18,7 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   late User _currentUser;
   List<User> _usersList = [];
+  List<NotificationItem> _farmerNotifications = [];
 
   @override
   void initState() {
@@ -23,6 +26,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _currentUser = widget.user;
     if (_currentUser.role == UserRole.admin) {
       _usersList = AuthService.getAllUsers();
+    }
+    _loadNotifications();
+    NotificationService.unreadCountNotifier.addListener(_onNotificationCountChanged);
+  }
+
+  @override
+  void dispose() {
+    NotificationService.unreadCountNotifier.removeListener(_onNotificationCountChanged);
+    super.dispose();
+  }
+
+  void _onNotificationCountChanged() {
+    _loadNotifications();
+  }
+
+  void _loadNotifications() {
+    if (mounted) {
+      setState(() {
+        _farmerNotifications =
+            NotificationService.getNotificationsForUser(_currentUser.id);
+      });
     }
   }
 
@@ -96,6 +120,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
+  void _showNotificationsSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _NotificationsBottomSheet(
+        userId: _currentUser.id,
+        onUpdated: _loadNotifications,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -117,6 +153,51 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ],
         ),
         actions: [
+          // Notification Bell with Badge
+          ValueListenableBuilder<int>(
+            valueListenable: NotificationService.unreadCountNotifier,
+            builder: (context, unreadCount, child) {
+              return Stack(
+                alignment: Alignment.center,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.notifications_outlined, size: 24),
+                    tooltip: 'Crop Activity Notifications',
+                    onPressed: () => _showNotificationsSheet(context),
+                  ),
+                  if (unreadCount > 0)
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 5, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFDC2626),
+                          borderRadius: BorderRadius.circular(10),
+                          border:
+                              Border.all(color: AppColors.forest, width: 1.5),
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
+                        child: Text(
+                          unreadCount > 9 ? '9+' : '$unreadCount',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
+          const SizedBox(width: 4),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
@@ -365,62 +446,378 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildFarmerPanel() {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.line),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: const [
-              Icon(Icons.camera_alt_outlined, color: AppColors.shoot, size: 22),
-              SizedBox(width: 8),
-              Text(
-                'Leaf & Pest Symptom Scanner',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.ink,
-                  fontFamily: 'serif',
+    final approvedList = _farmerNotifications
+        .where((n) => n.status == NotificationStatus.approved)
+        .toList();
+    final rejectedList = _farmerNotifications
+        .where((n) => n.status == NotificationStatus.rejected)
+        .toList();
+    final latestApproved = approvedList.isNotEmpty ? approvedList.first : null;
+    final latestRejected = rejectedList.isNotEmpty ? rejectedList.first : null;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // AI Advisory & Officer Decision Card
+        Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.line),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: const [
+                      Icon(Icons.psychology_alt_rounded,
+                          color: AppColors.forest, size: 24),
+                      SizedBox(width: 8),
+                      Text(
+                        'Crop Activity AI Advisory',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.ink,
+                          fontFamily: 'serif',
+                        ),
+                      ),
+                    ],
+                  ),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: AppColors.badgeFarmerBg,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Icon(Icons.verified,
+                            size: 12, color: AppColors.badgeFarmerText),
+                        SizedBox(width: 4),
+                        Text(
+                          'DOA Official',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.badgeFarmerText,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'AI-recommended field operations officially reviewed by your Agricultural Extension Officer.',
+                style: TextStyle(fontSize: 12, color: AppColors.inkSoft),
+              ),
+              const SizedBox(height: 14),
+
+              // Approved Recommendation Notice
+              if (latestApproved != null) ...[
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF0FDF4),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFF86EFAC)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFDCFCE7),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: const [
+                                Icon(Icons.check_circle_rounded,
+                                    size: 14, color: Color(0xFF166534)),
+                                SizedBox(width: 4),
+                                Text(
+                                  'OFFICER APPROVED',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF166534),
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Text(
+                            _formatTimeAgo(latestApproved.createdAt),
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: AppColors.inkSoft,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        latestApproved.actionText ?? latestApproved.title,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.ink,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withAlpha(200),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                              color: const Color(0xFF86EFAC).withAlpha(120)),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('👨‍🌾 ', style: TextStyle(fontSize: 14)),
+                            Expanded(
+                              child: RichText(
+                                text: TextSpan(
+                                  style: const TextStyle(
+                                      fontSize: 12, color: AppColors.ink),
+                                  children: [
+                                    TextSpan(
+                                      text:
+                                          '${latestApproved.officerName ?? "Agrarian Officer"}: ',
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold),
+                                    ),
+                                    TextSpan(
+                                      text:
+                                          '"${latestApproved.officerComment ?? latestApproved.message}"',
+                                      style: const TextStyle(
+                                          fontStyle: FontStyle.italic),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: const [
+                          Icon(Icons.task_alt,
+                              size: 16, color: Color(0xFF166534)),
+                          SizedBox(width: 6),
+                          Text(
+                            'Authorized for field application',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF166534),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
+
+              // Rejected Recommendation Notice
+              if (latestRejected != null) ...[
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFEF2F2),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFFFECACA)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFEE2E2),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: const [
+                                Icon(Icons.cancel_rounded,
+                                    size: 14, color: Color(0xFF991B1B)),
+                                SizedBox(width: 4),
+                                Text(
+                                  'OFFICER REJECTED (DO NOT APPLY)',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF991B1B),
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Text(
+                            _formatTimeAgo(latestRejected.createdAt),
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: AppColors.inkSoft,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        latestRejected.actionText ?? latestRejected.title,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.ink,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withAlpha(200),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                              color: const Color(0xFFFECACA).withAlpha(120)),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('⚠️ ', style: TextStyle(fontSize: 14)),
+                            Expanded(
+                              child: RichText(
+                                text: TextSpan(
+                                  style: const TextStyle(
+                                      fontSize: 12, color: AppColors.ink),
+                                  children: [
+                                    TextSpan(
+                                      text:
+                                          '${latestRejected.officerName ?? "Agrarian Officer"}: ',
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold),
+                                    ),
+                                    TextSpan(
+                                      text:
+                                          '"${latestRejected.officerComment ?? latestRejected.message}"',
+                                      style: const TextStyle(
+                                          fontStyle: FontStyle.italic),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
+
+              // Open Notifications Sheet Button
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => _showNotificationsSheet(context),
+                  icon:
+                      const Icon(Icons.notifications_active_outlined, size: 18),
+                  label: Text(
+                    'View All Crop Activity Notifications (${_farmerNotifications.length})',
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.creamDeep.withAlpha(120),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppColors.line),
-            ),
-            child: const Text(
-              'Notice discolored leaves or hopper burn? Snap a photo in the field. The 4-agent AI diagnosis pipeline will analyze it and submit to your local Extension Officer for approval.',
-              style: TextStyle(fontSize: 13, color: AppColors.inkSoft),
-            ),
+        ),
+        const SizedBox(height: 18),
+
+        // Leaf & Pest Symptom Scanner
+        Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.line),
           ),
-          const SizedBox(height: 16),
-          Center(
-            child: ElevatedButton.icon(
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'AI Diagnosis Scanner will link to mobile camera model pipeline.',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: const [
+                  Icon(Icons.camera_alt_outlined,
+                      color: AppColors.shoot, size: 22),
+                  SizedBox(width: 8),
+                  Text(
+                    'Leaf & Pest Symptom Scanner',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.ink,
+                      fontFamily: 'serif',
                     ),
                   ),
-                );
-              },
-              icon: const Icon(Icons.photo_camera),
-              label: const Text('Simulate Symptom Scan'),
-            ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.creamDeep.withAlpha(120),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.line),
+                ),
+                child: const Text(
+                  'Notice discolored leaves or hopper burn? Snap a photo in the field. The 4-agent AI diagnosis pipeline will analyze it and submit to your local Extension Officer for approval.',
+                  style: TextStyle(fontSize: 13, color: AppColors.inkSoft),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Center(
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'AI Diagnosis Scanner will link to mobile camera model pipeline.',
+                        ),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.photo_camera),
+                  label: const Text('Simulate Symptom Scan'),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -509,26 +906,94 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                Row(
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
                   children: [
-                    ElevatedButton(
+                    ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF16A34A),
+                        foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 8),
+                            horizontal: 14, vertical: 8),
                       ),
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Treatment plan approved! Notification sent to farmer.',
-                            ),
+                      onPressed: () async {
+                        await NotificationService.addNotification(
+                          NotificationItem(
+                            id: 'notif_${DateTime.now().millisecondsSinceEpoch}',
+                            userId: 'usr_farmer_01',
+                            title: 'Crop Activity Recommendation Approved',
+                            message:
+                                'Agricultural Officer ${_currentUser.fullName} approved: "Drain field 3 days; apply approved Thiamethoxam 25% WG". Advice: "Treatment authorized as per DOA guidelines. Ensure protective equipment."',
+                            type: 'CropActivityReview',
+                            status: NotificationStatus.approved,
+                            relatedCycleId: 1,
+                            relatedRecommendationId: 104,
+                            officerName: _currentUser.fullName,
+                            officerComment:
+                                'Treatment authorized as per DOA guidelines. Drain field 3 days prior; ensure personal protective gear is worn during application.',
+                            actionText:
+                                'Drain field 3 days; apply approved Thiamethoxam 25% WG',
+                            isRead: false,
+                            createdAt: DateTime.now(),
                           ),
                         );
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Treatment approved! Notification delivered to Farmer Bandara Wanninayake.',
+                              ),
+                            ),
+                          );
+                        }
                       },
-                      child: const Text('Approve Treatment',
+                      icon: const Icon(Icons.check, size: 16),
+                      label: const Text('Approve Treatment',
                           style: TextStyle(fontSize: 13)),
                     ),
-                    const SizedBox(width: 10),
+                    OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.errorText,
+                        side: const BorderSide(color: AppColors.errorText),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 8),
+                      ),
+                      onPressed: () async {
+                        await NotificationService.addNotification(
+                          NotificationItem(
+                            id: 'notif_${DateTime.now().millisecondsSinceEpoch}',
+                            userId: 'usr_farmer_01',
+                            title: 'Crop Activity Recommendation Rejected',
+                            message:
+                                'Agricultural Officer ${_currentUser.fullName} advised not to proceed with: "Drain field 3 days; apply Thiamethoxam 25% WG". Note: "Rejected: Hopper count is below threshold. Do not apply chemical spray; monitor water levels."',
+                            type: 'CropActivityReview',
+                            status: NotificationStatus.rejected,
+                            relatedCycleId: 1,
+                            relatedRecommendationId: 105,
+                            officerName: _currentUser.fullName,
+                            officerComment:
+                                'Rejected: Hopper count is below economic threshold. Do not apply chemical spray; maintain 2cm water level and conserve natural predators.',
+                            actionText:
+                                'Drain field 3 days; apply approved Thiamethoxam 25% WG',
+                            isRead: false,
+                            createdAt: DateTime.now(),
+                          ),
+                        );
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Treatment rejected. IPM warning notification delivered to Farmer.',
+                              ),
+                            ),
+                          );
+                        }
+                      },
+                      icon: const Icon(Icons.close, size: 16),
+                      label: const Text('Reject Treatment',
+                          style: TextStyle(fontSize: 13)),
+                    ),
                     OutlinedButton(
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(
@@ -842,3 +1307,529 @@ class _ListingTile extends StatelessWidget {
     );
   }
 }
+
+String _formatTimeAgo(DateTime dt) {
+  final diff = DateTime.now().difference(dt);
+  if (diff.inMinutes < 1) return 'Just now';
+  if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+  if (diff.inHours < 24) return '${diff.inHours}h ago';
+  if (diff.inDays < 7) return '${diff.inDays}d ago';
+  return '${dt.day}/${dt.month}/${dt.year}';
+}
+
+class _NotificationsBottomSheet extends StatefulWidget {
+  final String userId;
+  final VoidCallback onUpdated;
+
+  const _NotificationsBottomSheet({
+    required this.userId,
+    required this.onUpdated,
+  });
+
+  @override
+  State<_NotificationsBottomSheet> createState() =>
+      _NotificationsBottomSheetState();
+}
+
+class _NotificationsBottomSheetState extends State<_NotificationsBottomSheet> {
+  String _selectedFilter = 'all'; // 'all', 'approved', 'rejected'
+
+  @override
+  Widget build(BuildContext context) {
+    final allNotifications =
+        NotificationService.getNotificationsForUser(widget.userId);
+    final approvedCount = allNotifications
+        .where((n) => n.status == NotificationStatus.approved)
+        .length;
+    final rejectedCount = allNotifications
+        .where((n) => n.status == NotificationStatus.rejected)
+        .length;
+
+    List<NotificationItem> filteredList;
+    if (_selectedFilter == 'approved') {
+      filteredList = allNotifications
+          .where((n) => n.status == NotificationStatus.approved)
+          .toList();
+    } else if (_selectedFilter == 'rejected') {
+      filteredList = allNotifications
+          .where((n) => n.status == NotificationStatus.rejected)
+          .toList();
+    } else {
+      filteredList = allNotifications;
+    }
+
+    final unreadCount = NotificationService.getUnreadCount(widget.userId);
+
+    return Container(
+      decoration: const BoxDecoration(
+        color: AppColors.cream,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.88,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Drag Handle
+          const SizedBox(height: 12),
+          Container(
+            width: 44,
+            height: 4,
+            decoration: BoxDecoration(
+              color: AppColors.inkSoft.withAlpha(80),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Header
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.forest.withAlpha(20),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(
+                        Icons.notifications_active_rounded,
+                        color: AppColors.forest,
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Field Notifications',
+                          style: TextStyle(
+                            fontFamily: 'serif',
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.ink,
+                          ),
+                        ),
+                        Text(
+                          '$unreadCount unread advice notice${unreadCount == 1 ? "" : "s"}',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.inkSoft,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                if (unreadCount > 0)
+                  TextButton.icon(
+                    onPressed: () async {
+                      await NotificationService.markAllAsRead(widget.userId);
+                      widget.onUpdated();
+                      setState(() {});
+                    },
+                    icon: const Icon(Icons.done_all, size: 16),
+                    label: const Text('Mark all read',
+                        style: TextStyle(fontSize: 12)),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+
+          // Filter Chips
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              children: [
+                _buildFilterChip('all', 'All (${allNotifications.length})'),
+                const SizedBox(width: 8),
+                _buildFilterChip('approved', 'Approved ($approvedCount)',
+                    icon: Icons.check_circle,
+                    activeColor: const Color(0xFF166534)),
+                const SizedBox(width: 8),
+                _buildFilterChip('rejected', 'Rejected ($rejectedCount)',
+                    icon: Icons.cancel,
+                    activeColor: const Color(0xFF991B1B)),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          const Divider(height: 1, color: AppColors.line),
+
+          // Notification List
+          Expanded(
+            child: filteredList.isEmpty
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(32),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.notifications_off_outlined,
+                            size: 48,
+                            color: AppColors.inkSoft.withAlpha(120),
+                          ),
+                          const SizedBox(height: 12),
+                          const Text(
+                            'No notifications in this category',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.ink,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          const Text(
+                            'Approved and rejected AI recommendations will display here.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.inkSoft,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: filteredList.length,
+                    itemBuilder: (context, index) {
+                      final item = filteredList[index];
+                      return _NotificationCard(
+                        item: item,
+                        onMarkRead: () async {
+                          await NotificationService.markAsRead(item.id,
+                              userId: widget.userId);
+                          widget.onUpdated();
+                          setState(() {});
+                        },
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterChip(String key, String label,
+      {IconData? icon, Color? activeColor}) {
+    final isSelected = _selectedFilter == key;
+    return ChoiceChip(
+      selected: isSelected,
+      showCheckmark: false,
+      avatar: icon != null
+          ? Icon(icon,
+              size: 14,
+              color: isSelected
+                  ? Colors.white
+                  : (activeColor ?? AppColors.inkSoft))
+          : null,
+      label: Text(label),
+      labelStyle: TextStyle(
+        fontSize: 12,
+        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+        color: isSelected ? Colors.white : AppColors.ink,
+      ),
+      selectedColor: activeColor ?? AppColors.forest,
+      backgroundColor: Colors.white,
+      side: BorderSide(
+        color: isSelected ? Colors.transparent : AppColors.line,
+      ),
+      onSelected: (val) {
+        if (val) {
+          setState(() {
+            _selectedFilter = key;
+          });
+        }
+      },
+    );
+  }
+}
+
+class _NotificationCard extends StatelessWidget {
+  final NotificationItem item;
+  final VoidCallback onMarkRead;
+
+  const _NotificationCard({
+    required this.item,
+    required this.onMarkRead,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    Color borderColor;
+    Color statusBg;
+    Color statusTextColor;
+    IconData statusIcon;
+    String statusTitle;
+
+    switch (item.status) {
+      case NotificationStatus.approved:
+        borderColor = const Color(0xFF16A34A);
+        statusBg = const Color(0xFFDCFCE7);
+        statusTextColor = const Color(0xFF166534);
+        statusIcon = Icons.check_circle_rounded;
+        statusTitle = 'OFFICER APPROVED';
+        break;
+      case NotificationStatus.rejected:
+        borderColor = const Color(0xFFDC2626);
+        statusBg = const Color(0xFFFEE2E2);
+        statusTextColor = const Color(0xFF991B1B);
+        statusIcon = Icons.cancel_rounded;
+        statusTitle = 'OFFICER REJECTED';
+        break;
+      case NotificationStatus.pending:
+      default:
+        borderColor = const Color(0xFFD97706);
+        statusBg = const Color(0xFFFEF3C7);
+        statusTextColor = const Color(0xFF92400E);
+        statusIcon = Icons.hourglass_top_rounded;
+        statusTitle = 'PENDING REVIEW';
+        break;
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: item.isRead ? AppColors.line : borderColor.withAlpha(120),
+          width: item.isRead ? 1 : 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(10),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border(
+              left: BorderSide(color: borderColor, width: 4),
+            ),
+          ),
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Top Row: Status badge & time
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: statusBg,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(statusIcon, size: 13, color: statusTextColor),
+                        const SizedBox(width: 4),
+                        Text(
+                          statusTitle,
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: statusTextColor,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      if (!item.isRead) ...[
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFDC2626),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                      ],
+                      Text(
+                        _formatTimeAgo(item.createdAt),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.inkSoft,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+
+              // Title
+              Text(
+                item.title,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.ink,
+                ),
+              ),
+              const SizedBox(height: 6),
+
+              // Recommended / Proposed Action
+              if (item.actionText != null && item.actionText!.isNotEmpty) ...[
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.cream.withAlpha(140),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppColors.line),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'PROPOSED ACTIVITY',
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.6,
+                          color: AppColors.inkSoft,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        item.actionText!,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.ink,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 10),
+              ],
+
+              // Officer Guidance Note
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.person_pin_rounded,
+                            size: 15, color: AppColors.forest),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Reviewed by ${item.officerName ?? "Agricultural Officer"}',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.forest,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '"${item.officerComment ?? item.message}"',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontStyle: FontStyle.italic,
+                        color: AppColors.ink,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Footer Buttons
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  if (item.status == NotificationStatus.approved)
+                    Row(
+                      children: const [
+                        Icon(Icons.check, size: 14, color: Color(0xFF166534)),
+                        SizedBox(width: 4),
+                        Text(
+                          'DOA Certified Guidance',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF166534),
+                          ),
+                        ),
+                      ],
+                    )
+                  else if (item.status == NotificationStatus.rejected)
+                    Row(
+                      children: const [
+                        Icon(Icons.shield_outlined,
+                            size: 14, color: Color(0xFF991B1B)),
+                        SizedBox(width: 4),
+                        Text(
+                          'IPM Safety Hold',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF991B1B),
+                          ),
+                        ),
+                      ],
+                    )
+                  else
+                    const SizedBox.shrink(),
+
+                  if (!item.isRead)
+                    TextButton(
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      onPressed: onMarkRead,
+                      child: const Text(
+                        'Mark as read',
+                        style: TextStyle(fontSize: 11),
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+

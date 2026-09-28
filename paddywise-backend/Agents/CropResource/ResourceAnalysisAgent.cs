@@ -731,6 +731,38 @@ public class ResourceAnalysisAgent : IAgent<DelegatedTask, DelegatedTaskResult>,
 
         await _context.SaveChangesAsync(ct);
 
+        // Create Notification for the Farmer
+        try
+        {
+            var farmerId = rec.CultivationCycle?.Field?.FarmerId ?? rec.RequestedByUserId;
+            var actionSnippet = rec.Action.Length > 60 ? rec.Action.Substring(0, 57) + "..." : rec.Action;
+
+            var notification = new Notification
+            {
+                UserId = farmerId,
+                Title = isApprove ? "Crop Activity Recommendation Approved" : "Crop Activity Recommendation Rejected",
+                Message = isApprove
+                    ? $"Agricultural Officer {officer.Name} approved: \"{actionSnippet}\". Advice: \"{comment ?? "Approved as per DOA guidelines."}\""
+                    : $"Agricultural Officer {officer.Name} advised not to proceed with: \"{actionSnippet}\". Note: \"{comment ?? "Not recommended at this crop stage."}\"",
+                Type = "CropActivityReview",
+                Status = rec.Status,
+                RelatedCycleId = rec.CultivationCycleId,
+                RelatedRecommendationId = rec.Id,
+                OfficerName = officer.Name,
+                OfficerComment = comment,
+                ActionText = rec.Action,
+                IsRead = false,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.Notifications.Add(notification);
+            await _context.SaveChangesAsync(ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to create farmer notification for recommendation #{RecommendationId}.", recommendationId);
+        }
+
         // Audit Trail
         try
         {

@@ -21,6 +21,7 @@ import {
   MapPin,
   Camera,
   CheckCircle,
+  UserCheck,
   X,
   LogOut
 } from 'lucide-react';
@@ -48,8 +49,8 @@ export function Sidebar({ role, isOpen, onClose }: SidebarProps) {
 
   const agriculturalOfficerLinks = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-    { name: 'All Crop Activities', path: '/activities', icon: Activity },
-    { name: 'Generate Crop Report', path: '/activities?tab=report', icon: FileText },
+    { name: 'AI Approvals Queue', path: '/officer/approvals', icon: UserCheck },
+    { name: 'Activity Report', path: '/officer/reports', icon: FileText },
     { name: 'Review AI Recommendations', path: '/plans/pending', icon: CheckSquare },
     { name: 'Add Expert Recommendations', path: '#expert', icon: MessageSquare },
     { name: 'Monitor Disease & Statistics', path: '#stats', icon: BarChart2 },
@@ -57,8 +58,8 @@ export function Sidebar({ role, isOpen, onClose }: SidebarProps) {
 
   const adminLinks = [
     { name: 'Dashboard', path: '/dashboard/admin', icon: LayoutDashboard },
-    { name: 'All Crop Activities', path: '/activities', icon: Activity },
-    { name: 'Generate Crop Report', path: '/activities?tab=report', icon: FileText },
+    { name: 'AI Approvals Queue', path: '/officer/approvals', icon: UserCheck },
+    { name: 'Activity Report', path: '/officer/reports', icon: FileText },
     { name: 'Manage Users', path: '/admin/users', icon: Users },
     { name: 'Manage Knowledge Base', path: '#knowledge', icon: Database },
     { name: 'System Settings & Audit Logs', path: '#settings', icon: Settings },
@@ -66,8 +67,8 @@ export function Sidebar({ role, isOpen, onClose }: SidebarProps) {
 
   const fieldOfficerLinks = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-    { name: 'All Crop Activities', path: '/activities', icon: Activity },
-    { name: 'Generate Crop Report', path: '/activities?tab=report', icon: FileText },
+    { name: 'AI Approvals Queue', path: '/officer/approvals', icon: UserCheck },
+    { name: 'Activity Report', path: '/officer/reports', icon: FileText },
     { name: 'Visit Farms & Inspections', path: '#inspections', icon: MapPin },
     { name: 'Upload Field Images', path: '#upload', icon: Camera },
     { name: 'Verify Problems & Feedback', path: '#feedback', icon: CheckCircle },

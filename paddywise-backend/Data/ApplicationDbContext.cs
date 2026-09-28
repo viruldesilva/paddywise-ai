@@ -27,6 +27,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<DiagnosisRunLog> DiagnosisRunLogs => Set<DiagnosisRunLog>();//audit trail of Crop Analysis agent runs
     public DbSet<CropActivity> CropActivities => Set<CropActivity>();//farmer crop activities
     public DbSet<CropActivityRecommendation> CropActivityRecommendations => Set<CropActivityRecommendation>();//agent recommendations awaiting officer review / executed
+    public DbSet<Notification> Notifications => Set<Notification>();//user notifications for review decisions and alerts
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -350,5 +351,16 @@ public class ApplicationDbContext : DbContext
                 Source = "Sri Lanka Department of Agriculture"
             }
         );
+
+        modelBuilder.Entity<Notification>(entity =>
+        {
+            entity.HasIndex(n => n.UserId);
+            entity.HasIndex(n => n.IsRead);
+            entity.HasIndex(n => n.CreatedAt);
+            entity.HasOne(n => n.User)
+                .WithMany()
+                .HasForeignKey(n => n.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
     }
 }
