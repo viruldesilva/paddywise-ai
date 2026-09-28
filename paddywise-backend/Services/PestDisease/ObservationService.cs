@@ -240,6 +240,7 @@ public class ObservationService : IObservationService
         {
             ObservationId = observation.Id,
             CultivationId = observation.CultivationCycleId,
+            ObservationType = observation.ObservationType.ToString(),
             CropStage = observation.CropStage.ToString(),
             Symptoms = observation.Symptoms,
             Severity = observation.Severity.ToString(),

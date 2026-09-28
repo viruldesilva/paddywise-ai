@@ -36,6 +36,8 @@ public class PestDiseaseKnowledgeService : IPestDiseaseKnowledgeService
     public async Task<PestDiseaseKnowledgeResponseDto> CreateAsync(SavePestDiseaseKnowledgeRequestDto request)
     {
         var name = request.Name.Trim();
+        var category = ParseEnum<PestDiseaseCategory>(
+            request.Category, "Category must be Pest or Disease.");
 
         if (await NameTakenAsync(name, excludingId: null))
             throw new InvalidOperationException($"A knowledge base entry named '{name}' already exists.");
@@ -43,6 +45,7 @@ public class PestDiseaseKnowledgeService : IPestDiseaseKnowledgeService
         var entry = new PestDiseaseKnowledge
         {
             Name = name,
+            Category = category,
             Symptoms = request.Symptoms.Trim(),
             FavorableConditions = Normalize(request.FavorableConditions),
             CropStages = Normalize(request.CropStages),
@@ -63,11 +66,14 @@ public class PestDiseaseKnowledgeService : IPestDiseaseKnowledgeService
             return null;
 
         var name = request.Name.Trim();
+        var category = ParseEnum<PestDiseaseCategory>(
+            request.Category, "Category must be Pest or Disease.");
 
         if (await NameTakenAsync(name, excludingId: id))
             throw new InvalidOperationException($"A knowledge base entry named '{name}' already exists.");
 
         entry.Name = name;
+        entry.Category = category;
         entry.Symptoms = request.Symptoms.Trim();
         entry.FavorableConditions = Normalize(request.FavorableConditions);
         entry.CropStages = Normalize(request.CropStages);
@@ -107,10 +113,19 @@ public class PestDiseaseKnowledgeService : IPestDiseaseKnowledgeService
     private static string? Normalize(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
+    private static T ParseEnum<T>(string value, string message) where T : struct, Enum
+    {
+        if (!Enum.TryParse<T>(value, true, out var parsed) || !Enum.IsDefined(parsed))
+            throw new InvalidOperationException(message);
+
+        return parsed;
+    }
+
     private static PestDiseaseKnowledgeResponseDto MapToResponse(PestDiseaseKnowledge entry) => new()
     {
         Id = entry.Id,
         Name = entry.Name,
+        Category = entry.Category.ToString(),
         Symptoms = entry.Symptoms,
         FavorableConditions = entry.FavorableConditions,
         CropStages = entry.CropStages,
