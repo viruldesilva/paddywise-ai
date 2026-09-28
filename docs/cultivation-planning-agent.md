@@ -85,6 +85,29 @@ errors are stored in `ValidationErrorsJson`. Valid → `PendingOfficerApproval`,
 delegation is mapped onto the shared `DelegatedTask` (`TaskType` = the instruction,
 `PayloadJson` = the serialised payload) and dispatched to the keyed agent it names.
 
+## Second validation pass (Component 4)
+
+After `CultivationPlanService.RequestPlanAsync` returns, `PlansController.RequestPlan` calls
+Component 4's `IValidationAgentService.ValidateCultivationPlanAsync`
+(`Services/ReportingApproval/Agents/ValidationAgentService.cs`).
+
+**What it checks:** the plan's shape (steps, assumptions and delegations are present, and no
+task is empty), plus a dosage scan over the summary, the tasks *and* the rationales.
+
+**What it does on failure:** it sets `ValidationFailed` and stores its own violations. It also
+writes an LLM-generated explanation into `OfficerComment`.
+
+**Guard:** the second pass writes the status either way, so it runs **only when the plan is
+already `PendingOfficerApproval`**. It can fail a plan that passed `CultivationPlanValidator`,
+but it can never promote a plan that failed it.
+
+**Response:** the controller re-reads the plan after this pass, so the 201 response shows the
+final stored status, errors and comment.
+
+The service must be registered in `Program.cs` (`AddScoped<IValidationAgentService,
+ValidationAgentService>`). Without that registration, every `PlansController` route fails with
+a 500.
+
 ## Workflow states
 
 ```mermaid
@@ -92,6 +115,7 @@ stateDiagram-v2
     [*] --> Draft: farmer requests a plan
     Draft --> ValidationFailed: agent run failed or plan broke a rule
     Draft --> PendingOfficerApproval: plan valid, delegations dispatched
+    PendingOfficerApproval --> ValidationFailed: second pass (Component 4) finds a violation
     PendingOfficerApproval --> Approved: officer approves (cycle Planned to Active)
     PendingOfficerApproval --> Rejected: officer rejects (comment required)
     PendingOfficerApproval --> RevisionRequested: officer asks for changes (comment required)
@@ -115,3 +139,18 @@ or neither does.
 | GET | `/api/plans/{id}` | Any (farmer sees only their own) |
 | GET | `/api/plans/pending?divisionId=` | AgriculturalOfficer |
 | POST | `/api/plans/{id}/review` | AgriculturalOfficer |
+
+The POST can take 20–60 seconds: the agent's tool loop, then the second pass with its optional
+explanation. Clients should allow up to 120 seconds.
+
+## Clients
+
+Farmers use only the mobile app; officers and admins use only the web app.
+
+| Who | Where | What |
+| --- | --- | --- |
+| Farmer | Mobile, `lib/features/field_cultivation/` | Register fields, start cycles, log stages, request plans. Follow the plan status, the officer's comment and the dated steps (`/cycles/:id/plans/new`, `/plans/:id`). A new plan can be requested after `ValidationFailed`, `Rejected` or `RevisionRequested`. |
+| AgriculturalOfficer | Web, `src/features/field-cultivation/` | Browse fields by division (`/officer/fields`). Read a cycle with its plan and agent activity (`/cycles/:id`). Approve, reject or request revision in the queue (`/plans/pending`). |
+| Admin | Web | Read-only access to the same field and cycle pages. |
+
+A farmer only finds out about a review by refreshing the plan; there are no notifications yet.

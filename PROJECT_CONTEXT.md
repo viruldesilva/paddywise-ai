@@ -4,6 +4,10 @@
 > `feature/field-cultivation` (commit `251e45e`, 32 commits ahead of `origin/main`).
 > Purpose: paste this into an LLM chat as complete context before planning or debugging.
 > Everything below was verified against the code on that commit, not against older docs.
+>
+> **Updated 2026-09-28** on branch `feature/field-cultivation-mobile-ui` for the web/mobile
+> client split (Component 1 only). The Component 1, web-routing, mobile, CORS and build-status
+> sections reflect that change. Sections about other components were not re-verified.
 
 ---
 
@@ -28,16 +32,28 @@ officer approving it.** Every agent run is audit-logged whether it succeeds or f
 
 | # | Component | Agent | Owner area | Real code today? |
 |---|---|---|---|---|
-| **1** | **Field & Cultivation Management** — fields, cycles, growth stages, cultivation plans | **Cultivation Planning Agent** (workflow coordinator) | `FieldCultivation/`, `features/field-cultivation/` | **Yes — complete end to end** |
+| **1** | **Field & Cultivation Management** — fields, cycles, growth stages, cultivation plans | **Cultivation Planning Agent** (workflow coordinator) | `FieldCultivation/`, web `features/field-cultivation/`, mobile `lib/features/field_cultivation/` | **Yes — end to end: backend, officer web pages, farmer mobile screens** |
 | **2** | Crop Activity & Resource Management — irrigation/fertilizer/pesticide logging, fertilizer rules | Resource Analysis & Action Agent | `CropResource/`, `features/crop-resource/` | **Yes — backend + UI, but mostly rule-based, not LLM-driven** |
 | **3** | Pest & Disease Monitoring — problem reports, photo upload, diagnosis | Pest & Disease Diagnosis Agent (class: `CropAnalysisAgent`) | `PestDisease/` | **Backend yes (with vision). No web UI at all.** |
 | **4** | Reporting, Dashboards & Approval — officer/admin dashboards, approval mgmt, audit | Scheduling, Validation & Approval Agent | `Reporting/` | **No — a stub class and a hardcoded dashboard** |
 
+**Client split (team guideline):**
+- The **web app is for Admin and AgriculturalOfficer only**. Its login portals reject every
+  other role.
+- **Farmers use only the Flutter mobile app.**
+
+Farmer-facing features belong in `paddywise_mobile`; officer review and oversight belong in
+`paddywise-web`.
+
 **Nuran owns Component 1 only.** Ownership boundaries are enforced socially via `CLAUDE.md`:
-do not create/edit/delete files under `features/crop-resource/**` or any backend
-`Entities|DTOs|Services|Controllers|Agents/<Component>/` for components 2–4. Shared files
-(`App.tsx`, `Sidebar.tsx`, `Program.cs`, `ApplicationDbContext.cs`, `DashboardPage.tsx`) may be
-touched only for the minimal lines a task explicitly names.
+do not create/edit/delete files under `features/crop-resource/**`, any backend
+`Entities|DTOs|Services|Controllers|Agents/<Component>/` for components 2–4, or their web or
+mobile feature folders.
+
+Shared files may be touched only for the minimal lines a task explicitly names:
+- **Web:** `App.tsx`, `Sidebar.tsx`, `DashboardPage.tsx`
+- **Backend:** `Program.cs`, `ApplicationDbContext.cs`
+- **Mobile:** `app_router.dart`, `role_menu_config.dart`, `auth_service.dart`
 
 **Marketing copy that has no code behind it:** the landing page still pitches *harvest & market*,
 *buyers/millers* and *weather*. There is no harvest-sales, buyer, market-price or weather code
@@ -57,11 +73,12 @@ paddywise-ai/
 ├── paddywise-backend/         # ASP.NET Core 8 Web API (assembly: PaddyWise.Api)
 │   └── Docs/PestDiseaseMonitoring/      # component 3's own guide
 ├── paddywise-web/             # React 19 + TypeScript + Vite SPA
-└── paddywise_mobile/          # Flutter app (Dart 3.9) — fully offline, no backend
+└── paddywise_mobile/          # Flutter app (Dart 3.9) — the farmer client; calls the backend
 ```
 
 Three independent stacks. **No monorepo tooling, no shared contract/codegen, no CI, no Docker,
-no backend or web tests.** The only automated gates are `dotnet build` and `npm run build`.
+no backend or web tests.** The only automated gates are `dotnet build`, `npm run build`, and
+`flutter analyze` / `flutter test` for mobile.
 
 ---
 
@@ -324,8 +341,16 @@ Three secrets, none in the repo *by design* (see §12 for the current violation)
 `Gemini:Model` to override the model. Deployment uses `Jwt__Key`,
 `ConnectionStrings__DefaultConnection`, `Gemini__ApiKey`.
 
-CORS policy `AllowReactApp` allows exactly `http://localhost:5173`. The API listens on **5164**
-(https profile 7188). Both ports are hard-coded on both sides.
+CORS policy `AllowReactApp` allows any `localhost` origin on any port (`127.0.0.1` is not
+allowed). The API listens on **5164** (https profile 7188). The web client hard-codes
+`http://localhost:5164/api`.
+
+The mobile client uses `http://10.0.2.2:5164/api` on the Android emulator. Run the backend with
+the `http` profile for mobile: `UseHttpsRedirection` sends the emulator to 7188 under the
+`https` profile.
+
+**Registration gotcha:** `PlansController` depends on Component 4's `IValidationAgentService`.
+It was missing from `Program.cs`, which made every plan route return 500. It is now registered.
 
 ---
 
@@ -469,12 +494,13 @@ src/
 ├── components/                 landing-page sections + Navbar, Sidebar, ProtectedRoute
 ├── context/AuthContext.tsx     + hooks/useAuth.ts
 ├── features/
-│   ├── field-cultivation/      component 1 — the real module (~3,270 lines)
-│   │   ├── pages/              FieldsPage, FieldDetailPage, CycleDetailPage, PlanApprovalPage
-│   │   ├── components/         FieldForm, CycleForm, StageTimeline, PlanRequestPanel,
-│   │   │                       PlanView, PlanReviewForm, AgentActivity, PendingPlansCard,
-│   │   │                       CycleStatusBadge
-│   │   ├── services/fieldApi.ts   every /fields /divisions /cycles /varieties /plans route, typed
+│   ├── field-cultivation/      component 1 — officer/admin side only (farmer UI is on mobile)
+│   │   ├── pages/              DivisionFieldsPage, FieldDetailPage, CycleDetailPage, PlanApprovalPage
+│   │   ├── components/         StageTimeline, PlanView, PlanReviewForm, AgentActivity,
+│   │   │                       PendingPlansCard, CycleStatusBadge
+│   │   ├── services/fieldApi.ts   read + officer routes (fields by division, cycles, stages,
+│   │   │                          plans, pending queue, review). Farmer write calls were removed.
+│   │   │                          getMyCycles/getCycleById are also used by components 2 and 3.
 │   │   ├── types.ts            TS mirrors of the backend DTOs + validation constants + labels
 │   │   ├── utils/dates.ts
 │   │   └── styles/fieldCultivation.css
@@ -496,8 +522,8 @@ src/
 | `/dashboard` | authed → redirects by role |
 | `/dashboard/farmer`, `/dashboard/officer`, `/dashboard/admin`, `/dashboard/field-officer` | **authed only — NO role check** |
 | `/admin/users` | **authed only — NO role check** |
-| `/fields` | `allowedRoles={['Farmer']}` |
-| `/fields/:id`, `/cycles/:id` | Farmer, AgriculturalOfficer, FieldOfficer |
+| `/officer/fields` | AgriculturalOfficer, Admin — browse fields by division |
+| `/fields/:id`, `/cycles/:id` | AgriculturalOfficer, Admin (read-only for Admin; only an officer can log a stage) |
 | `/cycles/:id/activities/new` | Farmer |
 | `/plans/pending` | AgriculturalOfficer |
 | `/activities` | **authed only — NO role check** |
@@ -520,13 +546,54 @@ divergence has been cleaned up.
 
 ## 7. Mobile — `paddywise_mobile` (Flutter, Dart 3.9)
 
-`lib/{main,models/user,screens/{login,register,dashboard},services/auth_service,theme/app_theme}.dart`.
+**The mobile app is the only farmer client.** It uses go_router, `http`, `shared_preferences`
+and `setState`; there is no state-management library.
 
-**It talks to no backend at all.** `AuthService` is a `shared_preferences`-backed fake with four
-hard-coded demo users and **plaintext passwords** (`'Password123!'` stored as `passwordHash`).
-Its role enum includes `buyer` and `extensionOfficer` — names that do not exist on the backend.
-`flutter analyze` and `flutter test` (one widget smoke test) are available. It is a UI
-prototype, unrelated to Component 1 work.
+**Auth** (`lib/services/auth_service.dart`):
+- Login and register call the real backend (`/auth/login`, `/auth/register`).
+- `refreshSession()` trades the refresh token via `/auth/refresh`. It is single-flight, because
+  the backend revokes a refresh token on first use.
+- It still has an offline fallback: four demo users with plaintext passwords.
+- Its role enum includes `buyer`, which the backend does not have.
+
+**HTTP:** `lib/core/api/api_client.dart` (`ApiClient`) is the authenticated JSON client.
+- It adds the bearer token.
+- On a 401 it refreshes once, then logs out and returns to `/login`.
+- It maps `{ message }` / `errors` / `title` into `ApiException`.
+
+**Navigation:**
+- `lib/core/router/app_router.dart`: a `ShellRoute` with `AppShell` (app bar + role-based drawer).
+- `lib/core/widgets/role_menu_config.dart`: the drawer entries per backend role.
+
+**Component 1 — `lib/features/field_cultivation/`** (farmer only):
+
+```
+models/    field_models.dart (Division, Variety, Field, FieldRequest),
+           cycle_models.dart (enums, StageWindow, StageLog, CultivationCycle, DateOnly helpers),
+           plan_models.dart (PlanStatus with farmer wording, PlanStep, CultivationPlan)
+services/  field_cultivation_service.dart — every farmer call; requestPlan has a 120 s timeout
+widgets/   fc_common.dart (header, card, states, banners, back link), status_badges.dart,
+           stage_timeline.dart
+screens/   my_fields /fields · field_form /fields/new, /fields/:id/edit · field_detail /fields/:id
+           start_cycle /fields/:id/start-cycle · my_cycles /cycles · cycle_detail /cycles/:id
+           request_plan /cycles/:id/plans/new · plan_detail /plans/:id
+```
+
+- **Forms** (add/edit field, start cycle, request plan) are top-level routes declared before the
+  shell, so they open full-screen. List and detail screens live inside the shell.
+- **Drawer:** "My Fields" and "My Cultivations".
+- **Stage logging:** the app allows only running cycles, only stages at or after the current
+  one, and only dates between sowing and today. The backend enforces none of these.
+- **Status changes:** the only one the app sends is `Abandoned`.
+
+**Other components on mobile:**
+- `features/reporting_approval/` (Component 4): an officer pending-reviews screen and a
+  hard-coded farmer "Plan Status" screen.
+- The `mobile-crop_activities` branch adds Component 2's screens, including
+  `/cycles/:id/activities` routes, which don't collide with Component 1's.
+
+**Tests:** `test/role_navigation_test.dart`, `test/field_cultivation_models_test.dart`,
+`test/widget_test.dart`.
 
 ---
 
@@ -558,18 +625,22 @@ in the repo. The EF migrations are the single source of truth.
 
 ---
 
-## 9. Build status scoreboard (verified 2026-09-23)
+## 9. Build status scoreboard (verified 2026-09-23; web and mobile rows re-checked 2026-09-28)
 
 | Check | Result |
 |---|---|
 | `dotnet build` in `paddywise-backend` | ✅ **Build succeeded. 0 warnings, 0 errors.** |
-| `npm run build` in `paddywise-web` | ❌ **FAILS — 10 TypeScript errors** (all in `features/crop-resource/`) |
-| `npm run lint` in `paddywise-web` | eslint available, not run here |
+| `npm run build` in `paddywise-web` | ❌ **FAILS**, only in other components' files: 10 errors in `features/crop-resource/`, plus `onClick={logout}` type errors in `pest-disease/pages/*`, `UserManagementPage.tsx` and two crop-resource pages. Component 1 files are clean. |
+| `npm run lint` in `paddywise-web` | eslint clean on Component 1 files, `App.tsx` and `Sidebar.tsx` |
 | Backend tests | none exist |
 | Web tests | none exist |
-| Mobile | `flutter analyze` / `flutter test` (one smoke test) |
+| Mobile | ✅ `flutter analyze`: no issues. ✅ `flutter test`: 9 tests pass. |
 
-The 10 build errors, all component 2:
+**The `logout` errors** (added 2026-09-28): `useAuth().logout` now takes
+`shouldRedirect?: boolean`, so passing it straight to `onClick` no longer type-checks. The fix is
+`onClick={() => logout()}`, which Component 1's pages already use.
+
+The 10 older build errors, all component 2:
 
 ```
 ActivityForm.tsx(96,119,129,162)  TS2367  comparing number to '' — 'number' and 'string'
@@ -681,7 +752,8 @@ Admin through an authenticated endpoint (which doesn't exist yet — see §10 A2
 
 ### 🟠 3. The web app does not build
 
-10 TypeScript errors, all in `features/crop-resource/` — listed in §9. Nine are dead
+The TypeScript errors are all in other components' files; they are listed in §9. The 10 in
+`features/crop-resource/` were there before; the `logout` handler errors were added 2026-09-28. Nine are dead
 code/unused-import noise; one (`TotalUreaKgPerHa`) is a real display bug. **This is component 2's
 code, so it is not Nuran's to fix under the ownership rules** — it needs raising with that
 owner, or an explicit hand-off.
@@ -755,15 +827,20 @@ been agronomically verified**, and the citations imply an authority the data doe
 ### 🟡 12. Mobile app stores plaintext passwords
 
 `paddywise_mobile/lib/services/auth_service.dart` keeps `passwordHash: 'Password123!'` in
-`shared_preferences`. It's a demo with no backend, but it should not ship in that shape, and its
-role enum (`buyer`, `extensionOfficer`) doesn't match the backend's.
+`shared_preferences` for its offline demo fallback. Login now goes to the real backend first,
+but the fallback should not ship in that shape. Its role enum (`buyer`) also doesn't match the
+backend's. Tokens are kept in plain `shared_preferences`, not secure storage.
 
 ### 🟢 13. Smaller items
 
 - `database/schema.sql` is obsolete and contradicts the EF model — delete it or mark it dead.
 - `package-lock.json` at the repo root is an empty stub with no `package.json` — vestigial.
-- `PATCH /api/cycles/{id}/status` accepts any `CycleStatus` with no transition rules: a
-  `Harvested` cycle can be moved back to `Planned`.
+- `PATCH /api/cycles/{id}/status` accepts any `CycleStatus` with no transition rules. A
+  `Harvested` cycle can be moved back to `Planned`, and a farmer can set `Active` directly,
+  skipping officer approval of a plan. The mobile app only ever sends `Abandoned`, but the
+  backend should restrict farmers to that.
+- `POST /api/cycles/{id}/stages` has no ordering or date rules. The mobile app enforces them
+  on the client only.
 - `Sidebar.tsx` has 12 links pointing at `#profile`, `#report`, `#weather`, `#fields`, `#expert`,
   `#stats`, `#knowledge`, `#settings`, `#inspections`, `#upload`, `#feedback` — dead anchors.
 - `CropActivitiesController.UpdateActivity`/`DeleteActivity` carry **two** `[HttpPut]`/
@@ -795,9 +872,20 @@ role enum (`buyer`, `extensionOfficer`) doesn't match the backend's.
 - **All HTTP through `src/api/axiosInstance.ts`** — never bare `axios`.
 - Reuse `extractApiErrorMessage(err, fallback)` for every API error.
 - Register routes in `App.tsx` inside `<ProtectedRoute allowedRoles={[...]}>`.
+- The web is for Admin and AgriculturalOfficer only. Do not add farmer screens here.
 - Type state properly; avoid `useState<any>`.
 - Use only the `global.css` tokens listed in §6. Do not create new design tokens.
 - Fonts: Fraunces (headings), Work Sans (body).
+
+**Mobile**
+
+- A new feature goes in `lib/features/<name>/{models,services,widgets,screens}/`.
+- All authenticated HTTP goes through `lib/core/api/api_client.dart` (`ApiClient`), never bare `http`.
+- Register screens in `app_router.dart`: inside the `ShellRoute` for list/detail screens, and
+  top-level before the shell for full-screen forms. Add drawer entries in
+  `role_menu_config.dart` and update `test/role_navigation_test.dart`.
+- Use `AppColors` from `lib/theme/app_theme.dart` only.
+- Run `flutter analyze` and `flutter test` before finishing.
 - `npm run build` before finishing. Report the result.
 
 **Agents**
@@ -830,9 +918,13 @@ cd paddywise-web && npm install && npm run dev
 cd paddywise_mobile && flutter pub get && flutter run
 ```
 
-The web app reaches the API **only** on 5164 ↔ 5173 — both hard-coded (`axiosInstance.ts`
-`API_BASE_URL`, and the `AllowReactApp` CORS policy in `Program.cs`). The backend throws at
-startup if `Jwt:Key` is missing or under 32 characters. Mobile talks to no backend.
+The web app calls the API at `http://localhost:5164/api` (hard-coded in `axiosInstance.ts`).
+The `AllowReactApp` CORS policy accepts any `localhost` port. The backend throws at
+startup if `Jwt:Key` is missing or under 32 characters.
+
+Mobile calls the backend at `http://10.0.2.2:5164/api` from the Android emulator
+(`localhost` elsewhere; it can be overridden with `AuthService.setApiBaseUrl`). Start the backend
+with `dotnet run --launch-profile http` so it isn't redirected to HTTPS.
 
 **Branching:** feature branch off `develop`, PR back into `develop`. Current branch
 `feature/field-cultivation` is 32 commits ahead of `origin/main`. Active remote branches:
