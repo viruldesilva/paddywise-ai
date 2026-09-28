@@ -7,6 +7,7 @@ public class PestDiseaseKnowledgeResponseDto
 {
     public int Id { get; set; }
     public string Name { get; set; } = string.Empty;
+    public string Category { get; set; } = string.Empty;
     public string Symptoms { get; set; } = string.Empty;
     public string? FavorableConditions { get; set; }
     public string? CropStages { get; set; }
@@ -23,6 +24,10 @@ public class SavePestDiseaseKnowledgeRequestDto
     [Required(ErrorMessage = "Name is required.")]
     [MaxLength(150, ErrorMessage = "Name cannot exceed 150 characters.")]
     public string Name { get; set; } = string.Empty;
+
+    /// <summary>"Pest" or "Disease".</summary>
+    [Required(ErrorMessage = "Category is required.")]
+    public string Category { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "Symptoms are required.")]
     [MaxLength(1000, ErrorMessage = "Symptoms cannot exceed 1000 characters.")]

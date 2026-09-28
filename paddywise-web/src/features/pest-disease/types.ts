@@ -19,7 +19,17 @@ export type PestDiseaseReportStatus =
   | 'Rejected'
   | 'RevisionRequested';
 
+/** Entities/PestDisease/PestDiseaseCategory.cs */
+export type PestDiseaseCategory = 'Pest' | 'Disease';
+
 export const OBSERVATION_TYPES: readonly ObservationType[] = ['Pest', 'Disease', 'Unknown'];
+
+export const PEST_DISEASE_CATEGORIES: readonly PestDiseaseCategory[] = ['Pest', 'Disease'];
+
+export const PEST_DISEASE_CATEGORY_LABELS: Record<PestDiseaseCategory, string> = {
+  Pest: 'Pest',
+  Disease: 'Disease',
+};
 
 export const OBSERVATION_SEVERITIES: readonly ObservationSeverity[] = [
   'Low',
@@ -168,3 +178,45 @@ export function reportReviewNeedsComment(decision: ReportReviewDecision): boolea
 export function formatConfidence(confidence: number): string {
   return `${Math.round(confidence * 100)}%`;
 }
+
+/* ------------------------------------------------------ knowledge base (admin) */
+
+/** DTOs/PestDisease/PestDiseaseKnowledgeDto.cs — PestDiseaseKnowledgeResponseDto. */
+export interface PestDiseaseKnowledgeEntry {
+  id: number;
+  name: string;
+  category: PestDiseaseCategory;
+  symptoms: string;
+  favorableConditions: string | null;
+  cropStages: string | null;
+  managementGuidance: string;
+  source: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * DTOs/PestDisease/PestDiseaseKnowledgeDto.cs — SavePestDiseaseKnowledgeRequestDto.
+ * Shared by create (POST) and update (PUT) — a full replace either way. Name must be
+ * unique case-insensitively; CropAnalysisAgent's get_pest_knowledge tool looks entries
+ * up by this exact string.
+ */
+export interface SaveKnowledgeEntryRequest {
+  name: string;
+  category: PestDiseaseCategory;
+  symptoms: string;
+  favorableConditions: string | null;
+  cropStages: string | null;
+  managementGuidance: string;
+  source: string;
+}
+
+/** SavePestDiseaseKnowledgeRequestDto's DataAnnotations MaxLength values. */
+export const KNOWLEDGE_ENTRY_RULES = {
+  nameMaxLength: 150,
+  symptomsMaxLength: 1000,
+  favorableConditionsMaxLength: 500,
+  cropStagesMaxLength: 200,
+  managementGuidanceMaxLength: 1000,
+  sourceMaxLength: 200,
+} as const;

@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using PaddyWise.Api.Agents.Shared;
 using PaddyWise.Api.Data;
 using PaddyWise.Api.DTOs.PestDisease;
+using PaddyWise.Api.Entities.PestDisease;
 using PaddyWise.Api.Services.PestDisease;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Jpeg;
@@ -154,12 +155,28 @@ public sealed class CropAnalysisAgent : IAgent<DelegatedTask, DelegatedTaskResul
         var agentInput = JsonSerializer.Deserialize<CropAnalysisAgentInput>(input.PayloadJson, JsonOptions)
             ?? throw new InvalidOperationException("CropAnalysisAgent received an empty payload.");
 
-        var knownNames = await _context.PestDiseaseKnowledgeEntries
-            .AsNoTracking()
+        // Narrows the prompt to the farmer's own ObservationType when it's Pest or Disease —
+        // the knowledge base keeps growing, and listing every entry on every run was already
+        // pushing the first Gemini response alone past 120s with 25 entries. "Unknown" (or
+        // anything else) falls through to the unfiltered query, listing everything, same as
+        // before this change.
+        var knownNamesQuery = _context.PestDiseaseKnowledgeEntries.AsNoTracking();
+        if (Enum.TryParse<PestDiseaseCategory>(agentInput.ObservationType, true, out var category))
+            knownNamesQuery = knownNamesQuery.Where(k => k.Category == category);
+
+        var knownNames = await knownNamesQuery
             .Select(k => k.Name)
             .OrderBy(n => n)
             .ToListAsync(ct);
         var systemPrompt = BuildSystemPrompt(knownNames);
+
+        _logger.LogInformation(
+            "Crop analysis for observation {ObservationId} (correlation {CorrelationId}) built system prompt from {Count} known name(s) for ObservationType {ObservationType}: {Names}",
+            agentInput.ObservationId,
+            ctx.CorrelationId,
+            knownNames.Count,
+            agentInput.ObservationType,
+            string.Join(", ", knownNames));
 
         var images = await LoadImageAsync(agentInput.ImageUrl, ct);
         var userPrompt = BuildUserPrompt(agentInput, images.Count > 0);

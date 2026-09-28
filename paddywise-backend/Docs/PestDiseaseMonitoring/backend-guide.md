@@ -70,7 +70,7 @@ From the component work plan (`PaddyWise_Component3_Work_Plan.pdf`), under `Enti
 |---|---|---|
 | `CropObservations` | `Id, CultivationId, ObservationType, Symptoms, Severity, ImageUrl, CreatedAt` | Farmer-submitted report; feeds the agent. `CultivationId` FKs to Component 1's `CultivationCycle` — read-only reference, don't add write paths into `FieldCultivation/` for it. |
 | `PestDiseaseReports` | `Id, ObservationId, PossibleIssue, Confidence, Status` | Agent's structured output per observation. `ObservationId` FKs to `CropObservations`. |
-| `PestDisease` (knowledge base) | `Name, Symptoms, FavorableConditions, CropStages, ManagementGuidance, Source` | Admin-managed reference data, Department of Agriculture sourced — the agent looks facts up here, it never invents them. |
+| `PestDisease` (knowledge base) | `Name, Category, Symptoms, FavorableConditions, CropStages, ManagementGuidance, Source` | Admin-managed reference data, Department of Agriculture sourced — the agent looks facts up here, it never invents them. `Category` (`PestDiseaseCategory`: `Pest`/`Disease`) narrows which half of this table `CropAnalysisAgent` lists per run — see below. |
 
 Relationship chain: `CultivationCycle → CropObservations → PestDiseaseReports`, validated against
 `PestDisease` rather than free-form LLM output.
@@ -268,8 +268,9 @@ Agent rules that apply here same as every component:
   longer indistinguishable. The frontend renders the third state accordingly (see
   `paddywise-web`'s frontend guide).
 - Web frontend exists: `paddywise-web/src/features/pest-disease/` (farmer `ObservationsPage` at
-  `/observations`, officer `PestDiseaseReportsPage` at `/pest-disease-reports`), merged via
-  `feature/pestdisease-UI`. No UI yet for the knowledge base admin CRUD above.
+  `/observations`, officer `PestDiseaseReportsPage` at `/pest-disease-reports`, admin
+  `KnowledgeBasePage` at `/pest-disease-knowledge` for the CRUD above), merged via
+  `feature/pestdisease-UI`.
 - **Real-Gemini smoke test run** (2026-09-24, against the live API, not just compiled) surfaced
   two real bugs, both now fixed:
   - Fixed: the model was guessing plausible-sounding pest/disease names from its own training
@@ -325,6 +326,45 @@ Agent rules that apply here same as every component:
   hardening item on `LoadImageAsync` (fetching a farmer-supplied `ImageUrl` with no host
   allowlist) is unaffected by this change and remains open.
 - Not started: golden test cases (no test project exists yet).
+- **Knowledge base `Category` field + prompt filtering (2026-09-25).** The 25-entry knowledge
+  base (up from the original 7) was making `CropAnalysisAgent`'s system prompt large enough
+  that Gemini's first response alone — before any `get_pest_knowledge` tool round trip — could
+  take 170s+ with `gemini-3.1-pro-preview`, threatening the 240s `HttpClient` timeout as the
+  base keeps growing. Fix: added `Category` (`Entities/PestDisease/PestDiseaseCategory.cs`,
+  `Pest = 0` / `Disease = 1`) to `PestDiseaseKnowledge`, migration
+  `AddCategoryToPestDiseaseKnowledge` (auto `AddColumn`/`UpdateData` for the 7 `HasData` seed
+  rows, plus two hand-written `migrationBuilder.Sql(...)` `UPDATE ... WHERE lower("Name") IN
+  (...)` blocks backfilling the 18 rows added at runtime via the admin CRUD — matched
+  case-insensitively by name against the live DB's 25 entries before writing the migration, not
+  guessed). `SavePestDiseaseKnowledgeRequestDto.Category` is validated the same way
+  `ObservationType`/`Severity` already are elsewhere: a private static
+  `ParseEnum<T>(string, message) where T : struct, Enum` in
+  `PestDiseaseKnowledgeService` (`Enum.TryParse<T>(value, true, ...)` + `Enum.IsDefined`),
+  `[Required]` on the DTO. `PestDiseaseKnowledgeController` needed no changes — it's a pure
+  DTO pass-through.
+  - `CropAnalysisAgentInput` gained an `ObservationType` field (`"Pest"`, `"Disease"` or
+    `"Unknown"` — it was previously missing from the agent's input contract entirely);
+    `ObservationService.RequestAnalysisAsync` populates it from the observation. In
+    `CropAnalysisAgent.RunAsync`, the `knownNames` query (previously always unfiltered) now
+    does `Where(k => k.Category == category)` when `Enum.TryParse<PestDiseaseCategory>
+    (agentInput.ObservationType, true, out var category)` succeeds — `"Unknown"` (or anything
+    else) falls through to the unfiltered query, listing everything, unchanged from before this
+    fix. A `LogInformation` line right after the query logs the filtered count and the exact
+    name list, for verifying which half of the KB a given run actually saw.
+  - **Verified live** (not just compiled): applied the migration to the shared dev DB, confirmed
+    via `GET /api/pest-disease-knowledge` that all 25 entries backfilled to the correct category
+    (15 Pest, 10 Disease, matching the Department-of-Agriculture-sourced mapping exactly, zero
+    unmatched). Then ran a real observation end-to-end (`ObservationType=Disease`) through
+    `request-analysis` against the live Gemini API and confirmed via the new log line that the
+    system prompt listed exactly the 10 Disease names — none of the 15 Pest names — proving the
+    filter reaches the actual LLM call, not just the query. The run completed successfully end
+    to end: two candidates were returned (Rice Blast 85%, Brown Spot 35%), both of them Disease
+    entries, both confirmed via `get_pest_knowledge` and passed by `CropAnalysisValidator`, and
+    persisted as `PendingOfficerReview` reports with `LastAnalyzedAt` set — closing the loop from
+    migration through the live model call to the stored result. (The first Gemini response alone
+    still took ~173s, unchanged by this fix — filtering the prompt reduces the token count sent,
+    which matters as the KB keeps growing past 25 entries, but it isn't why any single run at the
+    current size is fast or slow.)
 
 ## Testing golden cases
 

@@ -10,6 +10,8 @@ public class PestDiseaseKnowledge
 
     public string Name { get; set; } = string.Empty;
 
+    public PestDiseaseCategory Category { get; set; }
+
     public string Symptoms { get; set; } = string.Empty;
 
     public string? FavorableConditions { get; set; }

@@ -8,6 +8,11 @@ public class CropAnalysisAgentInput
 {
     public int ObservationId { get; set; }
     public int CultivationId { get; set; }
+
+    /// <summary>"Pest", "Disease" or "Unknown" — narrows which half of the knowledge base
+    /// CropAnalysisAgent lists in its system prompt. "Unknown" lists everything.</summary>
+    public string ObservationType { get; set; } = string.Empty;
+
     public string CropStage { get; set; } = string.Empty;
     public string Symptoms { get; set; } = string.Empty;
     public string Severity { get; set; } = string.Empty;

@@ -17,9 +17,11 @@ src/features/pest-disease/
   components/
     ObservationForm.tsx          farmer's create/edit form
     ReportReviewForm.tsx         officer's Approve/Reject/RequestRevision form
+    KnowledgeEntryForm.tsx       admin's add/edit form for one knowledge base entry
   pages/
     ObservationsPage.tsx         farmer, routed at /observations
     PestDiseaseReportsPage.tsx   officer, routed at /pest-disease-reports
+    KnowledgeBasePage.tsx        admin, routed at /pest-disease-knowledge
 ```
 
 Follow the existing `field-cultivation/` feature folder as the template for this shape
@@ -38,11 +40,14 @@ Registered in `src/App.tsx`, each behind `ProtectedRoute allowedRoles`:
 |---|---|---|
 | `/observations` | `Farmer` | `ObservationsPage` |
 | `/pest-disease-reports` | `AgriculturalOfficer` | `PestDiseaseReportsPage` |
+| `/pest-disease-knowledge` | `Admin` | `KnowledgeBasePage` |
 
 Linked from `src/components/Sidebar.tsx`: the farmer's existing "Report Pests/Diseases" entry
 points at `/observations`; a new "Review Pest/Disease Reports" entry under the officer's links
-points at `/pest-disease-reports`. `Sidebar.tsx` and `App.tsx` are shared files — only the
-minimal lines to add a route/link were touched, per the root `CLAUDE.md`'s shared-file rule.
+points at `/pest-disease-reports`; the admin's pre-existing "Manage Knowledge Base" placeholder
+(`path: '#knowledge'`) now points at `/pest-disease-knowledge`. `Sidebar.tsx` and `App.tsx` are
+shared files — only the minimal lines to add a route/link were touched, per the root
+`CLAUDE.md`'s shared-file rule.
 
 ## Cross-feature reads
 
@@ -84,7 +89,10 @@ Every error is surfaced through `extractApiErrorMessage(err, fallback)` from
 their C# member name string (e.g. `PestDiseaseReportStatus = 'PendingOfficerReview' | ...`),
 not the ordinal. `formatConfidence(confidence)` renders `0.82` as `"82%"` — used everywhere a
 confidence is shown, since the agent's confidence is a possible-match score, never certainty
-(the UI copy says "possible match", not "diagnosis").
+(the UI copy says "possible match", not "diagnosis"). `PestDiseaseCategory = 'Pest' | 'Disease'`
+mirrors `Entities/PestDisease/PestDiseaseCategory.cs`, with `PEST_DISEASE_CATEGORIES` /
+`PEST_DISEASE_CATEGORY_LABELS` following the same const-array-plus-label-map shape as
+`OBSERVATION_TYPES`/`OBSERVATION_TYPE_LABELS`.
 
 If a backend DTO in `DTOs/PestDisease/` changes shape, update the matching interface here in
 the same change — there is no shared schema generation between the two.
@@ -108,9 +116,14 @@ independent — editing one never requires touching the other.
   diagnosis agent"; analyzed with matches → the results list; analyzed with none → a `.pd-no-match`
   note ("found no likely match... as of `<date>`") plus "Ask the diagnosis agent again", instead
   of the two states silently colliding.
-- **No admin UI** for the `PestDiseaseKnowledge` CRUD endpoints
-  (`Controllers/PestDisease/PestDiseaseKnowledgeController.cs`) — the API exists
-  (`GET/POST/PUT/DELETE /api/pest-disease-knowledge`), nothing in `paddywise-web` calls it yet.
+- Fixed: admin UI for the knowledge base. `KnowledgeBasePage.tsx` (`/pest-disease-knowledge`,
+  `Admin` only) lists every entry in a table (name, symptoms preview, source, updated date),
+  with Add/Edit via `KnowledgeEntryForm.tsx` (same validation-mirrors-DataAnnotations pattern
+  as `ObservationForm.tsx`) and Delete behind a `window.confirm`. Verified end to end against
+  the live API: create, edit (pre-fills correctly), and the list refreshing after each action —
+  delete was verified via the API directly rather than clicking through the native confirm
+  dialog during automated testing, since that would've frozen the browser automation session,
+  not because the delete path itself is untested.
 - Fixed: image upload. `ObservationForm.tsx` now has a real `<input type="file" accept="image/*"
   capture="environment">` (opens the phone's rear camera directly on mobile) above the existing
   "Photo URL" field, with a local preview via `URL.createObjectURL` (revoked on change/unmount
@@ -142,6 +155,16 @@ independent — editing one never requires touching the other.
 - Not yet tested against a real, running backend + live Gemini call from the browser (only
   route-level smoke-tested: pages load, redirect correctly when unauthenticated, no console
   errors) — see backend-guide.md's "real-Gemini smoke test" item.
+- **Fixed: knowledge base `Category` field (2026-09-25)**, matching the backend's `Category`
+  addition (see backend-guide.md). `KnowledgeEntryForm.tsx` gained a `Category` select
+  (Pest/Disease, defaulting to `Pest` for new entries) placed right after the Name field,
+  following the exact same `<select>` + const-array-map pattern as `ObservationForm.tsx`'s
+  `observationType`/`severity` selects — no new UI pattern invented.
+  `KnowledgeBasePage.tsx` gained a client-side category filter (`pd-queue-controls` /
+  `pd-form-group pd-queue-filter`, the same classes and shape `PestDiseaseReportsPage.tsx`
+  already uses for its status filter — filtering happens in-memory over the already-fetched
+  list rather than adding a server round trip, since `GET /api/pest-disease-knowledge` has no
+  category query param) and a Category column in the table.
 
 ## Build / lint
 
