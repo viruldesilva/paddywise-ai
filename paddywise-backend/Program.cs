@@ -166,6 +166,7 @@ builder.Services.AddScoped<IPhotoStorageService, AzureBlobPhotoStorageService>()
 // ============================================================
 
 builder.Services.AddScoped<IRevisionDraftService, RevisionDraftService>();
+builder.Services.AddScoped<PaddyWise.Api.Services.ReportingApproval.Agents.IValidationAgentService, PaddyWise.Api.Services.ReportingApproval.Agents.ValidationAgentService>();
 
 
 // ============================================================

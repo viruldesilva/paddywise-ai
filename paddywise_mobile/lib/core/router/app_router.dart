@@ -8,6 +8,16 @@ import '../../features/reporting_approval/screens/pending_reviews_screen.dart';
 import '../../features/reporting_approval/screens/plan_status_screen.dart';
 import '../../features/reporting_approval/screens/notifications_screen.dart';
 import '../../features/profile/screens/profile_screen.dart';
+import '../../features/field_cultivation/models/cycle_models.dart';
+import '../../features/field_cultivation/models/field_models.dart';
+import '../../features/field_cultivation/screens/cycle_detail_screen.dart';
+import '../../features/field_cultivation/screens/field_detail_screen.dart';
+import '../../features/field_cultivation/screens/field_form_screen.dart';
+import '../../features/field_cultivation/screens/my_cycles_screen.dart';
+import '../../features/field_cultivation/screens/my_fields_screen.dart';
+import '../../features/field_cultivation/screens/plan_detail_screen.dart';
+import '../../features/field_cultivation/screens/request_plan_screen.dart';
+import '../../features/field_cultivation/screens/start_cycle_screen.dart';
 import '../widgets/app_shell.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey =
@@ -49,6 +59,35 @@ final GoRouter appRouter = GoRouter(
       builder: (BuildContext context, GoRouterState state) {
         return const RegisterScreen();
       },
+    ),
+
+    // Field & Cultivation forms open full-screen above the shell. Listed
+    // before the shell so '/fields/new' is not read as a field id.
+    GoRoute(
+      path: '/fields/new',
+      builder: (BuildContext context, GoRouterState state) =>
+          const FieldFormScreen(),
+    ),
+    GoRoute(
+      path: '/fields/:id/edit',
+      builder: (BuildContext context, GoRouterState state) => FieldFormScreen(
+        fieldId: int.parse(state.pathParameters['id']!),
+        initial: state.extra as Field?,
+      ),
+    ),
+    GoRoute(
+      path: '/fields/:id/start-cycle',
+      builder: (BuildContext context, GoRouterState state) => StartCycleScreen(
+        fieldId: int.parse(state.pathParameters['id']!),
+        field: state.extra as Field?,
+      ),
+    ),
+    GoRoute(
+      path: '/cycles/:id/plans/new',
+      builder: (BuildContext context, GoRouterState state) => RequestPlanScreen(
+        cycleId: int.parse(state.pathParameters['id']!),
+        cycle: state.extra as CultivationCycle?,
+      ),
     ),
 
     // Authenticated shell routes (persistent AppShell drawer & app bar)
@@ -99,6 +138,31 @@ final GoRouter appRouter = GoRouter(
           builder: (BuildContext context, GoRouterState state) {
             return const NotificationsScreen();
           },
+        ),
+        GoRoute(
+          path: '/fields',
+          builder: (BuildContext context, GoRouterState state) =>
+              const MyFieldsScreen(),
+        ),
+        GoRoute(
+          path: '/fields/:id',
+          builder: (BuildContext context, GoRouterState state) =>
+              FieldDetailScreen(fieldId: int.parse(state.pathParameters['id']!)),
+        ),
+        GoRoute(
+          path: '/cycles',
+          builder: (BuildContext context, GoRouterState state) =>
+              const MyCyclesScreen(),
+        ),
+        GoRoute(
+          path: '/cycles/:id',
+          builder: (BuildContext context, GoRouterState state) =>
+              CycleDetailScreen(cycleId: int.parse(state.pathParameters['id']!)),
+        ),
+        GoRoute(
+          path: '/plans/:id',
+          builder: (BuildContext context, GoRouterState state) =>
+              PlanDetailScreen(planId: int.parse(state.pathParameters['id']!)),
         ),
         GoRoute(
           path: '/profile',
