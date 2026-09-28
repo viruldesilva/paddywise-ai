@@ -93,7 +93,7 @@ export const ActivityForm: React.FC<ActivityFormProps> = ({ activityType, select
       if (!data.type || !data.type.trim()) {
         errs.type = 'Please select a fertilizer type.';
       }
-      if (data.quantity === undefined || data.quantity === null || data.quantity === '') {
+      if (data.quantity === undefined || data.quantity === null || (data.quantity as any) === '') {
         errs.quantity = 'Quantity is required.';
       } else {
         const qty = Number(data.quantity);
@@ -116,7 +116,7 @@ export const ActivityForm: React.FC<ActivityFormProps> = ({ activityType, select
 
     // Irrigation validation
     if (activityType === 'Irrigation') {
-      if (data.waterLevel === undefined || data.waterLevel === null || data.waterLevel === '') {
+      if (data.waterLevel === undefined || data.waterLevel === null || (data.waterLevel as any) === '') {
         errs.waterLevel = 'Water level is required.';
       } else {
         const wl = Number(data.waterLevel);
@@ -126,7 +126,7 @@ export const ActivityForm: React.FC<ActivityFormProps> = ({ activityType, select
           errs.waterLevel = 'Water level cannot exceed 150 cm.';
         }
       }
-      if (data.duration === undefined || data.duration === null || data.duration === '') {
+      if (data.duration === undefined || data.duration === null || (data.duration as any) === '') {
         errs.duration = 'Duration is required.';
       } else {
         const dur = Number(data.duration);
@@ -159,7 +159,7 @@ export const ActivityForm: React.FC<ActivityFormProps> = ({ activityType, select
         errs.targetPest = 'Target pest/disease cannot exceed 100 characters.';
       }
 
-      if (data.quantity === undefined || data.quantity === null || data.quantity === '') {
+      if (data.quantity === undefined || data.quantity === null || (data.quantity as any) === '') {
         errs.quantity = 'Quantity is required.';
       } else {
         const qty = Number(data.quantity);

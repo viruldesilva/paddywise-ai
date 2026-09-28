@@ -21,6 +21,7 @@ import {
   Camera,
   CheckCircle,
   UserCheck,
+  FileText,
   X,
   LogOut
 } from 'lucide-react';
@@ -39,6 +40,8 @@ export function Sidebar({ role, isOpen, onClose }: SidebarProps) {
   const farmerLinks = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { name: 'Manage Profile', path: '#profile', icon: User },
+    { name: 'Manage Profile', path: '/profile', icon: User },
+    { name: 'Fields & Cultivation Cycles', path: '/fields', icon: Map },
     { name: 'Record Activities', path: '/activities', icon: Activity },
     { name: 'Report Pests/Diseases', path: '/observations', icon: Bug },
     { name: 'Weather & History', path: '#weather', icon: Cloud },
@@ -49,6 +52,8 @@ export function Sidebar({ role, isOpen, onClose }: SidebarProps) {
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { name: 'Past Crop Activities', path: '/activities', icon: Activity },
     { name: 'View Farmer Fields & Cycles', path: '/officer/fields', icon: Map },
+    { name: 'AI Approvals Queue', path: '/officer/approvals', icon: UserCheck },
+    { name: 'Activity Report', path: '/officer/reports', icon: FileText },
     { name: 'Review AI Recommendations', path: '/plans/pending', icon: CheckSquare },
     { name: 'Review Pest/Disease Reports', path: '/pest-disease-reports', icon: Bug },
     { name: 'Add Expert Recommendations', path: '#expert', icon: MessageSquare },
@@ -59,6 +64,8 @@ export function Sidebar({ role, isOpen, onClose }: SidebarProps) {
     { name: 'Dashboard', path: '/dashboard/admin', icon: LayoutDashboard },
     { name: 'Past Crop Activities', path: '/activities', icon: Activity },
     { name: 'Officer Approvals', path: '/admin/officer-requests', icon: UserCheck },
+    { name: 'AI Approvals Queue', path: '/officer/approvals', icon: UserCheck },
+    { name: 'Activity Report', path: '/officer/reports', icon: FileText },
     { name: 'Manage Users', path: '/admin/users', icon: Users },
     { name: 'Manage Knowledge Base', path: '/pest-disease-knowledge', icon: Database },
     { name: 'System Settings & Audit Logs', path: '#settings', icon: Settings },
@@ -66,7 +73,8 @@ export function Sidebar({ role, isOpen, onClose }: SidebarProps) {
 
   const fieldOfficerLinks = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-    { name: 'Past Crop Activities', path: '/activities', icon: Activity },
+    { name: 'AI Approvals Queue', path: '/officer/approvals', icon: UserCheck },
+    { name: 'Activity Report', path: '/officer/reports', icon: FileText },
     { name: 'Visit Farms & Inspections', path: '#inspections', icon: MapPin },
     { name: 'Upload Field Images', path: '#upload', icon: Camera },
     { name: 'Verify Problems & Feedback', path: '#feedback', icon: CheckCircle },
