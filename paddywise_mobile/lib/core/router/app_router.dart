@@ -18,6 +18,11 @@ import '../../features/field_cultivation/screens/my_fields_screen.dart';
 import '../../features/field_cultivation/screens/plan_detail_screen.dart';
 import '../../features/field_cultivation/screens/request_plan_screen.dart';
 import '../../features/field_cultivation/screens/start_cycle_screen.dart';
+import '../../features/crop-resource/screens/new_activity_screen.dart';
+import '../../features/crop-resource/screens/past_activities_screen.dart';
+import '../../features/crop-resource/screens/edit_activity_screen.dart';
+import '../../features/crop-resource/screens/crop_activity_ai_screen.dart';
+import '../../features/crop-resource/models/crop_activity_models.dart';
 import '../widgets/app_shell.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey =
@@ -168,6 +173,66 @@ final GoRouter appRouter = GoRouter(
           path: '/profile',
           builder: (BuildContext context, GoRouterState state) {
             return const ProfileScreen();
+          },
+        ),
+        GoRoute(
+          path: '/cycles/:id/activities/new',
+          builder: (BuildContext context, GoRouterState state) {
+            final idStr = state.pathParameters['id'];
+            final cycleId = idStr != null ? int.tryParse(idStr) : null;
+            return NewActivityScreen(cycleId: cycleId);
+          },
+        ),
+        GoRoute(
+          path: '/cycles/:id/activities',
+          builder: (BuildContext context, GoRouterState state) {
+            final idStr = state.pathParameters['id'];
+            final cycleId = idStr != null ? int.tryParse(idStr) : null;
+            return PastActivitiesScreen(initialCycleId: cycleId);
+          },
+        ),
+        GoRoute(
+          path: '/activities',
+          builder: (BuildContext context, GoRouterState state) {
+            final idStr = state.uri.queryParameters['cycleId'];
+            final cycleId = idStr != null ? int.tryParse(idStr) : null;
+            return PastActivitiesScreen(initialCycleId: cycleId);
+          },
+        ),
+        GoRoute(
+          path: '/activities/new',
+          builder: (BuildContext context, GoRouterState state) {
+            final idStr = state.uri.queryParameters['cycleId'];
+            final cycleId = idStr != null ? int.tryParse(idStr) : null;
+            return NewActivityScreen(cycleId: cycleId);
+          },
+        ),
+        GoRoute(
+          path: '/activities/:id/edit',
+          builder: (BuildContext context, GoRouterState state) {
+            final idStr = state.pathParameters['id'];
+            final activityId = idStr != null ? int.tryParse(idStr) : null;
+            final activity = state.extra is CropActivityDto ? state.extra as CropActivityDto : null;
+            return EditActivityScreen(
+              activityId: activityId,
+              initialActivity: activity,
+            );
+          },
+        ),
+        GoRoute(
+          path: '/activities/advisor',
+          builder: (BuildContext context, GoRouterState state) {
+            final idStr = state.uri.queryParameters['cycleId'];
+            final cycleId = idStr != null ? int.tryParse(idStr) : null;
+            return CropActivityAiScreen(cycleId: cycleId);
+          },
+        ),
+        GoRoute(
+          path: '/cycles/:id/activities/advisor',
+          builder: (BuildContext context, GoRouterState state) {
+            final idStr = state.pathParameters['id'];
+            final cycleId = idStr != null ? int.tryParse(idStr) : null;
+            return CropActivityAiScreen(cycleId: cycleId);
           },
         ),
       ],
