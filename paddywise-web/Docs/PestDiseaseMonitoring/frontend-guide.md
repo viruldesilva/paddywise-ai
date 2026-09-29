@@ -131,11 +131,26 @@ independent — editing one never requires touching the other.
   disabled and re-labeled once a file is chosen, so it's clear the file wins. Submit flow:
   create/update the observation first (unchanged), then — only if a file was chosen — call the
   new `uploadObservationPhoto(id, file)` (`services/pestDiseaseApi.ts`, posts `FormData` to
-  `POST /api/observations/{id}/photo`) and use *its* returned `Observation` for `onSaved`. Known
-  limitation, not fixed here: if the create/update call succeeds but the photo upload fails
-  afterward, the shared `submitError` message ("Could not save this report") is misleading — the
-  report *was* saved, just without a photo. Not handled specially; a retry from the form would
-  create a second observation rather than resuming the first.
+  `POST /api/observations/{id}/photo`) and use *its* returned `Observation` for `onSaved`.
+- **Fixed (2026-09-29): misleading error when create/update succeeds but the photo upload
+  fails.** `handleSubmit` used to wrap both calls in one try/catch, so a photo-upload failure
+  after a successful create/update surfaced the generic `submitError` ("Could not save this
+  report") even though the report *was* saved — and since `onSaved` was never called, the
+  parent list didn't reflect it either, inviting a retry that would create a second observation
+  rather than resuming the first. Now split into two steps: the create/update call still uses
+  `submitError` + stays in the form on failure (unchanged); a photo-upload failure after that
+  instead calls `onSaved(saved, warning)` — `ObservationForm`'s `onSaved` prop gained an
+  optional second `warning` argument for exactly this case. `ObservationsPage.tsx`'s
+  `handleSaved` still adds the (photo-less) observation to the list and closes the modal, and
+  now also shows `warning` in a toast (`pd-toast`, same component/timeout pattern
+  `KnowledgeBasePage.tsx` already uses for its save/delete toasts, `AlertCircle` icon since this
+  is a partial-failure notice rather than a plain success one). Verified against the live API:
+  posting a non-image file to `POST /api/observations/{id}/photo` returns `400 {"message":
+  "File must be an image."}` while the observation itself remains created and queryable — the
+  exact shape the new toast message wraps ("The report was saved, but the photo could not be
+  uploaded: File must be an image."). Full browser click-through wasn't possible this session
+  (Claude in Chrome wasn't connected); verified via `tsc --noEmit`/`eslint` (clean) plus this
+  live API check of the failure path the fix targets, not a screenshot of the toast itself.
 - **Fixed: real-world 415 on upload, found by the user testing through the actual UI (not
   caught by this session's own testing, which had used curl's multipart — curl sets its own
   correct `Content-Type` automatically, unaffected by this bug).** `axiosInstance` sets a

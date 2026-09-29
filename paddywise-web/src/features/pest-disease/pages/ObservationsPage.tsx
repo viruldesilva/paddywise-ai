@@ -20,6 +20,8 @@ import { formatDateTime } from '../utils/dates';
 import '../../../styles/Dashboard.css';
 import '../styles/pestDisease.css';
 
+const TOAST_MS = 5_000;
+
 const STATUS_BADGE_CLASS: Record<PestDiseaseReportStatus, string> = {
   PendingOfficerReview: 'pd-badge pd-badge-pending',
   Approved: 'pd-badge pd-badge-approved',
@@ -36,6 +38,7 @@ export default function ObservationsPage() {
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
 
   // Which observation is mid request-analysis, and any error from that one call.
   const [analyzingId, setAnalyzingId] = useState<number | null>(null);
@@ -71,9 +74,16 @@ export default function ObservationsPage() {
     setReloadToken((previous) => previous + 1);
   };
 
-  const handleSaved = (created: Observation) => {
+  useEffect(() => {
+    if (toast === null) return;
+    const timer = window.setTimeout(() => setToast(null), TOAST_MS);
+    return () => window.clearTimeout(timer);
+  }, [toast]);
+
+  const handleSaved = (created: Observation, warning?: string) => {
     setIsFormOpen(false);
     setObservations((previous) => [created, ...previous]);
+    if (warning) setToast(warning);
   };
 
   const handleRequestAnalysis = async (observationId: number) => {
@@ -127,7 +137,7 @@ export default function ObservationsPage() {
                 <span className="dashboard-user-sub">{user.email}</span>
               </div>
               <button
-                onClick={logout}
+                onClick={() => logout()}
                 className="btn btn-secondary btn-sm"
                 title="Sign Out"
                 style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
@@ -297,6 +307,16 @@ export default function ObservationsPage() {
 
             <ObservationForm onSaved={handleSaved} onCancel={() => setIsFormOpen(false)} />
           </div>
+        </div>
+      )}
+
+      {toast !== null && (
+        <div className="pd-toast" role="status" aria-live="polite">
+          <AlertCircle size={18} />
+          <span>{toast}</span>
+          <button className="pd-toast-close" onClick={() => setToast(null)} aria-label="Dismiss">
+            <X size={16} />
+          </button>
         </div>
       )}
     </div>
