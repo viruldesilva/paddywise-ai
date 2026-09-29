@@ -121,6 +121,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 // ============================================================
 
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IProfileService, ProfileService>();
 
 
 // ============================================================
@@ -175,6 +176,7 @@ builder.Services.AddHttpClient(CropAnalysisAgent.ImageDownloadHttpClientName)
 // ============================================================
 
 builder.Services.AddScoped<IRevisionDraftService, RevisionDraftService>();
+builder.Services.AddScoped<PaddyWise.Api.Services.ReportingApproval.Agents.IValidationAgentService, PaddyWise.Api.Services.ReportingApproval.Agents.ValidationAgentService>();
 
 
 // ============================================================

@@ -9,10 +9,12 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { useReveal } from './hooks/useReveal';
 import { getRoleDashboardRoute } from './utils/roleRoutes';
 import { ActivityDashboard } from './features/crop-resource/pages/ActivityDashboard';
+import { OfficerApprovalsPage } from './features/crop-resource/pages/OfficerApprovalsPage';
+import { OfficerActivityReportPage } from './features/crop-resource/pages/OfficerActivityReportPage';
 import DashboardPage from './pages/DashboardPage';
 import UserManagementPage from './pages/UserManagementPage';
 import OfficerApprovalPage from './pages/OfficerApprovalPage';
-import FieldsPage from './features/field-cultivation/pages/FieldsPage';
+import DivisionFieldsPage from './features/field-cultivation/pages/DivisionFieldsPage';
 import FieldDetailPage from './features/field-cultivation/pages/FieldDetailPage';
 import CycleDetailPage from './features/field-cultivation/pages/CycleDetailPage';
 import PlanApprovalPage from './features/field-cultivation/pages/PlanApprovalPage';
@@ -20,6 +22,7 @@ import { NewActivityPage } from './features/crop-resource/pages/NewActivityPage'
 import ObservationsPage from './features/pest-disease/pages/ObservationsPage';
 import PestDiseaseReportsPage from './features/pest-disease/pages/PestDiseaseReportsPage';
 import KnowledgeBasePage from './features/pest-disease/pages/KnowledgeBasePage';
+import { ManageProfilePage } from './features/profile/pages/ManageProfilePage';
 
 function RoleRedirect() {
   const { user } = useAuth();
@@ -101,10 +104,10 @@ function AppContent() {
         />
 
         <Route
-          path="/fields"
+          path="/officer/fields"
           element={
-            <ProtectedRoute allowedRoles={['Farmer']}>
-              <FieldsPage />
+            <ProtectedRoute allowedRoles={['AgriculturalOfficer', 'Admin']}>
+              <DivisionFieldsPage />
             </ProtectedRoute>
           }
         />
@@ -112,7 +115,7 @@ function AppContent() {
         <Route
           path="/fields/:id"
           element={
-            <ProtectedRoute allowedRoles={['Farmer', 'AgriculturalOfficer', 'FieldOfficer']}>
+            <ProtectedRoute allowedRoles={['AgriculturalOfficer', 'Admin']}>
               <FieldDetailPage />
             </ProtectedRoute>
           }
@@ -121,7 +124,7 @@ function AppContent() {
         <Route
           path="/cycles/:id"
           element={
-            <ProtectedRoute allowedRoles={['Farmer', 'AgriculturalOfficer', 'FieldOfficer']}>
+            <ProtectedRoute allowedRoles={['AgriculturalOfficer', 'Admin']}>
               <CycleDetailPage />
             </ProtectedRoute>
           }
@@ -164,6 +167,15 @@ function AppContent() {
         />
 
         <Route
+          path="/officer/approvals"
+          element={
+            <ProtectedRoute allowedRoles={['AgriculturalOfficer', 'FieldOfficer', 'Admin']}>
+              <OfficerApprovalsPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
           path="/pest-disease-reports"
           element={
             <ProtectedRoute allowedRoles={['AgriculturalOfficer']}>
@@ -173,10 +185,28 @@ function AppContent() {
         />
 
         <Route
+          path="/officer/reports"
+          element={
+            <ProtectedRoute allowedRoles={['AgriculturalOfficer', 'FieldOfficer', 'Admin']}>
+              <OfficerActivityReportPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
           path="/pest-disease-knowledge"
           element={
             <ProtectedRoute allowedRoles={['Admin']}>
               <KnowledgeBasePage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <ManageProfilePage />
             </ProtectedRoute>
           }
         />

@@ -20,4 +20,8 @@ public class CropActivityDto
     public string? FarmerName { get; set; }
     public int? FarmerId { get; set; }
     public string? CycleName { get; set; }
+    public string? DivisionName { get; set; }
+    public string? District { get; set; }
+    public string? Province { get; set; }
+    public decimal? FieldAreaAcres { get; set; }
 }

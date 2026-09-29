@@ -245,10 +245,21 @@
   height: 4px;
 }
 
-.water-card::before { background: linear-gradient(90deg, #2B6CB0, #4299E1); }
-.fert-card::before  { background: linear-gradient(90deg, #15803D, #34D399); }
-.pest-card::before  { background: linear-gradient(90deg, #D97706, #FBBF24); }
-.other-card::before { background: linear-gradient(90deg, #4F46E5, #818CF8); }
+.water-card::before {
+  background: linear-gradient(90deg, #2B6CB0, #4299E1);
+}
+
+.fert-card::before {
+  background: linear-gradient(90deg, #15803D, #34D399);
+}
+
+.pest-card::before {
+  background: linear-gradient(90deg, #D97706, #FBBF24);
+}
+
+.other-card::before {
+  background: linear-gradient(90deg, #4F46E5, #818CF8);
+}
 
 /* Card Header */
 .diagnostic-head {
@@ -276,10 +287,25 @@
   transition: transform 0.2s ease;
 }
 
-.water-icon { background: #EBF8FF; color: #2B6CB0; }
-.fert-icon  { background: #EDFDF5; color: #15803D; }
-.pest-icon  { background: #FFFBEB; color: #D97706; }
-.other-icon { background: #EEF2FF; color: #4F46E5; }
+.water-icon {
+  background: #EBF8FF;
+  color: #2B6CB0;
+}
+
+.fert-icon {
+  background: #EDFDF5;
+  color: #15803D;
+}
+
+.pest-icon {
+  background: #FFFBEB;
+  color: #D97706;
+}
+
+.other-icon {
+  background: #EEF2FF;
+  color: #4F46E5;
+}
 
 .diag-title h4 {
   margin: 0;
@@ -324,6 +350,7 @@
   color: #065F46;
   border: 1px solid #A7F3D0;
 }
+
 .badge-good .status-dot {
   background: #10B981;
   box-shadow: 0 0 6px rgba(16, 185, 129, 0.5);
@@ -334,6 +361,7 @@
   color: #92400E;
   border: 1px solid #FDE68A;
 }
+
 .badge-warning .status-dot {
   background: #F59E0B;
   box-shadow: 0 0 6px rgba(245, 158, 11, 0.5);
@@ -344,6 +372,7 @@
   color: #991B1B;
   border: 1px solid #FECACA;
 }
+
 .badge-danger .status-dot {
   background: #EF4444;
   box-shadow: 0 0 6px rgba(239, 68, 68, 0.5);
@@ -354,6 +383,7 @@
   color: #4B5563;
   border: 1px solid #E5E7EB;
 }
+
 .badge-neutral .status-dot {
   background: #9CA3AF;
 }
@@ -514,9 +544,20 @@
   letter-spacing: 0.5px;
 }
 
-.priority-high { background: #d9534f; color: #ffffff; }
-.priority-medium { background: var(--gold); color: var(--forest-deep); }
-.priority-low { background: var(--forest); color: #ffffff; }
+.priority-high {
+  background: #d9534f;
+  color: #ffffff;
+}
+
+.priority-medium {
+  background: var(--gold);
+  color: var(--forest-deep);
+}
+
+.priority-low {
+  background: var(--forest);
+  color: #ffffff;
+}
 
 .category-badge {
   background: rgba(34, 57, 42, 0.08);
@@ -709,4 +750,139 @@
   border: 1px dashed var(--line);
   border-radius: 12px;
   color: var(--ink-soft);
+}
+
+/* Farmer Recommendation Status Boxes & Execution Flow */
+.farmer-status-box {
+  margin-top: 0.85rem;
+  padding: 1rem 1.15rem;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.farmer-status-box .status-box-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.farmer-status-box p {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.status-pending-officer {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  color: #92400e;
+}
+
+.status-pending-officer .text-amber {
+  color: #d97706;
+}
+
+.status-officer-approved {
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #065f46;
+}
+
+.status-officer-approved .text-green {
+  color: #059669;
+}
+
+.status-officer-rejected {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+}
+
+.status-officer-rejected .text-red {
+  color: #dc2626;
+}
+
+.status-executed {
+  background: #f5f3ff;
+  border: 1px solid #ddd6fe;
+  color: #5b21b6;
+}
+
+.status-executed .text-purple {
+  color: #7c3aed;
+}
+
+.officer-guidance-text {
+  background: rgba(255, 255, 255, 0.65);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  border-left: 3px solid currentColor;
+  font-size: 0.85rem;
+}
+
+.farmer-execute-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 0.35rem;
+}
+
+.farmer-execute-btn {
+  background: #059669;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.65rem 1.35rem;
+  font-size: 0.88rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(5, 150, 105, 0.25);
+  transition: all 0.2s ease;
+}
+
+.farmer-execute-btn:hover:not(:disabled) {
+  background: #047857;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(5, 150, 105, 0.35);
+}
+
+.farmer-execute-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.execute-hint {
+  font-size: 0.78rem;
+  color: #047857;
+  opacity: 0.85;
+}
+
+.execution-alert-success {
+  background: #dcfce7;
+  border: 1px solid #86efac;
+  color: #15803d;
+  padding: 0.6rem 0.85rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+
+.execution-alert-error {
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+  color: #b91c1c;
+  padding: 0.6rem 0.85rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
 }

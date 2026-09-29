@@ -64,6 +64,7 @@ export interface Citation {
 
 export interface ActivityRecommendation {
   id: string;
+  dbId?: number;
   category: 'Irrigation' | 'Fertilizer' | 'Pest' | 'General' | string;
   priority: 'HIGH' | 'MEDIUM' | 'LOW';
   action: string;
@@ -72,6 +73,41 @@ export interface ActivityRecommendation {
   confidenceScore: number;
   citations: Citation[];
   requiresOfficerReview: boolean;
+  status?: 'PENDING_OFFICER_REVIEW' | 'APPROVED' | 'REJECTED' | 'EXECUTED' | string;
+  officerName?: string;
+  officerComment?: string;
+  reviewedAt?: string;
+  executedAt?: string;
+}
+
+export interface OfficerRecommendationReviewDto {
+  id: number;
+  recommendationUid: string;
+  cultivationCycleId: number;
+  fieldName: string;
+  farmerName: string;
+  varietyName: string;
+  daysAfterSowing: number;
+  divisionName: string;
+  category: string;
+  priority: string;
+  action: string;
+  reason: string;
+  evidence: string;
+  confidenceScore: number;
+  citations: Citation[];
+  status: string;
+  officerName?: string;
+  officerComment?: string;
+  reviewedAt?: string;
+  createdAt: string;
+}
+
+export interface ReviewRecommendationResponseDto {
+  success: boolean;
+  message: string;
+  executedActivityId?: number;
+  recommendationId: number;
 }
 
 export interface CropActivityAnalysisOutput {
@@ -110,6 +146,42 @@ export const cropAnalysisApi = {
     const response = await axiosInstance.post(`/cycles/${cycleId}/ai-chat`, {
       cultivationCycleId: cycleId,
       question
+    });
+    return response.data;
+  },
+
+  // Officer approval queue methods
+  getPendingOfficerRecommendations: async (divisionId?: number): Promise<OfficerRecommendationReviewDto[]> => {
+    const response = await axiosInstance.get('/recommendations/pending', {
+      params: divisionId ? { divisionId } : undefined
+    });
+    return response.data;
+  },
+
+  officerReviewRecommendation: async (id: number, decision: 'Approve' | 'Reject', comment?: string): Promise<OfficerRecommendationReviewDto> => {
+    const response = await axiosInstance.post(`/recommendations/${id}/officer-review`, {
+      decision,
+      comment
+    });
+    return response.data;
+  },
+
+  // Cycle recommendations and Farmer execution
+  getCycleRecommendations: async (cycleId: number): Promise<OfficerRecommendationReviewDto[]> => {
+    const response = await axiosInstance.get(`/cycles/${cycleId}/recommendations`);
+    return response.data;
+  },
+
+  executeFarmerRecommendation: async (
+    cycleId: number,
+    recommendationId: string | number,
+    decision: 'Approve' | 'Reject' | 'Revise' | 'Execute' = 'Execute',
+    notes?: string
+  ): Promise<ReviewRecommendationResponseDto> => {
+    const response = await axiosInstance.post(`/cycles/${cycleId}/recommendations/review`, {
+      recommendationId: String(recommendationId),
+      decision,
+      notes
     });
     return response.data;
   }

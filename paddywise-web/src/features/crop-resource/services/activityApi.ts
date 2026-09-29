@@ -19,6 +19,10 @@ export interface CropActivityDto {
   farmerName?: string;
   farmerId?: number;
   cycleName?: string;
+  divisionName?: string;
+  district?: string;
+  province?: string;
+  fieldAreaAcres?: number;
 }
 
 export const activityApi = {

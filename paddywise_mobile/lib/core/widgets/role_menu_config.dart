@@ -33,6 +33,17 @@ final Map<String, List<MenuItemConfig>> roleMenus = {
       route: '/farmer/observations',
     ),
     const MenuItemConfig(
+      label: 'My Fields',
+      icon: Icons.grass_outlined,
+      route: '/fields',
+    ),
+    const MenuItemConfig(
+      label: 'My Cultivations',
+      icon: Icons.eco_outlined,
+      route: '/cycles',
+    ),
+    // TODO: 'Report Crop Problem' - awaiting Pest & Disease feature screen
+    const MenuItemConfig(
       label: 'Plan Status & AI Advice',
       icon: Icons.psychology_outlined,
       route: '/farmer/plan-status',

@@ -8,10 +8,25 @@ import '../../features/reporting_approval/screens/pending_reviews_screen.dart';
 import '../../features/reporting_approval/screens/plan_status_screen.dart';
 import '../../features/reporting_approval/screens/notifications_screen.dart';
 import '../../features/profile/screens/profile_screen.dart';
-import '../../features/pest_disease/models/observation.dart';
+import '../../features/pest_disease/models/observation.dart' show Observation;
 import '../../features/pest_disease/screens/observations_list_screen.dart';
 import '../../features/pest_disease/screens/new_observation_screen.dart';
 import '../../features/pest_disease/screens/observation_detail_screen.dart';
+import '../../features/field_cultivation/models/cycle_models.dart';
+import '../../features/field_cultivation/models/field_models.dart';
+import '../../features/field_cultivation/screens/cycle_detail_screen.dart';
+import '../../features/field_cultivation/screens/field_detail_screen.dart';
+import '../../features/field_cultivation/screens/field_form_screen.dart';
+import '../../features/field_cultivation/screens/my_cycles_screen.dart';
+import '../../features/field_cultivation/screens/my_fields_screen.dart';
+import '../../features/field_cultivation/screens/plan_detail_screen.dart';
+import '../../features/field_cultivation/screens/request_plan_screen.dart';
+import '../../features/field_cultivation/screens/start_cycle_screen.dart';
+import '../../features/crop-resource/screens/new_activity_screen.dart';
+import '../../features/crop-resource/screens/past_activities_screen.dart';
+import '../../features/crop-resource/screens/edit_activity_screen.dart';
+import '../../features/crop-resource/screens/crop_activity_ai_screen.dart';
+import '../../features/crop-resource/models/crop_activity_models.dart';
 import '../widgets/app_shell.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey =
@@ -72,6 +87,35 @@ final GoRouter appRouter = GoRouter(
       },
     ),
 
+    // Field & Cultivation forms open full-screen above the shell. Listed
+    // before the shell so '/fields/new' is not read as a field id.
+    GoRoute(
+      path: '/fields/new',
+      builder: (BuildContext context, GoRouterState state) =>
+          const FieldFormScreen(),
+    ),
+    GoRoute(
+      path: '/fields/:id/edit',
+      builder: (BuildContext context, GoRouterState state) => FieldFormScreen(
+        fieldId: int.parse(state.pathParameters['id']!),
+        initial: state.extra as Field?,
+      ),
+    ),
+    GoRoute(
+      path: '/fields/:id/start-cycle',
+      builder: (BuildContext context, GoRouterState state) => StartCycleScreen(
+        fieldId: int.parse(state.pathParameters['id']!),
+        field: state.extra as Field?,
+      ),
+    ),
+    GoRoute(
+      path: '/cycles/:id/plans/new',
+      builder: (BuildContext context, GoRouterState state) => RequestPlanScreen(
+        cycleId: int.parse(state.pathParameters['id']!),
+        cycle: state.extra as CultivationCycle?,
+      ),
+    ),
+
     // Authenticated shell routes (persistent AppShell drawer & app bar)
     ShellRoute(
       navigatorKey: _shellNavigatorKey,
@@ -128,9 +172,94 @@ final GoRouter appRouter = GoRouter(
           },
         ),
         GoRoute(
+          path: '/fields',
+          builder: (BuildContext context, GoRouterState state) =>
+              const MyFieldsScreen(),
+        ),
+        GoRoute(
+          path: '/fields/:id',
+          builder: (BuildContext context, GoRouterState state) =>
+              FieldDetailScreen(fieldId: int.parse(state.pathParameters['id']!)),
+        ),
+        GoRoute(
+          path: '/cycles',
+          builder: (BuildContext context, GoRouterState state) =>
+              const MyCyclesScreen(),
+        ),
+        GoRoute(
+          path: '/cycles/:id',
+          builder: (BuildContext context, GoRouterState state) =>
+              CycleDetailScreen(cycleId: int.parse(state.pathParameters['id']!)),
+        ),
+        GoRoute(
+          path: '/plans/:id',
+          builder: (BuildContext context, GoRouterState state) =>
+              PlanDetailScreen(planId: int.parse(state.pathParameters['id']!)),
+        ),
+        GoRoute(
           path: '/profile',
           builder: (BuildContext context, GoRouterState state) {
             return const ProfileScreen();
+          },
+        ),
+        GoRoute(
+          path: '/cycles/:id/activities/new',
+          builder: (BuildContext context, GoRouterState state) {
+            final idStr = state.pathParameters['id'];
+            final cycleId = idStr != null ? int.tryParse(idStr) : null;
+            return NewActivityScreen(cycleId: cycleId);
+          },
+        ),
+        GoRoute(
+          path: '/cycles/:id/activities',
+          builder: (BuildContext context, GoRouterState state) {
+            final idStr = state.pathParameters['id'];
+            final cycleId = idStr != null ? int.tryParse(idStr) : null;
+            return PastActivitiesScreen(initialCycleId: cycleId);
+          },
+        ),
+        GoRoute(
+          path: '/activities',
+          builder: (BuildContext context, GoRouterState state) {
+            final idStr = state.uri.queryParameters['cycleId'];
+            final cycleId = idStr != null ? int.tryParse(idStr) : null;
+            return PastActivitiesScreen(initialCycleId: cycleId);
+          },
+        ),
+        GoRoute(
+          path: '/activities/new',
+          builder: (BuildContext context, GoRouterState state) {
+            final idStr = state.uri.queryParameters['cycleId'];
+            final cycleId = idStr != null ? int.tryParse(idStr) : null;
+            return NewActivityScreen(cycleId: cycleId);
+          },
+        ),
+        GoRoute(
+          path: '/activities/:id/edit',
+          builder: (BuildContext context, GoRouterState state) {
+            final idStr = state.pathParameters['id'];
+            final activityId = idStr != null ? int.tryParse(idStr) : null;
+            final activity = state.extra is CropActivityDto ? state.extra as CropActivityDto : null;
+            return EditActivityScreen(
+              activityId: activityId,
+              initialActivity: activity,
+            );
+          },
+        ),
+        GoRoute(
+          path: '/activities/advisor',
+          builder: (BuildContext context, GoRouterState state) {
+            final idStr = state.uri.queryParameters['cycleId'];
+            final cycleId = idStr != null ? int.tryParse(idStr) : null;
+            return CropActivityAiScreen(cycleId: cycleId);
+          },
+        ),
+        GoRoute(
+          path: '/cycles/:id/activities/advisor',
+          builder: (BuildContext context, GoRouterState state) {
+            final idStr = state.pathParameters['id'];
+            final cycleId = idStr != null ? int.tryParse(idStr) : null;
+            return CropActivityAiScreen(cycleId: cycleId);
           },
         ),
       ],

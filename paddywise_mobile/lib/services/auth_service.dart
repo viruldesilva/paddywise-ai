@@ -460,6 +460,48 @@ class AuthService {
     throw Exception('Registration failed. Please try again.');
   }
 
+  static Future<bool>? _refreshInFlight;
+
+  /// Trade the stored refresh token for a new token pair (POST /auth/refresh).
+  /// Concurrent callers share one request, because the backend revokes a
+  /// refresh token the first time it is used. Returns false when there is
+  /// nothing to refresh or the backend refuses; the caller decides what next.
+  static Future<bool> refreshSession() {
+    return _refreshInFlight ??=
+        _refreshSession().whenComplete(() => _refreshInFlight = null);
+  }
+
+  static Future<bool> _refreshSession() async {
+    final refreshToken = _refreshToken;
+    if (refreshToken == null || refreshToken.isEmpty) return false;
+
+    try {
+      final response = await http
+          .post(
+            Uri.parse('$apiBaseUrl/auth/refresh'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'refreshToken': refreshToken}),
+          )
+          .timeout(const Duration(seconds: 8));
+      if (response.statusCode != 200) return false;
+
+      final auth = AuthResponse.fromJson(
+        jsonDecode(response.body) as Map<String, dynamic>,
+      );
+      if (auth.accessToken.isEmpty || auth.refreshToken.isEmpty) return false;
+
+      _accessToken = auth.accessToken;
+      _refreshToken = auth.refreshToken;
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_storageKeyAccessToken, auth.accessToken);
+      await prefs.setString(_storageKeyRefreshToken, auth.refreshToken);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   static Future<void> logout() async {
     _currentUser = null;
     _accessToken = null;

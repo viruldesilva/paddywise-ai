@@ -18,8 +18,9 @@ void main() {
       expect(routes, contains('/farmer/plan-status'));
       expect(routes, contains('/farmer/notifications'));
       expect(routes, contains('/profile'));
+      expect(routes, contains('/fields'));
+      expect(routes, contains('/cycles'));
       // Unbuilt feature screens are omitted per Option (a)
-      expect(routes.contains('/fields'), isFalse);
       expect(routes.contains('/activities'), isFalse);
     });
 

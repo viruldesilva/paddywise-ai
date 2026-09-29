@@ -3,11 +3,13 @@ import {
   Sparkles,
   AlertTriangle,
   CheckCircle2,
+  XCircle,
+  Clock,
+  Check,
   Droplets,
   Leaf,
   ShieldAlert,
   Send,
-  HelpCircle,
   BookOpen,
   PhoneCall,
   Loader2,
@@ -32,7 +34,7 @@ interface AiAdvisorPanelProps {
 export const AiAdvisorPanel: React.FC<AiAdvisorPanelProps> = ({
   cycles,
   selectedCycleId,
-  onCycleSelect
+  onCycleSelect: _onCycleSelect
 }) => {
   const activeCycleId = selectedCycleId === 'all' ? cycles[0]?.id : selectedCycleId;
   const activeCycle = cycles.find(c => c.id === activeCycleId);
@@ -41,10 +43,52 @@ export const AiAdvisorPanel: React.FC<AiAdvisorPanelProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Execution states for farmer
+  const [executingRecId, setExecutingRecId] = useState<string | number | null>(null);
+  const [executionSuccessMessages, setExecutionSuccessMessages] = useState<Record<string, string>>({});
+  const [executionErrorMessages, setExecutionErrorMessages] = useState<Record<string, string>>({});
+
   // Chat console states
   const [chatQuestion, setChatQuestion] = useState('');
   const [chatMessages, setChatMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([]);
   const [isChatLoading, setIsChatLoading] = useState(false);
+
+  const handleFarmerExecute = async (rec: ActivityRecommendation) => {
+    if (!activeCycleId) return;
+    const targetId = rec.dbId || rec.id;
+    const key = String(targetId);
+
+    try {
+      setExecutingRecId(targetId);
+      setExecutionErrorMessages(prev => ({ ...prev, [key]: '' }));
+      const res = await cropAnalysisApi.executeFarmerRecommendation(activeCycleId, targetId, 'Execute');
+
+      // Update recommendation in state
+      if (analysis) {
+        setAnalysis({
+          ...analysis,
+          recommendations: analysis.recommendations.map(r =>
+            (r.dbId === targetId || r.id === String(targetId))
+              ? { ...r, status: 'EXECUTED', executedAt: new Date().toISOString() }
+              : r
+          )
+        });
+      }
+
+      setExecutionSuccessMessages(prev => ({
+        ...prev,
+        [key]: res.message || 'Activity successfully executed and recorded in field activity log!'
+      }));
+    } catch (err: any) {
+      console.error('Failed to execute recommendation', err);
+      setExecutionErrorMessages(prev => ({
+        ...prev,
+        [key]: err?.response?.data?.message || 'Failed to execute recommendation. Please verify permissions or network.'
+      }));
+    } finally {
+      setExecutingRecId(null);
+    }
+  };
 
   const runAnalysis = async (cycleIdToAnalyze?: number) => {
     const targetId = cycleIdToAnalyze || activeCycleId;
@@ -341,7 +385,7 @@ export const AiAdvisorPanel: React.FC<AiAdvisorPanelProps> = ({
                 <div className="diag-hero-metric">
                   <div className="hero-value-group">
                     <span className="hero-number">
-                      {analysis.diagnostics.fertilizer.totalUreaKgPerHa ?? analysis.diagnostics.fertilizer.TotalUreaKgPerHa ?? 0}
+                      {analysis.diagnostics.fertilizer.totalUreaKgPerHa ?? 0}
                     </span>
                     <span className="hero-unit">kg/ha</span>
                   </div>
@@ -501,6 +545,24 @@ export const AiAdvisorPanel: React.FC<AiAdvisorPanelProps> = ({
                         <span className="confidence-pill" title="AI confidence calculated against official rule benchmarks">
                           {Math.round(rec.confidenceScore * 100)}% Confidence
                         </span>
+                        {/* Status badge */}
+                        {rec.status === 'APPROVED' ? (
+                          <span className="badge-tag status-approved" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+                            <CheckCircle2 size={12} /> Officer Approved
+                          </span>
+                        ) : rec.status === 'REJECTED' ? (
+                          <span className="badge-tag status-rejected" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+                            <XCircle size={12} /> Officer Rejected
+                          </span>
+                        ) : rec.status === 'EXECUTED' ? (
+                          <span className="badge-tag status-executed" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', background: '#f5f3ff', color: '#6b21a8', border: '1px solid #ddd6fe' }}>
+                            <Check size={12} /> Executed & Logged
+                          </span>
+                        ) : (
+                          <span className="badge-tag status-pending" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+                            <Clock size={12} /> Pending Officer Approval
+                          </span>
+                        )}
                       </div>
                       {rec.requiresOfficerReview && (
                         <span className="officer-review-tag">
@@ -527,6 +589,127 @@ export const AiAdvisorPanel: React.FC<AiAdvisorPanelProps> = ({
                         </span>
                       </div>
                     )}
+
+                    {/* Official Review Status Box & Farmer Execution Flow */}
+                    {(() => {
+                      const recKey = String(rec.dbId || rec.id);
+                      const isPending = !rec.status || rec.status === 'PENDING_OFFICER_REVIEW';
+                      const isApproved = rec.status === 'APPROVED';
+                      const isRejected = rec.status === 'REJECTED';
+                      const isExecuted = rec.status === 'EXECUTED';
+                      const isExecuting = executingRecId === (rec.dbId || rec.id);
+                      const successMsg = executionSuccessMessages[recKey];
+                      const errorMsg = executionErrorMessages[recKey];
+
+                      if (isPending) {
+                        return (
+                          <div className="farmer-status-box status-pending-officer">
+                            <div className="status-box-header">
+                              <Clock size={16} className="text-amber" />
+                              <strong>Pending Agricultural Officer Approval</strong>
+                            </div>
+                            <p>
+                              This Agentic AI recommendation has been logged to the database and automatically dispatched to your
+                              Agrarian Services Agricultural Officer for review. Field execution will unlock once approved.
+                            </p>
+                          </div>
+                        );
+                      }
+
+                      if (isApproved) {
+                        return (
+                          <div className="farmer-status-box status-officer-approved">
+                            <div className="status-box-header">
+                              <CheckCircle2 size={16} className="text-green" />
+                              <strong>Verified & Approved by Agricultural Officer</strong>
+                            </div>
+                            <div className="officer-guidance-text">
+                              <strong>{rec.officerName || 'Agricultural Officer'}</strong>
+                              {rec.reviewedAt && (
+                                <span style={{ opacity: 0.8, fontSize: '0.8rem', marginLeft: '0.4rem' }}>
+                                  ({new Date(rec.reviewedAt).toLocaleDateString()})
+                                </span>
+                              )}
+                              : "{rec.officerComment || 'Approved for application as per DOA guidelines.'}"
+                            </div>
+                            <div className="farmer-execute-row">
+                              <button
+                                type="button"
+                                className="farmer-execute-btn"
+                                onClick={() => handleFarmerExecute(rec)}
+                                disabled={isExecuting}
+                              >
+                                {isExecuting ? (
+                                  <>
+                                    <Loader2 size={16} className="spinner" /> Recording Activity...
+                                  </>
+                                ) : (
+                                  <>
+                                    <CheckCircle2 size={16} /> Approve & Execute into Field Ledger
+                                  </>
+                                )}
+                              </button>
+                              <span className="execute-hint">Commits directly to your official field activity log</span>
+                            </div>
+                            {successMsg && (
+                              <div className="execution-alert-success">
+                                <Check size={16} /> {successMsg}
+                              </div>
+                            )}
+                            {errorMsg && (
+                              <div className="execution-alert-error">
+                                <AlertTriangle size={16} /> {errorMsg}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      }
+
+                      if (isRejected) {
+                        return (
+                          <div className="farmer-status-box status-officer-rejected">
+                            <div className="status-box-header">
+                              <XCircle size={16} className="text-red" />
+                              <strong>Recommendation Not Recommended by Officer</strong>
+                            </div>
+                            <div className="officer-guidance-text">
+                              <strong>{rec.officerName || 'Agricultural Officer'}</strong>
+                              {rec.reviewedAt && (
+                                <span style={{ opacity: 0.8, fontSize: '0.8rem', marginLeft: '0.4rem' }}>
+                                  ({new Date(rec.reviewedAt).toLocaleDateString()})
+                                </span>
+                              )}
+                              : "{rec.officerComment || 'Officer advised not to proceed with this activity.'}"
+                            </div>
+                            <p style={{ fontSize: '0.82rem', opacity: 0.9 }}>
+                              Please do not execute this action on your paddy plot. If you have questions, consult your local Agrarian Services Center.
+                            </p>
+                          </div>
+                        );
+                      }
+
+                      if (isExecuted) {
+                        return (
+                          <div className="farmer-status-box status-executed">
+                            <div className="status-box-header">
+                              <CheckCircle2 size={16} className="text-purple" />
+                              <strong>Executed & Recorded in Field Ledger</strong>
+                            </div>
+                            <p>
+                              This action was verified and logged to your official cultivation activity history
+                              {rec.executedAt ? ` on ${new Date(rec.executedAt).toLocaleDateString()}` : ''}.
+                            </p>
+                            {successMsg && (
+                              <div className="execution-alert-success">
+                                <Check size={16} /> {successMsg}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      }
+
+                      return null;
+                    })()}
                   </div>
                 ))}
               </div>

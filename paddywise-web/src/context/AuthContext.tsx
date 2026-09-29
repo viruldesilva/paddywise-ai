@@ -19,6 +19,7 @@ export interface AuthContextType {
   register: (data: RegisterRequestDto) => Promise<RegisterResponseDto>;
   logout: (shouldRedirect?: boolean) => void;
   clearAuth: () => void;
+  updateUser?: (data: Partial<AuthUser>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -133,6 +134,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  const updateUser = (data: Partial<AuthUser>) => {
+    setUser((prev) => {
+      if (!prev) return null;
+      const updated = { ...prev, ...data };
+      const currentToken = tokenStorage.getAccessToken() || '';
+      const refreshToken = tokenStorage.getRefreshToken() || '';
+      tokenStorage.saveSession({
+        accessToken: currentToken,
+        refreshToken: refreshToken,
+        name: updated.name,
+        email: updated.email,
+        role: updated.role,
+      });
+      return updated;
+    });
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -144,6 +162,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         register,
         logout,
         clearAuth,
+        updateUser,
       }}
     >
       {children}

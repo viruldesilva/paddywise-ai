@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PaddyWise.Api.DTOs.FieldCultivation;
+using PaddyWise.Api.Entities.FieldCultivation;
 using PaddyWise.Api.Entities.Shared;
 using PaddyWise.Api.Services.FieldCultivation;
 using PaddyWise.Api.Services.ReportingApproval.Agents;
@@ -41,9 +42,18 @@ public class PlansController : ControllerBase
             if (result == null)
                 return NotFound(new { message = "Cultivation cycle not found." });
 
+            // Component 4's second pass only checks shape and dosages, and it sets the status
+            // either way, so run it only on a plan CultivationPlanValidator passed: it may
+            // fail such a plan, but must never promote one this component already failed.
+            if (result.Status != nameof(PlanStatus.PendingOfficerApproval))
+                return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
+
             await _validationAgentService.ValidateCultivationPlanAsync(result.Id);
 
-            return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
+            // The second pass can change status, errors and comment, so return the stored plan.
+            var validated = await _planService.GetByIdAsync(result.Id, farmerId.Value, UserRole.Farmer) ?? result;
+
+            return CreatedAtAction(nameof(GetById), new { id = validated.Id }, validated);
         }
         catch (InvalidOperationException ex)
         {
