@@ -8,6 +8,10 @@ import '../../features/reporting_approval/screens/pending_reviews_screen.dart';
 import '../../features/reporting_approval/screens/plan_status_screen.dart';
 import '../../features/reporting_approval/screens/notifications_screen.dart';
 import '../../features/profile/screens/profile_screen.dart';
+import '../../features/pest_disease/models/observation.dart';
+import '../../features/pest_disease/screens/observations_list_screen.dart';
+import '../../features/pest_disease/screens/new_observation_screen.dart';
+import '../../features/pest_disease/screens/observation_detail_screen.dart';
 import '../widgets/app_shell.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey =
@@ -51,6 +55,23 @@ final GoRouter appRouter = GoRouter(
       },
     ),
 
+    // Pushed on top of the shell (own AppBar + back arrow, no drawer) — a create/edit form
+    // and a detail view aren't drawer destinations themselves; only the list screen inside
+    // the ShellRoute below is.
+    GoRoute(
+      path: '/farmer/observations/new',
+      builder: (BuildContext context, GoRouterState state) {
+        return NewObservationScreen(editing: state.extra as Observation?);
+      },
+    ),
+    GoRoute(
+      path: '/farmer/observations/:id',
+      builder: (BuildContext context, GoRouterState state) {
+        final id = int.parse(state.pathParameters['id']!);
+        return ObservationDetailScreen(observationId: id);
+      },
+    ),
+
     // Authenticated shell routes (persistent AppShell drawer & app bar)
     ShellRoute(
       navigatorKey: _shellNavigatorKey,
@@ -74,6 +95,12 @@ final GoRouter appRouter = GoRouter(
           path: '/farmer/plan-status',
           builder: (BuildContext context, GoRouterState state) {
             return const PlanStatusScreen();
+          },
+        ),
+        GoRoute(
+          path: '/farmer/observations',
+          builder: (BuildContext context, GoRouterState state) {
+            return const ObservationsListScreen();
           },
         ),
         GoRoute(
