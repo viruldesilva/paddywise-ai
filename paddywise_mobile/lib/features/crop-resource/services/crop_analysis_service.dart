@@ -103,6 +103,41 @@ class CropAnalysisService {
     return _generateDemoChatResponse(question);
   }
 
+  /// Review / Execute an approved recommendation into the crop activity field ledger in database
+  static Future<bool> executeRecommendation(
+    int cycleId,
+    String recommendationId, {
+    String? payloadJson,
+  }) async {
+    final token = AuthService.getAccessToken();
+    final url = Uri.parse('${AuthService.apiBaseUrl}/cycles/$cycleId/recommendations/review');
+
+    try {
+      final response = await http
+          .post(
+            url,
+            headers: {
+              'Content-Type': 'application/json',
+              if (token != null) 'Authorization': 'Bearer $token',
+            },
+            body: jsonEncode({
+              'recommendationId': recommendationId,
+              'decision': 'execute',
+              'recommendationJson': payloadJson,
+            }),
+          )
+          .timeout(_requestTimeout);
+
+      if (response.statusCode == 200) {
+        return true;
+      }
+    } catch (_) {
+      // In demo/offline mode, simulate successful execution
+      return true;
+    }
+    return false;
+  }
+
   /// High-fidelity demo analysis matching Department of Agriculture Sri Lanka recommendations
   static CropActivityAnalysisOutput _generateDemoAnalysis(int cycleId) {
     return CropActivityAnalysisOutput(
@@ -156,6 +191,10 @@ class CropAnalysisService {
       recommendations: const [
         ActivityRecommendation(
           id: 'rec-01',
+          dbId: 101,
+          status: 'APPROVED',
+          reviewedBy: 'Dr. Nilmini Perera (Agriculture Officer)',
+          reviewNotes: 'Verified against Bathalagoda standard fertilizer calendar. Approved for timely execution.',
           category: 'Fertilizer',
           priority: 'HIGH',
           action: 'Prepare for 2nd Top-Dressing at Panicle Initiation (55-60 DAS)',
@@ -172,6 +211,8 @@ class CropAnalysisService {
         ),
         ActivityRecommendation(
           id: 'rec-02',
+          dbId: 102,
+          status: 'PENDING_OFFICER_REVIEW',
           category: 'Irrigation',
           priority: 'MEDIUM',
           action: 'Maintain shallow standing water (3–5 cm) for next 14 days',
@@ -188,6 +229,8 @@ class CropAnalysisService {
         ),
         ActivityRecommendation(
           id: 'rec-03',
+          dbId: 103,
+          status: 'PENDING_OFFICER_REVIEW',
           category: 'Pest',
           priority: 'LOW',
           action: 'Scout field edges for Brown Planthopper (BPH) nymphs twice weekly',

@@ -9,7 +9,6 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await AuthService.init();
   await NotificationService.init();
-  final currentUser = AuthService.getCurrentUser();
 
   runApp(const PaddyWiseApp());
 }

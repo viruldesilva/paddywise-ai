@@ -12,7 +12,7 @@ public interface ICropActivityAnalysisService
     Task<List<AgentAuditLogEntryDto>> GetAuditLogsAsync(int cycleId, CancellationToken ct = default);
 
     // Agricultural Officer Review Queue
-    Task<List<CropActivityRecommendationDto>> GetPendingOfficerRecommendationsAsync(int? divisionId = null, CancellationToken ct = default);
+    Task<List<CropActivityRecommendationDto>> GetPendingOfficerRecommendationsAsync(int? divisionId = null, string? status = null, CancellationToken ct = default);
     Task<List<CropActivityRecommendationDto>> GetCycleRecommendationsAsync(int cycleId, CancellationToken ct = default);
     Task<CropActivityRecommendationDto> OfficerReviewRecommendationAsync(int recommendationId, string decision, string? comment, int officerId, CancellationToken ct = default);
 }

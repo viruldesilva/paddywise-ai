@@ -170,6 +170,8 @@ public class ApplicationDbContext : DbContext
 
         modelBuilder.Entity<CropActivityRecommendation>(entity =>
         {
+            entity.HasKey(r => r.Id);
+            entity.Property(r => r.Id).UseIdentityByDefaultColumn();
             entity.HasIndex(r => r.CultivationCycleId);
             entity.HasIndex(r => r.Status);
             entity.HasIndex(r => r.OfficerId);

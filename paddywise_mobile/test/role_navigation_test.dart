@@ -20,8 +20,7 @@ void main() {
       expect(routes, contains('/profile'));
       expect(routes, contains('/fields'));
       expect(routes, contains('/cycles'));
-      // Unbuilt feature screens are omitted per Option (a)
-      expect(routes.contains('/activities'), isFalse);
+      expect(routes, contains('/activities'));
     });
 
     test('AgriculturalOfficer menu includes Pending Reviews and notifications', () {
@@ -52,3 +51,4 @@ void main() {
     });
   });
 }
+      

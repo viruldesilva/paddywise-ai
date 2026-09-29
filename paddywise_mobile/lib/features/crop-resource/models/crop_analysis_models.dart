@@ -203,6 +203,7 @@ class Citation {
 
 class ActivityRecommendation {
   final String id;
+  final int? dbId;
   final String category;
   final String priority; // "HIGH", "MEDIUM", "LOW"
   final String action;
@@ -211,9 +212,17 @@ class ActivityRecommendation {
   final double confidenceScore;
   final List<Citation> citations;
   final bool requiresOfficerReview;
+  final String status; // "PENDING_OFFICER_REVIEW", "APPROVED", "REJECTED", "EXECUTED"
+  final String? executionPayloadJson;
+  final String? reviewedBy;
+  final String? reviewNotes;
+  final DateTime? reviewedAt;
+  final int? executedActivityId;
+  final DateTime? executedAt;
 
   const ActivityRecommendation({
     required this.id,
+    this.dbId,
     required this.category,
     required this.priority,
     required this.action,
@@ -222,11 +231,19 @@ class ActivityRecommendation {
     required this.confidenceScore,
     required this.citations,
     required this.requiresOfficerReview,
+    this.status = 'PENDING_OFFICER_REVIEW',
+    this.executionPayloadJson,
+    this.reviewedBy,
+    this.reviewNotes,
+    this.reviewedAt,
+    this.executedActivityId,
+    this.executedAt,
   });
 
   factory ActivityRecommendation.fromJson(Map<String, dynamic> json) {
     return ActivityRecommendation(
-      id: json['id'] as String? ?? '',
+      id: json['id']?.toString() ?? json['recommendationUid']?.toString() ?? '',
+      dbId: json['dbId'] as int? ?? (json['id'] is int ? json['id'] as int : null),
       category: json['category'] as String? ?? 'General',
       priority: json['priority'] as String? ?? 'MEDIUM',
       action: json['action'] as String? ?? '',
@@ -238,6 +255,53 @@ class ActivityRecommendation {
               .toList() ??
           [],
       requiresOfficerReview: json['requiresOfficerReview'] as bool? ?? false,
+      status: json['status'] as String? ?? 'PENDING_OFFICER_REVIEW',
+      executionPayloadJson: json['executionPayloadJson'] as String?,
+      reviewedBy: json['reviewedBy'] as String? ?? json['officerName'] as String?,
+      reviewNotes: json['reviewNotes'] as String? ?? json['officerComment'] as String?,
+      reviewedAt: json['reviewedAt'] != null ? DateTime.tryParse(json['reviewedAt'].toString()) : null,
+      executedActivityId: json['executedActivityId'] as int?,
+      executedAt: json['executedAt'] != null ? DateTime.tryParse(json['executedAt'].toString()) : null,
+    );
+  }
+
+  ActivityRecommendation copyWith({
+    String? id,
+    int? dbId,
+    String? category,
+    String? priority,
+    String? action,
+    String? reason,
+    String? evidence,
+    double? confidenceScore,
+    List<Citation>? citations,
+    bool? requiresOfficerReview,
+    String? status,
+    String? executionPayloadJson,
+    String? reviewedBy,
+    String? reviewNotes,
+    DateTime? reviewedAt,
+    int? executedActivityId,
+    DateTime? executedAt,
+  }) {
+    return ActivityRecommendation(
+      id: id ?? this.id,
+      dbId: dbId ?? this.dbId,
+      category: category ?? this.category,
+      priority: priority ?? this.priority,
+      action: action ?? this.action,
+      reason: reason ?? this.reason,
+      evidence: evidence ?? this.evidence,
+      confidenceScore: confidenceScore ?? this.confidenceScore,
+      citations: citations ?? this.citations,
+      requiresOfficerReview: requiresOfficerReview ?? this.requiresOfficerReview,
+      status: status ?? this.status,
+      executionPayloadJson: executionPayloadJson ?? this.executionPayloadJson,
+      reviewedBy: reviewedBy ?? this.reviewedBy,
+      reviewNotes: reviewNotes ?? this.reviewNotes,
+      reviewedAt: reviewedAt ?? this.reviewedAt,
+      executedActivityId: executedActivityId ?? this.executedActivityId,
+      executedAt: executedAt ?? this.executedAt,
     );
   }
 }
