@@ -25,6 +25,13 @@ final Map<String, List<MenuItemConfig>> roleMenus = {
       icon: Icons.dashboard_outlined,
       route: '/dashboard',
     ),
+    // TODO: 'My Fields' - awaiting Field & Cultivation feature screen
+    // TODO: 'My Cultivations' - awaiting Field & Cultivation feature screen
+    const MenuItemConfig(
+      label: 'Report Crop Problem',
+      icon: Icons.bug_report_outlined,
+      route: '/farmer/observations',
+    ),
     const MenuItemConfig(
       label: 'My Fields',
       icon: Icons.grass_outlined,

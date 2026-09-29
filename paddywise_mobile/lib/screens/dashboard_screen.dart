@@ -973,7 +973,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ],
           ),
         ),
-      ],
+      
           const SizedBox(height: 20),
           const Divider(height: 1, color: AppColors.line),
           const SizedBox(height: 16),
@@ -1032,7 +1032,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ],
           ),
         ],
-      ),
+      
     );
   }
 

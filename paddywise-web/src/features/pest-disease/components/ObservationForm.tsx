@@ -75,7 +75,12 @@ function validate(values: FormValues, isEditing: boolean): FormErrors {
 interface ObservationFormProps {
   /** Omit to submit a new observation; pass one to correct it in place. */
   observation?: Observation;
-  onSaved: (observation: Observation) => void;
+  /**
+   * `warning` is set when the observation itself saved but the photo upload right after it
+   * failed — the caller should still treat `observation` as saved (e.g. add/replace it in a
+   * list) and surface `warning` separately, rather than treating this as a failed submit.
+   */
+  onSaved: (observation: Observation, warning?: string) => void;
   onCancel: () => void;
 }
 
@@ -168,8 +173,10 @@ export function ObservationForm({ observation, onSaved, onCancel }: ObservationF
       photoFile || values.imageUrl.trim().length === 0 ? null : values.imageUrl.trim();
 
     setIsSubmitting(true);
+
+    let saved: Observation;
     try {
-      let saved =
+      saved =
         observation === undefined
           ? await createObservation({
               cultivationCycleId: Number(values.cultivationCycleId),
@@ -184,19 +191,34 @@ export function ObservationForm({ observation, onSaved, onCancel }: ObservationF
               severity: values.severity,
               imageUrl,
             });
-
-      if (photoFile) {
-        saved = await uploadObservationPhoto(saved.id, photoFile);
-      }
-
-      onSaved(saved);
     } catch (err: unknown) {
       setSubmitError(
         extractApiErrorMessage(err, 'Could not save this report. Please try again.')
       );
-    } finally {
       setIsSubmitting(false);
+      return;
     }
+
+    if (photoFile) {
+      // The report above already saved successfully — a failure here is a distinct,
+      // narrower problem than "could not save this report", so it's surfaced to the
+      // caller as a warning on the saved observation rather than blocking on submitError
+      // (which would leave the farmer thinking nothing was saved and inviting a retry
+      // that creates a second observation instead of resuming this one).
+      try {
+        saved = await uploadObservationPhoto(saved.id, photoFile);
+      } catch (err: unknown) {
+        setIsSubmitting(false);
+        onSaved(
+          saved,
+          `The report was saved, but the photo could not be uploaded: ${extractApiErrorMessage(err, 'please try again.')}`
+        );
+        return;
+      }
+    }
+
+    setIsSubmitting(false);
+    onSaved(saved);
   };
 
   return (

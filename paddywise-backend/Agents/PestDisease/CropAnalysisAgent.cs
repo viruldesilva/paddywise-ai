@@ -24,6 +24,11 @@ public sealed class CropAnalysisAgent : IAgent<DelegatedTask, DelegatedTaskResul
 {
     private const string GetPestKnowledgeTool = "get_pest_knowledge";
 
+    /// <summary>DI key for the named HttpClient used to download an observation's ImageUrl —
+    /// see Program.cs's registration and ObservationImageSsrfGuard for why this one isn't the
+    /// plain default client.</summary>
+    public const string ImageDownloadHttpClientName = "ObservationImage";
+
     /// <summary>Gemini's inline_data limit is ~20MB total request size; keep well under it.
     /// Downscaling in LoadImageAsync means this should now almost never trip — kept as a
     /// final safety net rather than removed.</summary>
@@ -368,9 +373,23 @@ public sealed class CropAnalysisAgent : IAgent<DelegatedTask, DelegatedTaskResul
         if (string.IsNullOrWhiteSpace(imageUrl))
             return new List<LlmImagePart>();
 
+        // Reject anything but http(s) before attempting a connection at all — HttpClient
+        // itself throws InvalidOperationException for other schemes (e.g. file://), which
+        // isn't caught below and would fail the whole run instead of degrading to text-only.
+        if (!Uri.TryCreate(imageUrl, UriKind.Absolute, out var parsedUrl) ||
+            (parsedUrl.Scheme != Uri.UriSchemeHttp && parsedUrl.Scheme != Uri.UriSchemeHttps))
+        {
+            _logger.LogWarning(
+                "Observation image {ImageUrl} is not a valid http(s) URL; skipping.", imageUrl);
+            return new List<LlmImagePart>();
+        }
+
         try
         {
-            var client = _httpClientFactory.CreateClient();
+            // Named client: its SocketsHttpHandler.ConnectCallback (ObservationImageSsrfGuard,
+            // registered in Program.cs) blocks connections to private/internal/reserved IP
+            // ranges — this URL is farmer-supplied free text, not a trusted address.
+            var client = _httpClientFactory.CreateClient(ImageDownloadHttpClientName);
             using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             timeoutCts.CancelAfter(TimeSpan.FromSeconds(ImageDownloadTimeoutSeconds));
 
@@ -409,7 +428,8 @@ public sealed class CropAnalysisAgent : IAgent<DelegatedTask, DelegatedTaskResul
 
             return new List<LlmImagePart> { new(mimeType, Convert.ToBase64String(bytes)) };
         }
-        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or UriFormatException)
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException
+            or UriFormatException or InvalidOperationException)
         {
             _logger.LogWarning(ex, "Failed to load observation image {ImageUrl}; continuing text-only.", imageUrl);
             return new List<LlmImagePart>();

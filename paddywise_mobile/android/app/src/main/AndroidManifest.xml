@@ -1,4 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Pest & Disease Monitoring: taking an observation photo via image_picker. -->
+    <uses-permission android:name="android.permission.CAMERA" />
     <application
         android:label="paddywise_mobile"
         android:name="${applicationName}"

@@ -161,6 +161,15 @@ builder.Services.AddScoped<IPestDiseaseReportService, PestDiseaseReportService>(
 builder.Services.AddScoped<IPestDiseaseKnowledgeService, PestDiseaseKnowledgeService>();
 builder.Services.AddScoped<IPhotoStorageService, AzureBlobPhotoStorageService>();
 
+// SSRF guard for CropAnalysisAgent.LoadImageAsync's fetch of a farmer-supplied ImageUrl — the
+// ConnectCallback validates the actual IP at connect time (including redirects), blocking
+// requests to internal/loopback/link-local/private addresses. See ObservationImageSsrfGuard.
+builder.Services.AddHttpClient(CropAnalysisAgent.ImageDownloadHttpClientName)
+    .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+    {
+        ConnectCallback = ObservationImageSsrfGuard.ConnectAsync
+    });
+
 
 // ============================================================
 // REPORTING & APPROVAL SERVICES (Component 4)

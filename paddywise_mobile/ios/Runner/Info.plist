@@ -45,5 +45,9 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Kumburu uses your camera to photograph a crop problem for a Pest &amp; Disease report.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Kumburu uses your photo library so you can attach an existing photo to a Pest &amp; Disease report.</string>
 </dict>
 </plist>
