@@ -2,7 +2,6 @@ import React, { useState, useMemo, useEffect } from 'react';
 import type { CropActivityDto } from '../services/activityApi';
 import { 
   FileText, 
-  Download, 
   Printer, 
   RotateCcw, 
   Search, 
@@ -413,56 +412,6 @@ export const ActivityReportGenerator: React.FC<ActivityReportGeneratorProps> = (
     }
   };
 
-  // CSV Export function
-  const handleExportCsv = () => {
-    if (filteredActivities.length === 0) {
-      alert('No activity records match the current filters to export.');
-      return;
-    }
-
-    const headers = [
-      'Activity ID',
-      'Date',
-      'Farmer Name',
-      'Field Name',
-      'Area (Acres)',
-      'Agrarian Division',
-      'District',
-      'Cultivation Cycle',
-      'Category',
-      'Intervention Summary',
-      'Logged By User'
-    ];
-
-    const rows = filteredActivities.map(a => {
-      const summary = parseDetails(a).replace(/"/g, '""');
-      return [
-        a.id,
-        a.date,
-        `"${(a.farmerName || a.loggedByUserName || 'Unknown').replace(/"/g, '""')}"`,
-        `"${(a.fieldName || 'N/A').replace(/"/g, '""')}"`,
-        a.fieldAreaAcres || 'N/A',
-        `"${(a.divisionName || 'N/A').replace(/"/g, '""')}"`,
-        `"${(a.district || 'N/A').replace(/"/g, '""')}"`,
-        `"${(a.cycleName || 'N/A').replace(/"/g, '""')}"`,
-        a.activityType,
-        `"${summary}"`,
-        `"${(a.loggedByUserName || 'Unknown').replace(/"/g, '""')}"`
-      ].join(',');
-    });
-
-    const csvContent = '\uFEFF' + [headers.join(','), ...rows].join('\r\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    const timestamp = new Date().toISOString().split('T')[0];
-    link.setAttribute('href', url);
-    link.setAttribute('download', `PaddyWise_Crop_Activities_Report_${timestamp}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
   // Print function
   const handlePrint = () => {
     window.print();
@@ -495,21 +444,11 @@ export const ActivityReportGenerator: React.FC<ActivityReportGeneratorProps> = (
           </div>
           <h2 className="report-heading">All Farmers Crop Activities Audit & Report</h2>
           <p className="report-subheading">
-            Filter, synthesize, and export agricultural field operations across farmers, agrarian divisions, and seasonal timeframes.
+            Filter, synthesize, and audit agricultural field operations across farmers, agrarian divisions, and seasonal timeframes.
           </p>
         </div>
 
         <div className="report-action-buttons">
-          <button 
-            type="button" 
-            onClick={handleExportCsv} 
-            className="report-btn report-btn-secondary"
-            title="Download CSV Spreadsheet"
-          >
-            <Download size={16} />
-            <span>Export CSV</span>
-          </button>
-
           <button 
             type="button" 
             onClick={handlePrint} 

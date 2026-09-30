@@ -178,7 +178,7 @@ export const OfficerRecommendationQueue: React.FC<OfficerRecommendationQueueProp
               type="button"
               className={`preset-chip ${statusTab === 'PENDING' ? 'active' : ''}`}
               style={{
-                background: statusTab === 'PENDING' ? '#059669' : 'white',
+                background: statusTab === 'PENDING' ? 'var(--forest)' : 'white',
                 color: statusTab === 'PENDING' ? 'white' : '#475569',
                 borderColor: statusTab === 'PENDING' ? '#059669' : '#cbd5e1',
                 padding: '0.45rem 0.9rem',
@@ -193,7 +193,7 @@ export const OfficerRecommendationQueue: React.FC<OfficerRecommendationQueueProp
               type="button"
               className={`preset-chip ${statusTab === 'ALL' ? 'active' : ''}`}
               style={{
-                background: statusTab === 'ALL' ? '#059669' : 'white',
+                background: statusTab === 'ALL' ? 'var(--forest)' : 'white',
                 color: statusTab === 'ALL' ? 'white' : '#475569',
                 borderColor: statusTab === 'ALL' ? '#059669' : '#cbd5e1',
                 padding: '0.45rem 0.9rem',
@@ -256,7 +256,7 @@ export const OfficerRecommendationQueue: React.FC<OfficerRecommendationQueueProp
         </div>
       ) : filteredList.length === 0 ? (
         <div className="queue-empty-card">
-          <CheckCircle2 size={44} style={{ color: '#059669' }} />
+          <CheckCircle2 size={44} style={{ color: 'var(--forest)' }} />
           <h3>No Recommendations In Queue</h3>
           <p>
             {statusTab === 'PENDING'
@@ -309,19 +309,18 @@ export const OfficerRecommendationQueue: React.FC<OfficerRecommendationQueueProp
                     </span>
                     <span className="badge-tag category-pill">{rec.category}</span>
                     <span
-                      className={`badge-tag ${
-                        isPending
-                          ? 'status-pending'
-                          : isApproved
+                      className={`badge-tag ${isPending
+                        ? 'status-pending'
+                        : isApproved
                           ? 'status-approved'
                           : 'status-rejected'
-                      }`}
+                        }`}
                     >
                       {isPending
                         ? 'Pending Officer Review'
                         : isApproved
-                        ? 'Approved'
-                        : 'Rejected'}
+                          ? 'Approved'
+                          : 'Rejected'}
                     </span>
                   </div>
                 </div>

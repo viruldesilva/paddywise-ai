@@ -6,7 +6,7 @@
 }
 
 .officer-queue-header {
-  background: linear-gradient(135deg, #064e3b 0%, #065f46 50%, #047857 100%);
+  background: var(--forest);
   border-radius: 16px;
   padding: 2rem 2.25rem;
   color: white;

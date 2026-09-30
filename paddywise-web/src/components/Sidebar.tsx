@@ -50,10 +50,9 @@ export function Sidebar({ role, isOpen, onClose }: SidebarProps) {
 
   const agriculturalOfficerLinks = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-    { name: 'Past Crop Activities', path: '/activities', icon: Activity },
     { name: 'View Farmer Fields & Cycles', path: '/officer/fields', icon: Map },
-    { name: 'AI Approvals Queue', path: '/officer/approvals', icon: UserCheck },
-    { name: 'Activity Report', path: '/officer/reports', icon: FileText },
+    { name: 'Past Crop Activities', path: '/officer/reports', icon: Activity },
+    { name: 'Crop Activity Recomendation', path: '/officer/approvals', icon: UserCheck },
     { name: 'Review AI Recommendations', path: '/plans/pending', icon: CheckSquare },
     { name: 'Review Pest/Disease Reports', path: '/pest-disease-reports', icon: Bug },
     { name: 'Add Expert Recommendations', path: '#expert', icon: MessageSquare },
