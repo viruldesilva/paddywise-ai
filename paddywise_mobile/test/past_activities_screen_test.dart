@@ -2,11 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:paddywise_mobile/features/crop-resource/screens/past_activities_screen.dart';
 import 'package:paddywise_mobile/features/crop-resource/screens/edit_activity_screen.dart';
+import 'package:paddywise_mobile/features/crop-resource/services/crop_activity_service.dart';
 import 'package:paddywise_mobile/features/crop-resource/widgets/activity_card.dart';
 import 'package:paddywise_mobile/features/crop-resource/widgets/activity_detail_sheet.dart';
 import 'package:paddywise_mobile/theme/app_theme.dart';
 
 void main() {
+  setUp(() {
+    CropActivityService.useDemoFallback = true;
+  });
+
+  tearDown(() {
+    CropActivityService.useDemoFallback = false;
+  });
+
   group('PastActivitiesScreen & Crop Activities History Tests', () {
     testWidgets('renders PastActivitiesScreen with app bar, category pills, and activities', (tester) async {
       await tester.pumpWidget(

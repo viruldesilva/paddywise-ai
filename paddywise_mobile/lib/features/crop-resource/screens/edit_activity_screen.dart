@@ -67,7 +67,7 @@ class _EditActivityScreenState extends State<EditActivityScreen> {
       try {
         cycle = await CropActivityService.getCycleById(act.cultivationCycleId);
       } catch (_) {
-        cycle = CropActivityService.defaultDemoCycle;
+        cycle = null;
       }
 
       if (mounted) {

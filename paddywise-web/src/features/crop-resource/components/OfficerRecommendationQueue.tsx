@@ -284,16 +284,16 @@ export const OfficerRecommendationQueue: React.FC<OfficerRecommendationQueueProp
                       {(rec.farmerName || 'F').charAt(0).toUpperCase()}
                     </div>
                     <div className="farmer-names">
-                      <h4>{rec.farmerName || 'Registered Farmer'}</h4>
+                      <h4>{rec.farmerName || '—'}</h4>
                       <div className="farmer-sub-details">
                         <span>
                           <Layers size={12} style={{ display: 'inline', marginRight: '3px' }} />
-                          <strong>{rec.fieldName}</strong>
+                          <strong>{rec.fieldName || '—'}</strong>
                         </span>
                         <span>•</span>
-                        <span>{rec.divisionName || 'Agrarian Division'}</span>
+                        <span>{rec.divisionName || '—'}</span>
                         <span>•</span>
-                        <span>{rec.varietyName}</span>
+                        <span>{rec.varietyName || '—'}</span>
                         <span>•</span>
                         <span>
                           <Calendar size={12} style={{ display: 'inline', marginRight: '3px' }} />

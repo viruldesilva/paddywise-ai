@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+ import 'package:flutter/material.dart';
 import '../../../theme/app_theme.dart';
 import '../models/crop_activity_models.dart';
 import '../models/crop_analysis_models.dart';
@@ -74,8 +74,10 @@ class _CropActivityAiScreenState extends State<CropActivityAiScreen> {
         } else {
           _selectedCycle = cycles.first;
         }
-      } else {
+      } else if (CropActivityService.useDemoFallback) {
         _selectedCycle = CropActivityService.defaultDemoCycle;
+      } else {
+        _selectedCycle = null;
       }
 
       await _fetchAnalysis();
@@ -90,7 +92,15 @@ class _CropActivityAiScreenState extends State<CropActivityAiScreen> {
   }
 
   Future<void> _fetchAnalysis() async {
-    if (_selectedCycle == null) return;
+    if (_selectedCycle == null) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _isAnalyzing = false;
+        });
+      }
+      return;
+    }
 
     setState(() {
       _isAnalyzing = true;
@@ -436,6 +446,46 @@ class _CropActivityAiScreenState extends State<CropActivityAiScreen> {
                       const SizedBox(height: 16),
                     ],
 
+                    if (_analysis == null && _errorMessage == null) ...[
+                      Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: AppColors.line),
+                        ),
+                        child: Column(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: AppColors.forest.withAlpha(20),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.auto_awesome_rounded, size: 36, color: AppColors.forest),
+                            ),
+                            const SizedBox(height: 16),
+                            const Text(
+                              'No Activity Analysis Available',
+                              style: TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: 'serif',
+                                color: AppColors.ink,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            const Text(
+                              'Record your crop activities (irrigation, fertilizer, pesticide) to generate real-time agronomic telemetry and safety diagnostics.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(fontSize: 13, color: AppColors.inkSoft),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+
                     if (_analysis != null) ...[
                       // 1. Executive Summary
                       _buildExecutiveSummaryCard(_analysis!),
@@ -568,7 +618,7 @@ class _CropActivityAiScreenState extends State<CropActivityAiScreen> {
           ),
           const SizedBox(height: 12),
           Text(
-            _selectedCycle?.fieldName ?? 'Maha Kumbura (Plot 04)',
+            _selectedCycle?.fieldName ?? (CropActivityService.useDemoFallback ? 'Maha Kumbura (Plot 04)' : 'Cultivation Field'),
             style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -581,17 +631,19 @@ class _CropActivityAiScreenState extends State<CropActivityAiScreen> {
             children: [
               _buildMetaPill(
                 Icons.calendar_month_outlined,
-                '${_selectedCycle?.season ?? "Yala"} ${_selectedCycle?.year ?? DateTime.now().year}',
+                _selectedCycle != null
+                    ? '${_selectedCycle!.season} ${_selectedCycle!.year}'
+                    : (CropActivityService.useDemoFallback ? 'Yala ${DateTime.now().year}' : '—'),
               ),
               const SizedBox(width: 8),
               _buildMetaPill(
                 Icons.grass_rounded,
-                _selectedCycle?.varietyName ?? 'Bg 352',
+                _selectedCycle?.varietyName ?? (CropActivityService.useDemoFallback ? 'Bg 352' : '—'),
               ),
               const SizedBox(width: 8),
               _buildMetaPill(
                 Icons.timeline_rounded,
-                _selectedCycle?.currentStage ?? 'Tillering',
+                _selectedCycle?.currentStage ?? (CropActivityService.useDemoFallback ? 'Tillering' : '—'),
                 isHighlight: true,
               ),
             ],

@@ -6,6 +6,10 @@ import '../models/crop_analysis_models.dart';
 class CropAnalysisService {
   static const Duration _requestTimeout = Duration(seconds: 12);
 
+  /// Toggle whether demo fallback analysis should be returned.
+  /// Defaults to false so no dummy data is displayed.
+  static bool useDemoFallback = false;
+
   /// Run Agentic AI analysis for a specific cultivation cycle
   static Future<CropActivityAnalysisOutput> runAnalysis(
     int cycleId, {
@@ -36,10 +40,13 @@ class CropAnalysisService {
         return CropActivityAnalysisOutput.fromJson(data);
       }
     } catch (_) {
-      // Backend offline or timeout -> Return demo analysis
+      // Backend offline or timeout
     }
 
-    return _generateDemoAnalysis(cycleId);
+    if (useDemoFallback) {
+      return _generateDemoAnalysis(cycleId);
+    }
+    throw Exception('Failed to connect to AI Analysis service. Please check your connection.');
   }
 
   /// Fetch the latest recorded analysis
@@ -64,7 +71,10 @@ class CropAnalysisService {
       // Fallback
     }
 
-    return _generateDemoAnalysis(cycleId);
+    if (useDemoFallback) {
+      return _generateDemoAnalysis(cycleId);
+    }
+    throw Exception('Failed to fetch latest analysis.');
   }
 
   /// Interactive Q&A chat with the AI Advisor about cultivation cycle activities
@@ -100,7 +110,10 @@ class CropAnalysisService {
       // Fallback response
     }
 
-    return _generateDemoChatResponse(question);
+    if (useDemoFallback) {
+      return _generateDemoChatResponse(question);
+    }
+    throw Exception('Failed to connect to AI Advisor service.');
   }
 
   /// Review / Execute an approved recommendation into the crop activity field ledger in database
@@ -132,7 +145,10 @@ class CropAnalysisService {
         return true;
       }
     } catch (_) {
-      // In demo/offline mode, simulate successful execution
+      // Offline fallback only if demo enabled
+    }
+
+    if (useDemoFallback) {
       return true;
     }
     return false;

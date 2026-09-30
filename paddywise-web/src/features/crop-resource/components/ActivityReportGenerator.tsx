@@ -33,7 +33,7 @@ export const ActivityReportGenerator: React.FC<ActivityReportGeneratorProps> = (
   activities,
   officerName = 'Agricultural Officer',
   officerRole = 'Agricultural Officer',
-  officerEmail = 'officer@doa.gov.lk'
+  officerEmail = '—'
 }) => {
   const [divisions, setDivisions] = useState<Division[]>([]);
 
@@ -134,7 +134,7 @@ export const ActivityReportGenerator: React.FC<ActivityReportGeneratorProps> = (
   const farmerOptions = useMemo(() => {
     const map = new Map<string, number>();
     activities.forEach(a => {
-      const name = a.farmerName || a.loggedByUserName || 'Unknown Farmer';
+      const name = a.farmerName || a.loggedByUserName || '—';
       map.set(name, (map.get(name) || 0) + 1);
     });
     return Array.from(map.entries())
@@ -306,12 +306,12 @@ export const ActivityReportGenerator: React.FC<ActivityReportGeneratorProps> = (
     }>();
 
     filteredActivities.forEach(a => {
-      const name = a.farmerName || a.loggedByUserName || 'Unknown Farmer';
+      const name = a.farmerName || a.loggedByUserName || '—';
       if (!map.has(name)) {
         map.set(name, {
           farmerName: name,
           fieldNames: new Set<string>(),
-          divisionName: a.divisionName || a.district || 'General Area',
+          divisionName: a.divisionName || a.district || '—',
           totalActivities: 0,
           fertilizerCount: 0,
           irrigationCount: 0,
@@ -351,8 +351,8 @@ export const ActivityReportGenerator: React.FC<ActivityReportGeneratorProps> = (
     }>();
 
     filteredActivities.forEach(a => {
-      const area = a.divisionName || 'Unassigned Division';
-      const dist = a.district || 'Western / General';
+      const area = a.divisionName || (a.district ? `${a.district} District` : 'Unassigned Division');
+      const dist = a.district || '—';
 
       if (!map.has(area)) {
         map.set(area, {
@@ -396,16 +396,37 @@ export const ActivityReportGenerator: React.FC<ActivityReportGeneratorProps> = (
     try {
       const data = JSON.parse(activity.detailsJson || '{}');
       switch (activity.activityType) {
-        case 'Fertilizer':
-          return `${data.type || 'Fertilizer'}: ${data.quantity || '—'} kg/ha (${data.cropStage || 'All Stages'})${data.method ? ` via ${data.method}` : ''}`;
-        case 'Irrigation':
-          return `Water Level: ${data.waterLevel !== undefined ? `${data.waterLevel} cm` : '—'}, ${data.duration !== undefined ? `${data.duration} hrs` : '—'} (${data.source || 'Canal'})`;
-        case 'Pesticide':
-          return `${data.product || 'Pesticide'} against ${data.targetPest || 'Pest'}${data.quantity ? ` (${data.quantity} ml/g)` : ''}`;
-        case 'Other':
-          return `${data.specificActivity || 'Operation'}: ${data.notes || 'Routine'}`;
+        case 'Fertilizer': {
+          const parts: string[] = [];
+          if (data.type) parts.push(data.type);
+          if (data.quantity !== undefined && data.quantity !== '') parts.push(`${data.quantity} kg/ha`);
+          if (data.cropStage) parts.push(`(${data.cropStage})`);
+          if (data.method) parts.push(`via ${data.method}`);
+          return parts.length > 0 ? parts.join(' ') : 'Fertilizer application';
+        }
+        case 'Irrigation': {
+          const parts: string[] = [];
+          if (data.waterLevel !== undefined && data.waterLevel !== '') parts.push(`Water Level: ${data.waterLevel} cm`);
+          if (data.duration !== undefined && data.duration !== '') parts.push(`${data.duration} hrs`);
+          if (data.source) parts.push(`Source: ${data.source}`);
+          return parts.length > 0 ? parts.join(', ') : 'Irrigation recorded';
+        }
+        case 'Pesticide': {
+          const parts: string[] = [];
+          if (data.product) parts.push(data.product);
+          if (data.targetPest) parts.push(`against ${data.targetPest}`);
+          if (data.quantity !== undefined && data.quantity !== '') parts.push(`(${data.quantity} ml/g)`);
+          if (data.method) parts.push(`via ${data.method}`);
+          return parts.length > 0 ? parts.join(' ') : 'Pesticide treatment';
+        }
+        case 'Other': {
+          const parts: string[] = [];
+          if (data.specificActivity) parts.push(data.specificActivity);
+          if (data.notes) parts.push(data.notes);
+          return parts.length > 0 ? parts.join(': ') : (activity.detailsJson || 'Other activity');
+        }
         default:
-          return activity.detailsJson;
+          return activity.detailsJson || '—';
       }
     } catch (_) {
       return activity.detailsJson || '—';
@@ -718,7 +739,11 @@ export const ActivityReportGenerator: React.FC<ActivityReportGeneratorProps> = (
           <div className="metric-details">
             <span className="metric-label">Crop Protection</span>
             <span className="metric-value">{metrics.pesticideEvents} sprays</span>
-            <span className="metric-sub">100% ROP Safety Verified</span>
+            <span className="metric-sub">
+              {metrics.pesticideEvents > 0 
+                ? (metrics.targetPests.length > 0 ? `Target: ${metrics.targetPests.join(', ')}` : `${metrics.pesticideEvents} recorded spray${metrics.pesticideEvents > 1 ? 's' : ''}`)
+                : 'No sprays recorded'}
+            </span>
           </div>
         </div>
       </div>
@@ -792,12 +817,12 @@ export const ActivityReportGenerator: React.FC<ActivityReportGeneratorProps> = (
                     <tr key={a.id}>
                       <td className="font-mono text-nowrap">{a.date}</td>
                       <td className="font-semibold text-forest">
-                        {a.farmerName || a.loggedByUserName || 'Unknown'}
+                        {a.farmerName || a.loggedByUserName || '—'}
                       </td>
                       <td>
-                        <div className="cell-field-title">{a.fieldName || 'Field Plot'}</div>
+                        <div className="cell-field-title">{a.fieldName || '—'}</div>
                         <div className="cell-field-sub">
-                          {a.divisionName ? a.divisionName : (a.district ? `${a.district} Dist.` : 'General Division')}
+                          {a.divisionName ? a.divisionName : (a.district ? `${a.district} Dist.` : '—')}
                           {a.fieldAreaAcres ? ` · ${a.fieldAreaAcres} ac` : ''}
                         </div>
                       </td>
@@ -810,10 +835,10 @@ export const ActivityReportGenerator: React.FC<ActivityReportGeneratorProps> = (
                         {parseDetails(a)}
                       </td>
                       <td className="text-soft text-nowrap">
-                        {a.cycleName || 'Active Cycle'}
+                        {a.cycleName || '—'}
                       </td>
                       <td className="text-soft">
-                        {a.loggedByUserName || 'System'}
+                        {a.loggedByUserName || '—'}
                       </td>
                     </tr>
                   ))}
@@ -874,7 +899,7 @@ export const ActivityReportGenerator: React.FC<ActivityReportGeneratorProps> = (
                 <tr key={f.farmerName}>
                   <td className="font-semibold text-forest">{f.farmerName}</td>
                   <td>{f.divisionName}</td>
-                  <td>{Array.from(f.fieldNames).join(', ') || '1 Field'}</td>
+                  <td>{Array.from(f.fieldNames).join(', ') || '—'}</td>
                   <td><span className="tag-pill tag-fertilizer">{f.fertilizerCount}</span></td>
                   <td><span className="tag-pill tag-irrigation">{f.irrigationCount}</span></td>
                   <td><span className="tag-pill tag-pesticide">{f.pesticideCount}</span></td>
@@ -901,7 +926,7 @@ export const ActivityReportGenerator: React.FC<ActivityReportGeneratorProps> = (
                 <th>Estimated Acreage</th>
                 <th>Total Field Interventions</th>
                 <th>Dominant Activity</th>
-                <th>Compliance Status</th>
+                <th>Activity Status</th>
               </tr>
             </thead>
             <tbody>
@@ -919,8 +944,8 @@ export const ActivityReportGenerator: React.FC<ActivityReportGeneratorProps> = (
                     </span>
                   </td>
                   <td>
-                    <span className="compliance-badge">
-                      <CheckCircle2 size={13} /> High Compliance
+                    <span className="compliance-badge" style={{ background: 'rgba(34, 57, 42, 0.08)', color: 'var(--forest-deep)' }}>
+                      <CheckCircle2 size={13} /> {a.totalOperations > 0 ? 'Active Records' : 'No Activity'}
                     </span>
                   </td>
                 </tr>

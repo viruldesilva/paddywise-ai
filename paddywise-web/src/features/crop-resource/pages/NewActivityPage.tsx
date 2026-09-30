@@ -52,7 +52,7 @@ export const NewActivityPage: React.FC = () => {
                 <span className="dashboard-user-sub">{user.email}</span>
               </div>
               <button 
-                onClick={logout} 
+                onClick={() => logout()} 
                 className="btn btn-secondary btn-sm"
                 title="Sign Out"
                 style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
