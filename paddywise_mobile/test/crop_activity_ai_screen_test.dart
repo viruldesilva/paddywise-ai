@@ -1,9 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:paddywise_mobile/features/crop-resource/screens/crop_activity_ai_screen.dart';
+import 'package:paddywise_mobile/features/crop-resource/services/crop_activity_service.dart';
+import 'package:paddywise_mobile/features/crop-resource/services/crop_analysis_service.dart';
 import 'package:paddywise_mobile/theme/app_theme.dart';
 
 void main() {
+  setUp(() {
+    CropActivityService.useDemoFallback = true;
+    CropAnalysisService.useDemoFallback = true;
+  });
+
+  tearDown(() {
+    CropActivityService.useDemoFallback = false;
+    CropAnalysisService.useDemoFallback = false;
+  });
+
   group('CropActivityAiScreen Tests', () {
     testWidgets('renders CropActivityAiScreen with agentic AI badge and summary', (tester) async {
       tester.view.physicalSize = const Size(1080, 2400);

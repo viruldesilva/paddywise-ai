@@ -152,9 +152,10 @@ public class CropActivityAnalysisController : ControllerBase
     /// </summary>
     [HttpGet("api/recommendations/pending")]
     public async Task<ActionResult<List<CropActivityRecommendationDto>>> GetPendingOfficerRecommendations(
-        [FromQuery] int? divisionId)
+        [FromQuery] int? divisionId,
+        [FromQuery] string? status = null)
     {
-        var result = await _analysisService.GetPendingOfficerRecommendationsAsync(divisionId);
+        var result = await _analysisService.GetPendingOfficerRecommendationsAsync(divisionId, status);
         return Ok(result);
     }
 

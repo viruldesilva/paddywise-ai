@@ -1,4 +1,6 @@
 using System;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using PaddyWise.Api.Entities.FieldCultivation;
 using PaddyWise.Api.Entities.Shared;
 
@@ -10,6 +12,8 @@ namespace PaddyWise.Api.Entities.CropResource;
 /// </summary>
 public class CropActivityRecommendation
 {
+    [Key]
+    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public int Id { get; set; }
 
     public string RecommendationUid { get; set; } = Guid.NewGuid().ToString("N");

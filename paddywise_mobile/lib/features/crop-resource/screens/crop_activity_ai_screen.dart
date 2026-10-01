@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+ import 'package:flutter/material.dart';
 import '../../../theme/app_theme.dart';
 import '../models/crop_activity_models.dart';
 import '../models/crop_analysis_models.dart';
@@ -27,6 +27,7 @@ class _CropActivityAiScreenState extends State<CropActivityAiScreen> {
   List<CultivationCycleSummary> _cycles = [];
   CultivationCycleSummary? _selectedCycle;
   CropActivityAnalysisOutput? _analysis;
+  final Set<String> _executingRecIds = {};
 
   // Chat Console States
   final TextEditingController _chatController = TextEditingController();
@@ -73,8 +74,10 @@ class _CropActivityAiScreenState extends State<CropActivityAiScreen> {
         } else {
           _selectedCycle = cycles.first;
         }
-      } else {
+      } else if (CropActivityService.useDemoFallback) {
         _selectedCycle = CropActivityService.defaultDemoCycle;
+      } else {
+        _selectedCycle = null;
       }
 
       await _fetchAnalysis();
@@ -89,7 +92,15 @@ class _CropActivityAiScreenState extends State<CropActivityAiScreen> {
   }
 
   Future<void> _fetchAnalysis() async {
-    if (_selectedCycle == null) return;
+    if (_selectedCycle == null) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _isAnalyzing = false;
+        });
+      }
+      return;
+    }
 
     setState(() {
       _isAnalyzing = true;
@@ -111,6 +122,88 @@ class _CropActivityAiScreenState extends State<CropActivityAiScreen> {
           _isLoading = false;
           _isAnalyzing = false;
           _errorMessage = 'Failed to analyze crop activities: $e';
+        });
+      }
+    }
+  }
+
+  Future<void> _handleExecuteRecommendation(ActivityRecommendation rec) async {
+    if (_selectedCycle == null || _executingRecIds.contains(rec.id)) return;
+
+    setState(() {
+      _executingRecIds.add(rec.id);
+    });
+
+    try {
+      final success = await CropAnalysisService.executeRecommendation(
+        _selectedCycle!.id,
+        rec.id,
+        payloadJson: rec.executionPayloadJson,
+      );
+
+      if (!mounted) return;
+
+      if (success) {
+        setState(() {
+          final updatedRecs = _analysis!.recommendations.map((r) {
+            if (r.id == rec.id) {
+              return r.copyWith(
+                status: 'EXECUTED',
+                executedAt: DateTime.now(),
+              );
+            }
+            return r;
+          }).toList();
+
+          _analysis = CropActivityAnalysisOutput(
+            fieldOverview: _analysis!.fieldOverview,
+            diagnostics: _analysis!.diagnostics,
+            recommendations: updatedRecs,
+            warnings: _analysis!.warnings,
+            requiresOfficerReview: _analysis!.requiresOfficerReview,
+            executiveSummary: _analysis!.executiveSummary,
+            analyzedAt: _analysis!.analyzedAt,
+          );
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: AppColors.forest,
+            content: Row(
+              children: const [
+                Icon(Icons.check_circle_outline, color: Colors.white, size: 20),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Recommendation committed to database field activity ledger!',
+                    style: TextStyle(color: Colors.white, fontSize: 13),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            backgroundColor: Colors.redAccent,
+            content: Text('Failed to execute recommendation. Please check network connection.'),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Colors.redAccent,
+            content: Text('Error executing recommendation: $e'),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _executingRecIds.remove(rec.id);
         });
       }
     }
@@ -353,6 +446,46 @@ class _CropActivityAiScreenState extends State<CropActivityAiScreen> {
                       const SizedBox(height: 16),
                     ],
 
+                    if (_analysis == null && _errorMessage == null) ...[
+                      Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: AppColors.line),
+                        ),
+                        child: Column(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: AppColors.forest.withAlpha(20),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.auto_awesome_rounded, size: 36, color: AppColors.forest),
+                            ),
+                            const SizedBox(height: 16),
+                            const Text(
+                              'No Activity Analysis Available',
+                              style: TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: 'serif',
+                                color: AppColors.ink,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            const Text(
+                              'Record your crop activities (irrigation, fertilizer, pesticide) to generate real-time agronomic telemetry and safety diagnostics.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(fontSize: 13, color: AppColors.inkSoft),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+
                     if (_analysis != null) ...[
                       // 1. Executive Summary
                       _buildExecutiveSummaryCard(_analysis!),
@@ -380,7 +513,7 @@ class _CropActivityAiScreenState extends State<CropActivityAiScreen> {
                       _buildSectionHeader(
                         title: 'Agronomic Recommendations',
                         subtitle:
-                            'Prioritized interventions tailored to your cultivation cycle',
+                            'Prioritized interventions • Saved to database & routed to Officer',
                         icon: Icons.recommend_outlined,
                       ),
                       const SizedBox(height: 12),
@@ -485,7 +618,7 @@ class _CropActivityAiScreenState extends State<CropActivityAiScreen> {
           ),
           const SizedBox(height: 12),
           Text(
-            _selectedCycle?.fieldName ?? 'Maha Kumbura (Plot 04)',
+            _selectedCycle?.fieldName ?? (CropActivityService.useDemoFallback ? 'Maha Kumbura (Plot 04)' : 'Cultivation Field'),
             style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -498,17 +631,19 @@ class _CropActivityAiScreenState extends State<CropActivityAiScreen> {
             children: [
               _buildMetaPill(
                 Icons.calendar_month_outlined,
-                '${_selectedCycle?.season ?? "Yala"} ${_selectedCycle?.year ?? DateTime.now().year}',
+                _selectedCycle != null
+                    ? '${_selectedCycle!.season} ${_selectedCycle!.year}'
+                    : (CropActivityService.useDemoFallback ? 'Yala ${DateTime.now().year}' : '—'),
               ),
               const SizedBox(width: 8),
               _buildMetaPill(
                 Icons.grass_rounded,
-                _selectedCycle?.varietyName ?? 'Bg 352',
+                _selectedCycle?.varietyName ?? (CropActivityService.useDemoFallback ? 'Bg 352' : '—'),
               ),
               const SizedBox(width: 8),
               _buildMetaPill(
                 Icons.timeline_rounded,
-                _selectedCycle?.currentStage ?? 'Tillering',
+                _selectedCycle?.currentStage ?? (CropActivityService.useDemoFallback ? 'Tillering' : '—'),
                 isHighlight: true,
               ),
             ],
@@ -898,6 +1033,7 @@ class _CropActivityAiScreenState extends State<CropActivityAiScreen> {
 
   Widget _buildRecommendationCard(ActivityRecommendation rec) {
     final priorityColor = _getPriorityColor(rec.priority);
+    final isExecuting = _executingRecIds.contains(rec.id);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -1021,6 +1157,248 @@ class _CropActivityAiScreenState extends State<CropActivityAiScreen> {
               ],
             ),
           ],
+          const SizedBox(height: 12),
+          _buildRecommendationStatusBox(rec, isExecuting),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRecommendationStatusBox(ActivityRecommendation rec, bool isExecuting) {
+    final status = rec.status.toUpperCase();
+    final isApproved = status == 'APPROVED';
+    final isExecuted = status == 'EXECUTED';
+    final isRejected = status == 'REJECTED';
+
+    if (isApproved) {
+      return Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF0FDF4),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: const Color(0xFFBBF7D0)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.check_circle_rounded, size: 16, color: Color(0xFF16A34A)),
+                const SizedBox(width: 6),
+                const Expanded(
+                  child: Text(
+                    'Verified & Approved by Agricultural Officer',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF15803D),
+                    ),
+                  ),
+                ),
+                if (rec.dbId != null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(color: const Color(0xFF86EFAC)),
+                    ),
+                    child: Text(
+                      'DB #${rec.dbId}',
+                      style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFF15803D)),
+                    ),
+                  ),
+              ],
+            ),
+            if (rec.reviewedBy != null || rec.reviewNotes != null) ...[
+              const SizedBox(height: 5),
+              Text(
+                '${rec.reviewedBy ?? "Officer"}: "${rec.reviewNotes ?? "Approved as per DOA guidelines."}"',
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontStyle: FontStyle.italic,
+                  color: Color(0xFF166534),
+                ),
+              ),
+            ],
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              height: 38,
+              child: ElevatedButton.icon(
+                onPressed: isExecuting ? null : () => _handleExecuteRecommendation(rec),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.forest,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                ),
+                icon: isExecuting
+                    ? const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Icon(Icons.playlist_add_check_circle_rounded, size: 18),
+                label: Text(
+                  isExecuting ? 'Recording to Ledger...' : 'Approve & Execute into Field Ledger',
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+            const SizedBox(height: 4),
+            const Center(
+              child: Text(
+                'Commits directly to your official field activity log in database',
+                style: TextStyle(fontSize: 10, color: Color(0xFF15803D)),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (isExecuted) {
+      return Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFAF5FF),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: const Color(0xFFE9D5FF)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.task_alt_rounded, size: 16, color: Color(0xFF9333EA)),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Executed & Logged in Field Ledger',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF7E22CE),
+                    ),
+                  ),
+                  Text(
+                    rec.executedAt != null
+                        ? 'Recorded on ${rec.executedAt!.toLocal().toString().split(" ")[0]} in database.'
+                        : 'Saved & committed to official field activities in database.',
+                    style: const TextStyle(fontSize: 11, color: Color(0xFF6B21A8)),
+                  ),
+                ],
+              ),
+            ),
+            if (rec.dbId != null)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(color: const Color(0xFFD8B4FE)),
+                ),
+                child: Text(
+                  'DB #${rec.dbId}',
+                  style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFF7E22CE)),
+                ),
+              ),
+          ],
+        ),
+      );
+    }
+
+    if (isRejected) {
+      return Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFEF2F2),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: const Color(0xFFFECACA)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.cancel_outlined, size: 16, color: Color(0xFFDC2626)),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Agricultural Officer Declined',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFFB91C1C),
+                    ),
+                  ),
+                  Text(
+                    rec.reviewNotes ?? 'Not recommended for application at this stage.',
+                    style: const TextStyle(fontSize: 11, color: Color(0xFF991B1B)),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Default: PENDING_OFFICER_REVIEW
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFFBEB),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFFDE68A)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.cloud_done_rounded, size: 16, color: Color(0xFFD97706)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Text(
+                      'Saved to Database',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFFB45309),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFEF3C7),
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(color: const Color(0xFFF59E0B)),
+                      ),
+                      child: Text(
+                        rec.dbId != null ? 'DB #${rec.dbId} • PENDING REVIEW' : 'PENDING REVIEW',
+                        style: const TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF92400E),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                const Text(
+                  'Queued for Agrarian Services Officer verification. Field execution will unlock once approved.',
+                  style: TextStyle(fontSize: 11, color: Color(0xFF92400E)),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );

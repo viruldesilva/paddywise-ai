@@ -51,18 +51,16 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
 
       if (_selectedCycle == null) {
         if (widget.cycleId != null) {
-          _selectedCycle = cycles.firstWhere(
-            (c) => c.id == widget.cycleId,
-            orElse: () => cycles.isNotEmpty ? cycles.first : CropActivityService.defaultDemoCycle,
-          );
+          final matched = cycles.where((c) => c.id == widget.cycleId).toList();
+          _selectedCycle = matched.isNotEmpty ? matched.first : (cycles.isNotEmpty ? cycles.first : null);
         } else if (cycles.isNotEmpty) {
           _selectedCycle = cycles.first;
         } else {
-          _selectedCycle = CropActivityService.defaultDemoCycle;
+          _selectedCycle = null;
         }
       }
     } catch (_) {
-      _selectedCycle = CropActivityService.defaultDemoCycle;
+      _selectedCycle = null;
     } finally {
       if (mounted) {
         setState(() => _isLoadingCycle = false);
@@ -303,7 +301,7 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
                               Text(
                                 _selectedCycle != null
                                     ? _selectedCycle!.displayName
-                                    : 'Loading Cycle...',
+                                    : (_availableCycles.isEmpty ? 'No Cultivation Cycle' : 'Select Cultivation Cycle'),
                                 style: const TextStyle(
                                   fontSize: 22,
                                   fontWeight: FontWeight.bold,
@@ -313,7 +311,7 @@ class _NewActivityScreenState extends State<NewActivityScreen> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                _selectedCycle?.fieldName ?? '',
+                                _selectedCycle?.fieldName ?? (_availableCycles.isEmpty ? 'No active cultivation cycles found' : 'Select a cycle to log activities'),
                                 style: const TextStyle(
                                   fontSize: 14,
                                   color: AppColors.inkSoft,

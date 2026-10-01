@@ -6,6 +6,10 @@ import '../models/crop_analysis_models.dart';
 class CropAnalysisService {
   static const Duration _requestTimeout = Duration(seconds: 12);
 
+  /// Toggle whether demo fallback analysis should be returned.
+  /// Defaults to false so no dummy data is displayed.
+  static bool useDemoFallback = false;
+
   /// Run Agentic AI analysis for a specific cultivation cycle
   static Future<CropActivityAnalysisOutput> runAnalysis(
     int cycleId, {
@@ -36,10 +40,13 @@ class CropAnalysisService {
         return CropActivityAnalysisOutput.fromJson(data);
       }
     } catch (_) {
-      // Backend offline or timeout -> Return demo analysis
+      // Backend offline or timeout
     }
 
-    return _generateDemoAnalysis(cycleId);
+    if (useDemoFallback) {
+      return _generateDemoAnalysis(cycleId);
+    }
+    throw Exception('Failed to connect to AI Analysis service. Please check your connection.');
   }
 
   /// Fetch the latest recorded analysis
@@ -64,7 +71,10 @@ class CropAnalysisService {
       // Fallback
     }
 
-    return _generateDemoAnalysis(cycleId);
+    if (useDemoFallback) {
+      return _generateDemoAnalysis(cycleId);
+    }
+    throw Exception('Failed to fetch latest analysis.');
   }
 
   /// Interactive Q&A chat with the AI Advisor about cultivation cycle activities
@@ -100,7 +110,48 @@ class CropAnalysisService {
       // Fallback response
     }
 
-    return _generateDemoChatResponse(question);
+    if (useDemoFallback) {
+      return _generateDemoChatResponse(question);
+    }
+    throw Exception('Failed to connect to AI Advisor service.');
+  }
+
+  /// Review / Execute an approved recommendation into the crop activity field ledger in database
+  static Future<bool> executeRecommendation(
+    int cycleId,
+    String recommendationId, {
+    String? payloadJson,
+  }) async {
+    final token = AuthService.getAccessToken();
+    final url = Uri.parse('${AuthService.apiBaseUrl}/cycles/$cycleId/recommendations/review');
+
+    try {
+      final response = await http
+          .post(
+            url,
+            headers: {
+              'Content-Type': 'application/json',
+              if (token != null) 'Authorization': 'Bearer $token',
+            },
+            body: jsonEncode({
+              'recommendationId': recommendationId,
+              'decision': 'execute',
+              'recommendationJson': payloadJson,
+            }),
+          )
+          .timeout(_requestTimeout);
+
+      if (response.statusCode == 200) {
+        return true;
+      }
+    } catch (_) {
+      // Offline fallback only if demo enabled
+    }
+
+    if (useDemoFallback) {
+      return true;
+    }
+    return false;
   }
 
   /// High-fidelity demo analysis matching Department of Agriculture Sri Lanka recommendations
@@ -156,6 +207,10 @@ class CropAnalysisService {
       recommendations: const [
         ActivityRecommendation(
           id: 'rec-01',
+          dbId: 101,
+          status: 'APPROVED',
+          reviewedBy: 'Dr. Nilmini Perera (Agriculture Officer)',
+          reviewNotes: 'Verified against Bathalagoda standard fertilizer calendar. Approved for timely execution.',
           category: 'Fertilizer',
           priority: 'HIGH',
           action: 'Prepare for 2nd Top-Dressing at Panicle Initiation (55-60 DAS)',
@@ -172,6 +227,8 @@ class CropAnalysisService {
         ),
         ActivityRecommendation(
           id: 'rec-02',
+          dbId: 102,
+          status: 'PENDING_OFFICER_REVIEW',
           category: 'Irrigation',
           priority: 'MEDIUM',
           action: 'Maintain shallow standing water (3–5 cm) for next 14 days',
@@ -188,6 +245,8 @@ class CropAnalysisService {
         ),
         ActivityRecommendation(
           id: 'rec-03',
+          dbId: 103,
+          status: 'PENDING_OFFICER_REVIEW',
           category: 'Pest',
           priority: 'LOW',
           action: 'Scout field edges for Brown Planthopper (BPH) nymphs twice weekly',

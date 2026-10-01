@@ -280,11 +280,15 @@ public class ResourceAnalysisAgent : IAgent<DelegatedTask, DelegatedTaskResult>,
                 else
                 {
                     // Persist new recommendation in database, ready for Agricultural Officer approval
+                    var effectiveUserId = userId > 0
+                        ? userId
+                        : (bundle.Cycle.Field?.FarmerId > 0 ? bundle.Cycle.Field.FarmerId : 1);
+
                     var newEntity = new CropActivityRecommendation
                     {
-                        RecommendationUid = rec.Id,
+                        RecommendationUid = string.IsNullOrWhiteSpace(rec.Id) ? Guid.NewGuid().ToString("N") : rec.Id,
                         CultivationCycleId = input.CultivationCycleId,
-                        RequestedByUserId = userId,
+                        RequestedByUserId = effectiveUserId,
                         Category = rec.Category,
                         Priority = rec.Priority,
                         Action = rec.Action,
@@ -304,6 +308,44 @@ public class ResourceAnalysisAgent : IAgent<DelegatedTask, DelegatedTaskResult>,
 
                     rec.DbId = newEntity.Id;
                     rec.Status = "PENDING_OFFICER_REVIEW";
+                }
+            }
+
+            // Also append any existing DB recommendations for this cycle so farmer sees past officer decisions & comments
+            foreach (var dbRec in existingDbRecs)
+            {
+                if (!output.Recommendations.Any(r => r.Action == dbRec.Action || r.Id == dbRec.RecommendationUid || (r.DbId.HasValue && r.DbId == dbRec.Id)))
+                {
+                    List<CitationDto> citations = new();
+                    try
+                    {
+                        if (!string.IsNullOrWhiteSpace(dbRec.CitationsJson))
+                        {
+                            citations = JsonSerializer.Deserialize<List<CitationDto>>(dbRec.CitationsJson) ?? new();
+                        }
+                    }
+                    catch {}
+
+                    output.Recommendations.Add(new ActivityRecommendationDto
+                    {
+                        Id = dbRec.RecommendationUid,
+                        DbId = dbRec.Id,
+                        Category = dbRec.Category,
+                        Priority = dbRec.Priority,
+                        Action = dbRec.Action,
+                        Reason = dbRec.Reason,
+                        Evidence = dbRec.Evidence,
+                        ConfidenceScore = dbRec.ConfidenceScore,
+                        Status = dbRec.Status,
+                        ReviewedBy = dbRec.OfficerName,
+                        ReviewedAt = dbRec.ReviewedAt,
+                        ReviewNotes = dbRec.OfficerComment,
+                        ExecutedActivityId = dbRec.ExecutedActivityId,
+                        ExecutedAt = dbRec.ExecutedAt,
+                        ExecutionPayloadJson = dbRec.ExecutionPayloadJson,
+                        RequiresOfficerReview = dbRec.RequiresOfficerReview,
+                        Citations = citations
+                    });
                 }
             }
         }
@@ -567,6 +609,7 @@ public class ResourceAnalysisAgent : IAgent<DelegatedTask, DelegatedTaskResult>,
     /// </summary>
     public async Task<List<CropActivityRecommendationDto>> GetPendingOfficerRecommendationsAsync(
         int? divisionId = null,
+        string? status = null,
         CancellationToken ct = default)
     {
         var query = _context.CropActivityRecommendations
@@ -579,7 +622,12 @@ public class ResourceAnalysisAgent : IAgent<DelegatedTask, DelegatedTaskResult>,
                     .ThenInclude(f => f!.Division)
             .Include(r => r.CultivationCycle)
                 .ThenInclude(c => c!.Variety)
-            .Where(r => r.Status == "PENDING_OFFICER_REVIEW");
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(status) && !status.Equals("ALL", StringComparison.OrdinalIgnoreCase))
+        {
+            query = query.Where(r => r.Status == status.ToUpperInvariant());
+        }
 
         if (divisionId.HasValue)
         {
@@ -587,7 +635,8 @@ public class ResourceAnalysisAgent : IAgent<DelegatedTask, DelegatedTaskResult>,
         }
 
         var list = await query
-            .OrderByDescending(r => r.CreatedAt)
+            .OrderByDescending(r => r.Status == "PENDING_OFFICER_REVIEW")
+            .ThenByDescending(r => r.CreatedAt)
             .ToListAsync(ct);
 
         var today = DateOnly.FromDateTime(DateTime.UtcNow);

@@ -84,7 +84,7 @@ export const OfficerActivityReportPage: React.FC = () => {
               Crop Activities Agronomic Report
             </h1>
             <p className="fc-page-sub" style={{ color: 'var(--ink-soft)', fontSize: '1.1rem', marginTop: '0.5rem' }}>
-              Generate filtered, printable audit reports and export CSV spreadsheets across farmers, agrarian divisions, and time frames.
+              Generate filtered, printable audit reports across farmers, agrarian divisions, and time frames.
             </p>
           </div>
 
