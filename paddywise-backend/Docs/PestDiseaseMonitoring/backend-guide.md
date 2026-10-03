@@ -392,10 +392,29 @@ Agent rules that apply here same as every component:
 
 ## Testing golden cases
 
-No test project exists in the solution yet — if adding one (xUnit/Moq, per the work plan), the
-work plan's six agent golden cases to cover: normal report; invalid input; unauthorized caller
-(HTTP 403); tool failure (retry then safe fail); prompt injection (rejected); officer rejects
-(status `REJECTED`).
+**Done (2026-10-03).** `paddywise-backend.Tests/PestDisease/` (xUnit + Moq + EF Core InMemory,
+plus `Microsoft.AspNetCore.Mvc.Testing` for the API tests) covers the work plan's golden cases
+and more — 15 agent-level test IDs (AG-01..AG-15, some with multiple boundary/category cases)
+plus 7 API-level test IDs (API-01..API-07) covering 401/403/200 authorization, validation
+shapes, and the edit-lock business rule. Every class carries `[Trait("Component",
+"PestDisease")]`, so the suite runs standalone:
+
+```bash
+cd paddywise-backend.Tests
+dotnet test --filter "Component=PestDisease"
+```
+
+Full row-by-row scenario/input/expected/actual mapping is in
+`Docs/PestDiseaseMonitoring/test-cases.md`. `ILlmClient` is always mocked (`PestDisease/
+Helpers/FakeLlmClient.cs`) — the mock genuinely invokes the `toolExecutor` callback to simulate
+`get_pest_knowledge` calls, never a real Gemini request. API tests run through a real
+`WebApplicationFactory<Program>` (`PestDisease/Helpers/PestDiseaseApiFactory.cs`) with an
+InMemory database and a header-driven `TestAuthHandler` standing in for real JWTs — the
+routing, `[Authorize]`/`[Authorize(Roles=...)]`, and model-validation layers are all exercised
+for real, only the database and token verification are swapped out. This needed one addition to
+`Program.cs` — `public partial class Program { }` at the very end, the standard fix for
+exposing a top-level-statements app's implicit `Program` class to a separate test project's
+`WebApplicationFactory<Program>`; it changes no runtime behavior.
 
 ## Conventions shared with the rest of the backend
 
