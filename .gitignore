@@ -76,3 +76,7 @@ Thumbs.db
 # ===================================
 *.sql.bak
 database/local-dumps/
+
+
+**/TestResults/
+**/CoverageReport/
