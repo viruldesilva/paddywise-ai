@@ -120,4 +120,19 @@ public class NonFunctionalTests : IClassFixture<CustomWebApplicationFactory>
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.True(stopwatch.ElapsedMilliseconds < 500, $"Notification fetch took {stopwatch.ElapsedMilliseconds}ms, exceeding 500ms.");
     }
+
+    [Fact]
+    public async Task HealthCheck_ReturnsOk_WithoutAuthentication()
+    {
+        // Arrange
+        var client = _factory.CreateClient();
+
+        // Act
+        var response = await client.GetAsync("/health");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var content = await response.Content.ReadAsStringAsync();
+        Assert.Equal("Healthy", content);
+    }
 }

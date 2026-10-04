@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { API_BASE_URL } from '../api/axiosInstance';
 import { Sidebar } from '../components/Sidebar';
 import { PendingPlansCard } from '../features/field-cultivation/components/PendingPlansCard';
 import type { UserRole } from '../types/auth';
@@ -349,7 +350,7 @@ export default function DashboardPage({ roleView }: DashboardPageProps) {
                   GPS location and offline sensor packets automatically sync with the ASP.NET Core API server once within cellular range.
                 </div>
                 <p style={{ fontSize: '0.85rem', color: 'var(--ink-soft)', marginTop: '0.75rem' }}>
-                  Connected to backend gateway: <code>http://localhost:5164/api</code>
+                  Connected to backend gateway: <code>{API_BASE_URL}</code>
                 </p>
               </div>
             </div>
@@ -378,7 +379,7 @@ export default function DashboardPage({ roleView }: DashboardPageProps) {
               <div className="metric-card">
                 <span className="metric-label">Backend Status</span>
                 <span className="metric-value" style={{ color: '#2e7d32' }}>Ready</span>
-                <span className="metric-sub">http://localhost:5164/api</span>
+                <span className="metric-sub">{API_BASE_URL}</span>
               </div>
             </div>
 
@@ -392,7 +393,7 @@ export default function DashboardPage({ roleView }: DashboardPageProps) {
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.875rem' }}>
                   <div style={{ padding: '0.75rem 1rem', background: 'var(--cream-deep)', borderRadius: '6px' }}>
-                    <strong>API Base URL:</strong> <code>http://localhost:5164/api</code>
+                    <strong>API Base URL:</strong> <code>{API_BASE_URL}</code>
                   </div>
                   <div style={{ padding: '0.75rem 1rem', background: 'var(--cream-deep)', borderRadius: '6px' }}>
                     <strong>Authentication Endpoints:</strong>

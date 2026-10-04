@@ -105,8 +105,12 @@ class AuthService {
   static String? _refreshToken;
   static String? _customBaseUrl;
 
-  /// Default API Base URL based on platform
+  /// Default API Base URL based on environment or platform
   static String get defaultApiBaseUrl {
+    const envUrl = String.fromEnvironment('API_BASE_URL', defaultValue: '');
+    if (envUrl.isNotEmpty) {
+      return envUrl.replaceAll(RegExp(r'/+$'), '');
+    }
     if (kIsWeb) return 'http://localhost:5164/api';
     try {
       if (Platform.isAndroid) {
