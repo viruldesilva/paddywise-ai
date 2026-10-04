@@ -176,6 +176,7 @@ builder.Services.AddHttpClient(CropAnalysisAgent.ImageDownloadHttpClientName)
 // ============================================================
 
 builder.Services.AddScoped<IRevisionDraftService, RevisionDraftService>();
+builder.Services.AddScoped<INotificationMessageService, NotificationMessageService>();
 builder.Services.AddScoped<PaddyWise.Api.Services.ReportingApproval.Agents.IValidationAgentService, PaddyWise.Api.Services.ReportingApproval.Agents.ValidationAgentService>();
 
 
