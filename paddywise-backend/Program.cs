@@ -382,3 +382,7 @@ app.MapControllers();
 // ============================================================
 
 app.Run();
+
+// Exposes the implicit top-level-statements Program class to
+// paddywise-backend.Tests's WebApplicationFactory<Program> — no behavior change.
+public partial class Program { }
