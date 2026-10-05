@@ -1,0 +1,248 @@
+# PaddyWise-AI continuous integration
+#
+# Three BLOCKING jobs decide whether a pull request is green:
+#   backend  – builds the API and runs every backend test (all components).
+#   web      – the web suites that pass today, lint on those folders, and a production bundle.
+#   mobile   – the Flutter test files that compile and pass today.
+#
+# Two REPORT-ONLY jobs (continue-on-error) run the full commands so known failures stay
+# visible without blocking anyone:
+#   web-full    – `npm run lint`, `npm run build` (tsc -b + vite build) and the full Vitest run.
+#                 Known causes: lint errors in crop-resource / profile / AuthContext /
+#                 OfficerApprovalPage / src/test/setup.ts, and 4 teammate test files written
+#                 against an older AuthContext (18 failing tests, plus their type errors).
+#   mobile-full – `flutter analyze` and the full `flutter test`.
+#                 Known causes: a stray `],` at lib/screens/dashboard_screen.dart:1091 (5 test
+#                 files can't compile) and role_navigation_test.dart, whose Farmer menu
+#                 assertion fails (the Farmer drawer has no `/activities` entry).
+#
+# Skipped tests (known bugs documented in paddywise-backend/Docs/*/test-cases.md) never fail CI.
+#
+# When the known failures are fixed: delete `continue-on-error: true` from the report-only
+# job (or fold its steps into the blocking job) and widen the scoped test lists below.
+
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # ---------------------------------------------------------------- blocking
+
+  backend:
+    name: Backend — build + all tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore paddywise-backend.Tests/PaddyWise.Backend.Tests.csproj
+
+      # No secrets are needed: the test factories supply placeholder Jwt / connection-string
+      # settings, swap Postgres for an InMemory database, and every LLM call is mocked.
+      #
+      # Debug, not Release: SixLabors.ImageSharp 4.x (used by the pest & disease agent) fails a
+      # Release build without a licence key — its licence check only continues on error in
+      # Debug. To build Release here, add a SixLaborsLicenseKey secret and pass
+      # -p:SixLaborsLicenseKey=${{ secrets.SIXLABORS_LICENSE_KEY }}.
+      - name: Build (API + tests)
+        run: dotnet build paddywise-backend.Tests/PaddyWise.Backend.Tests.csproj -c Debug --no-restore
+
+      - name: Test (every component)
+        run: >
+          dotnet test paddywise-backend.Tests/PaddyWise.Backend.Tests.csproj
+          -c Debug --no-build
+          --logger "trx;LogFileName=backend-tests.trx"
+          --results-directory TestResults
+          --collect "XPlat Code Coverage"
+
+      - name: Upload test results and coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-results
+          path: TestResults
+          if-no-files-found: ignore
+
+  web:
+    name: Web — passing suites + lint + bundle
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: paddywise-web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: paddywise-web/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      # The suites that pass today: Components 1, 2 and 4 (including reviewsApi.test.ts).
+      # Widen to a plain `npx vitest run` once the teammates' auth/approval tests are fixed.
+      - name: Test (component suites)
+        run: >
+          npx vitest run
+          src/features/field-cultivation
+          src/features/crop-resource
+          src/features/reporting-approval
+
+      - name: Lint (component test folders + field-cultivation)
+        run: >
+          npx eslint
+          src/features/field-cultivation
+          src/features/crop-resource/__tests__
+          src/features/reporting-approval/__tests__
+
+      # `vite build` bundles the production app WITHOUT type-checking, so it proves the app
+      # builds even though some test files don't type-check yet. Full type-checking
+      # (`tsc -b`, via `npm run build`) runs in the report-only web-full job until the
+      # teammates' test files are fixed; then switch this step to `npm run build`.
+      - name: Production bundle (no type-check)
+        run: npx vite build
+
+  mobile:
+    name: Mobile — passing test files
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: paddywise_mobile
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.47.3
+          cache: true
+
+      - name: Install
+        run: flutter pub get
+
+      # The files that compile and pass today. Files importing the app router can't compile
+      # until the stray `],` in lib/screens/dashboard_screen.dart is removed; widen this to
+      # a plain `flutter test` then.
+      - name: Test (passing files)
+        run: >
+          flutter test
+          test/features/crop_resource
+          test/features/reporting_approval
+          test/features/reporting_approval_gaps
+          test/features/pest_disease
+          test/features/field_cultivation/models_test.dart
+          test/features/field_cultivation/status_badges_test.dart
+          test/field_cultivation_models_test.dart
+          test/crop_activity_ai_screen_test.dart
+          test/new_activity_screen_test.dart
+          test/edit_activity_screen_test.dart
+
+  # ---------------------------------------------------------------- report-only
+
+  web-full:
+    name: Web — full lint/build/tests (report only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    continue-on-error: true # known failures — see the header of this file
+    defaults:
+      run:
+        working-directory: paddywise-web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: paddywise-web/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Lint (whole app)
+        id: lint
+        continue-on-error: true
+        run: npm run lint
+
+      - name: Build with type-check (tsc -b + vite build)
+        id: build
+        continue-on-error: true
+        run: npm run build
+
+      - name: Test (all suites)
+        id: test
+        continue-on-error: true
+        run: npx vitest run
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "### Web — full checks (report only)"
+            echo "| Check | Result |"
+            echo "|---|---|"
+            echo "| npm run lint | ${{ steps.lint.outcome }} |"
+            echo "| npm run build (tsc -b) | ${{ steps.build.outcome }} |"
+            echo "| npx vitest run (all) | ${{ steps.test.outcome }} |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  mobile-full:
+    name: Mobile — full analyze/tests (report only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    continue-on-error: true # known failures — see the header of this file
+    defaults:
+      run:
+        working-directory: paddywise_mobile
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.47.3
+          cache: true
+
+      - name: Install
+        run: flutter pub get
+
+      - name: Analyze (whole app)
+        id: analyze
+        continue-on-error: true
+        run: flutter analyze
+
+      - name: Test (all files)
+        id: test
+        continue-on-error: true
+        run: flutter test
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "### Mobile — full checks (report only)"
+            echo "| Check | Result |"
+            echo "|---|---|"
+            echo "| flutter analyze | ${{ steps.analyze.outcome }} |"
+            echo "| flutter test (all) | ${{ steps.test.outcome }} |"
+          } >> "$GITHUB_STEP_SUMMARY"
