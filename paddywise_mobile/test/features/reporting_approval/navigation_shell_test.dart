@@ -1,11 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:paddywise_mobile/core/widgets/app_shell.dart';
 import 'package:paddywise_mobile/core/widgets/role_menu_config.dart';
-import 'package:paddywise_mobile/models/user.dart';
 import 'package:paddywise_mobile/services/auth_service.dart';
-import 'package:paddywise_mobile/theme/app_theme.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
