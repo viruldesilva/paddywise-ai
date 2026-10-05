@@ -1,4 +1,4 @@
-# 🌾 PaddyWise-AI ("Kumburu" · කුඹුරු)
+# 🌾 PaddyWise-AI ("Kumbura" · කුඹුර)
 
 > **Agentic AI Decision-Support & Agricultural Governance Platform for Sri Lankan Paddy Farming**
 
