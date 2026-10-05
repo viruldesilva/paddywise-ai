@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../../../theme/app_theme.dart';
 import '../../../services/auth_service.dart';
+import '../../../core/api/api_config.dart';
 
 class PendingReviewsScreen extends StatefulWidget {
   const PendingReviewsScreen({super.key});
@@ -27,7 +28,7 @@ class _PendingReviewsScreenState extends State<PendingReviewsScreen> {
     });
 
     final token = AuthService.getAccessToken();
-    final url = Uri.parse('${AuthService.apiBaseUrl}/plans/pending');
+    final url = ApiConfig.buildUri(AuthService.apiBaseUrl, '/plans/pending');
 
     try {
       final response = await http.get(
@@ -391,8 +392,8 @@ class _PlanReviewBottomSheetState extends State<_PlanReviewBottomSheet> {
 
     final token = AuthService.getAccessToken();
     final planId = widget.plan['id'];
-    final url = Uri.parse(
-        '${AuthService.apiBaseUrl}/reviews/plans/$planId/draft-revision-comment');
+    final url = ApiConfig.buildUri(
+        AuthService.apiBaseUrl, '/reviews/plans/$planId/draft-revision-comment');
 
     try {
       final response = await http.get(

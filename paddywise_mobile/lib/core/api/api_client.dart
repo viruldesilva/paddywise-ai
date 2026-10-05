@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 
 import '../../services/auth_service.dart';
 import '../router/app_router.dart';
+import 'api_config.dart';
 
 /// A failed API call, carrying the message the backend sent when it sent one.
 class ApiException implements Exception {
@@ -47,9 +48,7 @@ class ApiClient {
     Object? body,
     Duration? timeout,
   }) async {
-    final uri = Uri.parse('${AuthService.apiBaseUrl}$path').replace(
-      queryParameters: (query == null || query.isEmpty) ? null : query,
-    );
+    final uri = ApiConfig.buildUri(AuthService.apiBaseUrl, path, query);
 
     var response = await _attempt(method, uri, body, timeout ?? defaultTimeout);
 

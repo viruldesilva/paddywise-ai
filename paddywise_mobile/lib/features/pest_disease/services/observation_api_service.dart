@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import '../../../core/storage/user_storage.dart';
+import '../../../core/api/api_config.dart';
 import '../../../services/auth_service.dart';
 import '../models/cultivation_cycle_summary.dart';
 import '../models/observation.dart';
@@ -49,11 +50,7 @@ class ObservationApiService {
         _pollWindow = pollWindow;
 
   Uri _uri(String path, [Map<String, String>? query]) {
-    final base = Uri.parse(AuthService.apiBaseUrl);
-    return base.replace(
-      path: '${base.path}$path',
-      queryParameters: query != null && query.isNotEmpty ? query : null,
-    );
+    return ApiConfig.buildUri(AuthService.apiBaseUrl, path, query);
   }
 
   Future<Map<String, String>> _headers({bool json = true}) async {

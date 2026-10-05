@@ -1,8 +1,8 @@
 import 'dart:convert';
-import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../core/api/api_config.dart';
 import '../models/user.dart';
 
 class AuthResponse {
@@ -106,26 +106,15 @@ class AuthService {
   static String? _customBaseUrl;
 
   /// Default API Base URL based on environment or platform
-  static String get defaultApiBaseUrl {
-    const envUrl = String.fromEnvironment('API_BASE_URL', defaultValue: '');
-    if (envUrl.isNotEmpty) {
-      return envUrl.replaceAll(RegExp(r'/+$'), '');
-    }
-    if (kIsWeb) return 'http://localhost:5164/api';
-    try {
-      if (Platform.isAndroid) {
-        return 'http://10.0.2.2:5164/api';
-      }
-    } catch (_) {}
-    return 'http://localhost:5164/api';
-  }
+  static String get defaultApiBaseUrl => ApiConfig.resolveDefaultBaseUrl();
 
-  /// Get current effective API base URL
-  static String get apiBaseUrl => _customBaseUrl ?? defaultApiBaseUrl;
+  /// Get current effective API base URL (always normalized)
+  static String get apiBaseUrl =>
+      ApiConfig.normalizeBaseUrl(_customBaseUrl ?? defaultApiBaseUrl);
 
   /// Set and persist custom API base URL
   static Future<void> setApiBaseUrl(String url) async {
-    final cleanUrl = url.trim().replaceAll(RegExp(r'/+$'), '');
+    final cleanUrl = ApiConfig.normalizeBaseUrl(url);
     _customBaseUrl = cleanUrl.isNotEmpty ? cleanUrl : null;
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -153,7 +142,7 @@ class AuthService {
       // Load custom API URL if set
       final savedUrl = prefs.getString(_storageKeyApiBaseUrl);
       if (savedUrl != null && savedUrl.trim().isNotEmpty) {
-        _customBaseUrl = savedUrl.trim();
+        _customBaseUrl = ApiConfig.normalizeBaseUrl(savedUrl);
       }
 
       // Load tokens
@@ -215,7 +204,7 @@ class AuthService {
       throw Exception('Please fill in both your email address and password.');
     }
 
-    final url = Uri.parse('$apiBaseUrl/auth/login');
+    final url = ApiConfig.buildUri(apiBaseUrl, '/auth/login');
     http.Response? response;
     bool networkError = false;
     String networkErrorDetail = '';
@@ -317,11 +306,16 @@ class AuthService {
       }
 
       // If not a demo user or password incorrect:
-      throw Exception(
-        'Cannot connect to backend server at $apiBaseUrl.\n'
-        'Please ensure the backend is running (e.g. dotnet run on port 5164).\n'
-        'Details: ${networkErrorDetail.split('\n').first}',
-      );
+      debugPrint('Login connection failure ($apiBaseUrl): $networkErrorDetail');
+      if (kReleaseMode || !ApiConfig.isLocalUrl(apiBaseUrl)) {
+        throw Exception("Can't reach the server, check your connection.");
+      } else {
+        throw Exception(
+          'Cannot connect to backend server at $apiBaseUrl.\n'
+          'Please ensure the backend is running (e.g. dotnet run on port 5164).\n'
+          'Details: ${networkErrorDetail.split('\n').first}',
+        );
+      }
     }
 
     throw Exception('An unexpected error occurred during sign in.');
@@ -340,7 +334,7 @@ class AuthService {
     final cleanEmail = email.trim();
     final cleanPassword = password.trim();
 
-    final url = Uri.parse('$apiBaseUrl/auth/register');
+    final url = ApiConfig.buildUri(apiBaseUrl, '/auth/register');
     http.Response? response;
     bool networkError = false;
 
@@ -482,7 +476,7 @@ class AuthService {
     try {
       final response = await http
           .post(
-            Uri.parse('$apiBaseUrl/auth/refresh'),
+            ApiConfig.buildUri(apiBaseUrl, '/auth/refresh'),
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({'refreshToken': refreshToken}),
           )

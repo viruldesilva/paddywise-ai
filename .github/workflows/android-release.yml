@@ -74,7 +74,7 @@ jobs:
       - name: Build Android Release APK
         working-directory: paddywise_mobile
         env:
-          API_BASE_URL: ${{ secrets.API_BASE_URL || 'https://paddywise-backend.azurewebsites.net/api' }}
+          API_BASE_URL: ${{ secrets.API_BASE_URL || 'https://paddywise-backend-bubkb2b8gmf2dpe6.malaysiawest-01.azurewebsites.net' }}
         run: |
           flutter build apk --release \
             --build-number=${{ github.run_number }} \
