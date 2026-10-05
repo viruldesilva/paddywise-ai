@@ -1,75 +1,102 @@
-# React + TypeScript + Vite
+# 🌾 PaddyWise Web Client ("Kumburu")
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+The official web frontend for the **PaddyWise-AI** decision-support platform, engineered with React 19, TypeScript, and Vite.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 🛠️ Tech Stack
 
-## React Compiler
+- **Framework**: [React 19](https://react.dev/) + [TypeScript](https://www.typescriptlang.org/)
+- **Bundler & Dev Server**: [Vite](https://vitejs.dev/)
+- **Routing**: [React Router v7](https://reactrouter.com/)
+- **HTTP Client**: [Axios](https://axios-http.com/) with single-flight token refresh queue interceptor
+- **Icons**: [Lucide React](https://lucide.dev/)
+- **Design System**: Vanilla CSS tokens with modern typography (`Fraunces` + `Work Sans`)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the ESLint configuration
+## 🚀 Getting Started
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### Prerequisites
+- Node.js (v20+)
+- npm
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### Installation & Development Server
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+```bash
+# Install dependencies
+npm install
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+# Start Vite development server (starts on http://localhost:5173)
+npm run dev
 
+# Type check and build production bundle
+npm run build
+
+# Run ESLint
+npm run lint
+
+# Preview production build locally
+npm run preview
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+> [!NOTE]
+> The dev server runs on **port 5173**. The backend API CORS policy (`AllowReactApp`) expects requests from `http://localhost:5173`. The API client in `src/api/axiosInstance.ts` connects to `http://localhost:5164/api`.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+---
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## 📁 Source Code Organization
 
+```text
+src/
+├── api/
+│   └── axiosInstance.ts      # Configured Axios client with automatic 401 refresh token queue
+├── assets/                   # Static branding and image assets
+├── components/
+│   ├── ProtectedRoute.tsx    # Role-based route guard
+│   └── Sidebar.tsx           # Contextual navigation sidebar
+├── context/
+│   └── AuthContext.tsx       # Authentication state, login, register, token refresh
+├── features/
+│   ├── field-cultivation/    # Component 1: Fields, cycles, AI plan generation & approval
+│   ├── crop-resource/        # Component 2: Activity logging & resource analysis
+│   └── pest-disease/         # Component 3: Observations, photo upload & diagnostic reports
+├── hooks/
+│   └── useReveal.ts          # Scroll-reveal intersection observer hook
+├── pages/
+│   ├── Home.tsx              # Landing page
+│   ├── LoginPage.tsx         # User authentication
+│   ├── RegisterPage.tsx      # User registration with role selection
+│   ├── DashboardPage.tsx     # Role-customized dashboard (Farmer, Officer, Admin)
+│   └── UserManagementPage.tsx# Admin user administration
+├── styles/
+│   └── global.css            # Agronomic design system tokens & base typography
+├── types/                    # Shared TypeScript interfaces & models
+└── utils/
+    └── roleRoutes.ts         # Role-specific route resolution
 ```
+
+---
+
+## 🎨 Design System & Colors
+
+Styling relies on curated CSS variables in `src/styles/global.css`:
+
+```css
+--cream: #F6F1E3;        /* Parchment background */
+--cream-deep: #EDE5CF;   /* Card / panel background */
+--forest: #22392A;       /* Primary evergreen tone */
+--forest-deep: #182A1E;  /* Deep contrast evergreen */
+--shoot: #7FA66C;        /* Seedling green accent */
+--shoot-light: #B4CB9C;  /* Soft green border / badge */
+--gold: #E1A63B;         /* Golden harvest accent */
+--gold-deep: #C48A28;    /* Warning / attention state */
+--clay: #A6693F;         /* Earth soil accent */
+--ink: #212D1E;          /* Primary dark text */
+--ink-soft: #4B5645;     /* Secondary / muted body text */
+--line: rgba(33,45,30,.14); /* Subtle separator borders */
+```
+
+Typography:
+- **Headings**: `Fraunces`, serif
+- **Body**: `Work Sans`, sans-serif
