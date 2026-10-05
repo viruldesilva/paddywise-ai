@@ -1,6 +1,8 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -8,6 +10,7 @@ using Moq;
 using PaddyWise.Api.Controllers.Shared;
 using PaddyWise.Api.Data;
 using PaddyWise.Api.DTOs.Shared;
+using PaddyWise.Api.Entities.FieldCultivation;
 using PaddyWise.Api.Entities.Shared;
 using PaddyWise.Api.Services.Shared;
 using Xunit;
@@ -113,6 +116,48 @@ public class AdminControllerTests : IClassFixture<CustomWebApplicationFactory>
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetDashboard_AnonymousCaller_Returns401Unauthorized()
+    {
+        var client = _factory.CreateClient();
+        var response = await client.GetAsync("/api/admin/dashboard");
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Theory]
+    [InlineData("Farmer")]
+    [InlineData("AgriculturalOfficer")]
+    public async Task GetDashboard_NonAdminCaller_Returns403Forbidden(string role)
+    {
+        var client = _factory.CreateClient();
+        var token = TestJwtHelper.GenerateToken(99, "Non Admin", "nonadmin@example.com", role);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var response = await client.GetAsync("/api/admin/dashboard");
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetUsers_AnonymousCaller_Returns401Unauthorized()
+    {
+        var client = _factory.CreateClient();
+        var response = await client.GetAsync("/api/admin/users");
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Theory]
+    [InlineData("Farmer")]
+    [InlineData("AgriculturalOfficer")]
+    public async Task GetUsers_NonAdminCaller_Returns403Forbidden(string role)
+    {
+        var client = _factory.CreateClient();
+        var token = TestJwtHelper.GenerateToken(99, "Non Admin", "nonadmin@example.com", role);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var response = await client.GetAsync("/api/admin/users");
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 
     // =========================================================================
@@ -259,5 +304,151 @@ public class AdminControllerTests : IClassFixture<CustomWebApplicationFactory>
 
         // Spec requirement: No email sent on rejection
         mockEmail.Verify(e => e.SendOfficerApprovalEmailAsync(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetDashboard_ReturnsRealAggregatedStats()
+    {
+        // Arrange
+        using var context = CreateInMemoryDbContext();
+        var mockEmail = new Mock<IEmailService>();
+
+        context.Users.AddRange(
+            new User { Id = 101, Name = "Farmer 1", Email = "f1@paddy.lk", Role = UserRole.Farmer, AccountStatus = AccountStatus.Approved },
+            new User { Id = 102, Name = "Farmer 2", Email = "f2@paddy.lk", Role = UserRole.Farmer, AccountStatus = AccountStatus.Rejected },
+            new User { Id = 103, Name = "Officer 1", Email = "o1@paddy.lk", Role = UserRole.AgriculturalOfficer, AccountStatus = AccountStatus.PendingApproval },
+            new User { Id = 104, Name = "Admin 1", Email = "a1@paddy.lk", Role = UserRole.Admin, AccountStatus = AccountStatus.Approved }
+        );
+        await context.SaveChangesAsync();
+
+        var controller = new AdminController(context, mockEmail.Object, NullLogger<AdminController>.Instance);
+
+        // Act
+        var result = await controller.GetDashboard(CancellationToken.None);
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        var dto = Assert.IsType<AdminDashboardDto>(okResult.Value);
+
+        Assert.Equal(4, dto.TotalUsers);
+        Assert.Equal(2, dto.ActiveUsers);
+        Assert.Equal(2, dto.InactiveUsers);
+        Assert.Equal(1, dto.PendingOfficerApprovals);
+        Assert.Equal(2, dto.UsersPerRole["Farmer"]);
+        Assert.Equal(1, dto.UsersPerRole["AgriculturalOfficer"]);
+        Assert.Equal(1, dto.UsersPerRole["Admin"]);
+    }
+
+    [Fact]
+    public async Task GetUsers_PaginationAndSearch_ReturnsFilteredResults()
+    {
+        // Arrange
+        using var context = CreateInMemoryDbContext();
+        var mockEmail = new Mock<IEmailService>();
+
+        var divPolonnaruwa = new Division { Id = 1, Name = "Polonnaruwa Central", District = "Polonnaruwa", Province = "North Central" };
+        var divAmpara = new Division { Id = 2, Name = "Ampara Central", District = "Ampara", Province = "Eastern" };
+        context.Divisions.AddRange(divPolonnaruwa, divAmpara);
+
+        context.Users.AddRange(
+            new User { Id = 201, Name = "Sunil Bandara", Email = "sunil@farm.lk", Role = UserRole.Farmer, AccountStatus = AccountStatus.Approved, Division = divPolonnaruwa },
+            new User { Id = 202, Name = "Kamal Perera", Email = "kamal@agri.lk", Role = UserRole.AgriculturalOfficer, AccountStatus = AccountStatus.Approved, Division = divAmpara },
+            new User { Id = 203, Name = "Sunil Shantha", Email = "sshantha@farm.lk", Role = UserRole.Farmer, AccountStatus = AccountStatus.Approved, Division = divAmpara }
+        );
+        await context.SaveChangesAsync();
+
+        var controller = new AdminController(context, mockEmail.Object, NullLogger<AdminController>.Instance);
+
+        // Act - search "Sunil"
+        var result = await controller.GetUsers(search: "Sunil", role: "Farmer", page: 1, pageSize: 10, ct: CancellationToken.None);
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        var paged = Assert.IsType<AdminUsersPagedResponseDto>(okResult.Value);
+
+        Assert.Equal(2, paged.TotalCount);
+        Assert.Equal(2, paged.Items.Count);
+        Assert.All(paged.Items, item => Assert.Contains("Sunil", item.FullName));
+    }
+
+    [Fact]
+    public async Task DeleteUser_PreventSelfDeletion_ReturnsBadRequest()
+    {
+        // Arrange
+        using var context = CreateInMemoryDbContext();
+        var mockEmail = new Mock<IEmailService>();
+
+        var adminUser = new User
+        {
+            Id = 301,
+            Name = "Active Admin",
+            Email = "admin@paddywise.lk",
+            Role = UserRole.Admin,
+            AccountStatus = AccountStatus.Approved
+        };
+        context.Users.Add(adminUser);
+        await context.SaveChangesAsync();
+
+        var controller = new AdminController(context, mockEmail.Object, NullLogger<AdminController>.Instance);
+        controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext
+            {
+                User = new ClaimsPrincipal(new ClaimsIdentity(new[]
+                {
+                    new Claim(ClaimTypes.NameIdentifier, "301"),
+                    new Claim(ClaimTypes.Role, "Admin")
+                }))
+            }
+        };
+
+        // Act - Admin attempts to delete their own account
+        var result = await controller.DeleteUser(301);
+
+        // Assert
+        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Equal(400, badRequestResult.StatusCode);
+    }
+
+    [Fact]
+    public async Task DeleteUser_OtherUser_RemovesUserSuccessfully()
+    {
+        // Arrange
+        using var context = CreateInMemoryDbContext();
+        var mockEmail = new Mock<IEmailService>();
+
+        var userToDelete = new User
+        {
+            Id = 401,
+            Name = "Removable User",
+            Email = "removable@paddywise.lk",
+            Role = UserRole.Farmer,
+            AccountStatus = AccountStatus.Approved
+        };
+        context.Users.Add(userToDelete);
+        await context.SaveChangesAsync();
+
+        var controller = new AdminController(context, mockEmail.Object, NullLogger<AdminController>.Instance);
+        controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext
+            {
+                User = new ClaimsPrincipal(new ClaimsIdentity(new[]
+                {
+                    new Claim(ClaimTypes.NameIdentifier, "999"),
+                    new Claim(ClaimTypes.Role, "Admin")
+                }))
+            }
+        };
+
+        // Act
+        var result = await controller.DeleteUser(401);
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        Assert.Equal(200, okResult.StatusCode);
+
+        var exists = await context.Users.AnyAsync(u => u.Id == 401);
+        Assert.False(exists);
     }
 }

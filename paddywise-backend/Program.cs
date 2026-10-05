@@ -28,7 +28,8 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
     });
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddHealthChecks();
+builder.Services.AddHealthChecks()
+    .AddCheck<PaddyWise.Api.Services.Shared.DatabaseHealthCheck>("database");
 
 
 // ============================================================
@@ -180,6 +181,7 @@ builder.Services.AddHttpClient(CropAnalysisAgent.ImageDownloadHttpClientName)
 builder.Services.AddScoped<IRevisionDraftService, RevisionDraftService>();
 builder.Services.AddScoped<INotificationMessageService, NotificationMessageService>();
 builder.Services.AddScoped<PaddyWise.Api.Services.ReportingApproval.Agents.IValidationAgentService, PaddyWise.Api.Services.ReportingApproval.Agents.ValidationAgentService>();
+builder.Services.AddScoped<IOfficerDashboardService, OfficerDashboardService>();
 
 
 // ============================================================
@@ -387,7 +389,27 @@ app.UseCors("AllowReactApp");
 app.UseAuthentication();
 app.UseAuthorization();
 
+var healthCheckOptions = new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+{
+    ResponseWriter = async (context, report) =>
+    {
+        context.Response.ContentType = "application/json";
+        var dbStatus = report.Entries.TryGetValue("database", out var dbEntry)
+            ? dbEntry.Status.ToString()
+            : "Unknown";
+
+        var response = new
+        {
+            status = report.Status.ToString(),
+            database = dbStatus,
+            totalDurationMs = report.TotalDuration.TotalMilliseconds
+        };
+        await context.Response.WriteAsJsonAsync(response);
+    }
+};
+
 app.MapHealthChecks("/health").AllowAnonymous();
+app.MapHealthChecks("/api/health", healthCheckOptions).AllowAnonymous();
 
 app.MapControllers();
 

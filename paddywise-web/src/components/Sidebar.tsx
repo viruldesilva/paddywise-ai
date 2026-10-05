@@ -61,9 +61,7 @@ export function Sidebar({ role, isOpen, onClose }: SidebarProps) {
 
   const adminLinks = [
     { name: 'Dashboard', path: '/dashboard/admin', icon: LayoutDashboard },
-    { name: 'Past Crop Activities', path: '/activities', icon: Activity },
     { name: 'Officer Approvals', path: '/admin/officer-requests', icon: UserCheck },
-    { name: 'AI Approvals Queue', path: '/officer/approvals', icon: UserCheck },
     { name: 'Activity Report', path: '/officer/reports', icon: FileText },
     { name: 'Manage Users', path: '/admin/users', icon: Users },
     { name: 'Manage Knowledge Base', path: '/pest-disease-knowledge', icon: Database },

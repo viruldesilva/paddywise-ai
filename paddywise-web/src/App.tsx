@@ -5,6 +5,8 @@ import AdminLoginPage from './features/auth/pages/AdminLoginPage';
 import OfficerLoginPage from './features/auth/pages/OfficerLoginPage';
 import RegisterPage from './pages/RegisterPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { queryClient } from './api/queryClient';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { useReveal } from './hooks/useReveal';
 import { getRoleDashboardRoute } from './utils/roleRoutes';
@@ -151,7 +153,7 @@ function AppContent() {
         <Route
           path="/activities"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['Farmer', 'AgriculturalOfficer', 'FieldOfficer']}>
               <ActivityDashboard />
             </ProtectedRoute>
           }
@@ -169,7 +171,7 @@ function AppContent() {
         <Route
           path="/officer/approvals"
           element={
-            <ProtectedRoute allowedRoles={['AgriculturalOfficer', 'FieldOfficer', 'Admin']}>
+            <ProtectedRoute allowedRoles={['AgriculturalOfficer', 'FieldOfficer']}>
               <OfficerApprovalsPage />
             </ProtectedRoute>
           }
@@ -217,9 +219,11 @@ function AppContent() {
 
 function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }
 
