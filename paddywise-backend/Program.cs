@@ -13,7 +13,6 @@ using PaddyWise.Api.Services.FieldCultivation;
 using PaddyWise.Api.Services.PestDisease;
 using PaddyWise.Api.Services.ReportingApproval;
 using PaddyWise.Api.Services.Shared;
-using Resend;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -128,15 +127,10 @@ builder.Services.AddScoped<IProfileService, ProfileService>();
 
 
 // ============================================================
-// EMAIL SERVICES (Brevo REST API, SMTP Relay & Resend)
+// EMAIL SERVICE (Brevo REST API & SMTP Relay)
 // ============================================================
 
 builder.Services.AddHttpClient();
-builder.Services.AddHttpClient<IResend, ResendClient>();
-builder.Services.Configure<ResendClientOptions>(options =>
-{
-    options.ApiToken = builder.Configuration["Resend:ApiKey"] ?? string.Empty;
-});
 builder.Services.AddScoped<IEmailService, EmailService>();
 
 

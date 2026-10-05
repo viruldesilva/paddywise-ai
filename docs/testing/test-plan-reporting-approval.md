@@ -38,7 +38,7 @@ This test plan adheres to the SE3090 Quality Evaluation rubric by implementing a
 | `ValidationAgentService` | `IValidationAgentService` | Deterministic verification of Cultivation Plans (structure, dosage prohibition) and Pest/Disease Reports (confidence range, DOA knowledge-base verification), status updates, LLM-generated explanations, and audit trail logging. |
 | `RevisionDraftService` | `IRevisionDraftService` | Generates balanced agronomic evaluations and revision suggestions for officers; degrades gracefully to safe fallbacks when inputs are empty or Gemini is unavailable. |
 | `NotificationMessageService` | `INotificationMessageService` | Synthesizes plain-language farmer notifications from officer review decisions; guarantees fallback notification creation when LLM fails. |
-| `EmailService` | `IEmailService` | Dispatches transactional approval emails via Resend API; isolates failures to ensure database updates never roll back due to mail transport errors. |
+| `EmailService` | `IEmailService` | Dispatches transactional approval emails via Brevo API; isolates failures to ensure database updates never roll back due to mail transport errors. |
 
 ### 2.2 Controllers & API Endpoints Under Test
 | Controller | Route | HTTP Method | Authorization | Test Scope |
@@ -73,7 +73,7 @@ This test plan adheres to the SE3090 Quality Evaluation rubric by implementing a
 |     - ValidationAgentService: normal, invalid, boundary (0.0/1.0), dosage rule       |
 |     - RevisionDraftService: normal, LLM isolation, safe-failure                      |
 |     - NotificationMessageService: approved/rejected, LLM timeout fallback           |
-|     - EmailService: successful send, Resend timeout graceful recovery                 |
+|     - EmailService: successful send, Brevo timeout graceful recovery                 |
 +---------------------------------------------------------------------------------------+
 |  2. Agentic AI Testing & Evaluation (Specific Rubric Category)                        |
 |     - Structured-Output Validation: schema conformity on malformed inputs            |
@@ -94,7 +94,7 @@ This test plan adheres to the SE3090 Quality Evaluation rubric by implementing a
 ```
 
 ### 3.1 Unit Testing
-- **Approach:** Isolate service classes by mocking all external dependencies (`ILlmClient`, `IResend`, `IEmailService`, `ILogger`).
+- **Approach:** Isolate service classes by mocking all external dependencies (`ILlmClient`, `IEmailService`, `ILogger`).
 - **Focus:** Complete branch coverage spanning normal (happy path), invalid (business errors), boundary (edges), and failure (exceptions/timeouts) conditions.
 
 ### 3.2 Agentic AI Testing & Evaluation
@@ -120,7 +120,7 @@ This test plan adheres to the SE3090 Quality Evaluation rubric by implementing a
 |---|---|---|
 | **.NET SDK** | 8.0.x | Target runtime and execution platform. |
 | **xUnit** | 2.5.3 | Core testing framework (Facts, Theories, InlineData). |
-| **Moq** | 4.20.72 | Mocking framework for external interfaces (`ILlmClient`, `IResend`, `IEmailService`, loggers). |
+| **Moq** | 4.20.72 | Mocking framework for external interfaces (`ILlmClient`, `IEmailService`, loggers). |
 | **Microsoft.AspNetCore.Mvc.Testing** | 8.0.10 | Real HTTP test server via `WebApplicationFactory<Program>`. |
 | **Microsoft.EntityFrameworkCore.InMemory** | 8.0.10 | High-performance, isolated database provider for testing. |
 | **Coverlet Collector** | 6.0.0 | Code coverage metrics collection. |
@@ -132,7 +132,7 @@ The **EF Core InMemory Database Provider** is selected as the primary persistenc
 3. **Total Test Isolation:** Each test method seeds an uniquely named database (`Guid.NewGuid().ToString()`), preventing test pollution and race conditions during parallel execution.
 4. **Deterministic Behavior:** Seed data and assertions are strictly controlled without residual state.
 
-External APIs (Google Gemini LLM and Resend Email API) are mocked across all tests to prevent API rate limiting, external service downtime, and unnecessary financial costs during test runs.
+External APIs (Google Gemini LLM and Brevo Email API) are mocked across all tests to prevent API rate limiting, external service downtime, and unnecessary financial costs during test runs.
 
 ---
 
@@ -144,7 +144,7 @@ paddywise-backend.Tests/
 ├── ValidationAgentServiceTests.cs      # Step 2: Deterministic validation, boundaries, dosages
 ├── RevisionDraftServiceTests.cs        # Step 2: AI draft generation, LLM isolation, fallbacks
 ├── NotificationMessageServiceTests.cs  # Step 2: Farmer notification generation, safe-failure
-├── EmailServiceTests.cs                # Step 2: Resend email dispatch, timeout resilience
+├── OfficerApprovalGateTests.cs         # Step 2: Officer gating, Brevo email failure resilience
 ├── AdminControllerTests.cs             # Step 2: WebApplicationFactory HTTP RBAC & approval tests
 ├── AgenticAiEvaluationTests.cs         # Step 3: Structured output, prompt injection, enforcement
 ├── DatabaseIntegrationTests.cs         # Step 4: EF Core persistence, defaults, transaction safety

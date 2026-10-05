@@ -1,6 +1,5 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using Resend;
 
 namespace PaddyWise.Api.Services.Shared;
 
@@ -8,25 +7,16 @@ public class EmailService : IEmailService
 {
     private readonly IConfiguration _config;
     private readonly ILogger<EmailService> _logger;
-    private readonly IResend? _resend;
     private readonly IHttpClientFactory? _httpClientFactory;
 
     public EmailService(
         IConfiguration config,
         ILogger<EmailService> logger,
-        IResend? resend = null,
         IHttpClientFactory? httpClientFactory = null)
     {
         _config = config;
         _logger = logger;
-        _resend = resend;
         _httpClientFactory = httpClientFactory;
-    }
-
-    // Overload for backward compatibility and unit tests
-    public EmailService(IResend resend, IConfiguration config, ILogger<EmailService> logger)
-        : this(config, logger, resend, null)
-    {
     }
 
     public async Task SendOfficerApprovalEmailAsync(string toEmail, string officerName)
@@ -40,16 +30,16 @@ public class EmailService : IEmailService
             var smtpHost = _config["Smtp:Host"];
             var smtpPassword = _config["Smtp:Password"];
 
-            // 1. Try Brevo REST API if API key is provided (works over HTTPS port 443 to ANY email address)
+            // 1. Send via Brevo REST API if API key is configured (works over HTTPS port 443 to ALL emails)
             if (!string.IsNullOrWhiteSpace(brevoApiKey))
             {
-                var fromEmail = _config["Brevo:FromEmail"] ?? _config["Smtp:FromEmail"] ?? "no-reply@paddywise.ai";
-                var fromName = _config["Brevo:FromName"] ?? _config["Smtp:FromName"] ?? "PaddyWise AI";
+                var fromEmail = _config["Brevo:FromEmail"] ?? "no-reply@paddywise.ai";
+                var fromName = _config["Brevo:FromName"] ?? "PaddyWise AI";
                 await SendViaBrevoApiAsync(brevoApiKey, fromEmail, fromName, toEmail, officerName, htmlBody, cts.Token);
                 return;
             }
 
-            // 2. Try standard SMTP if Host and Password are provided (e.g., Brevo SMTP relay or Gmail SMTP)
+            // 2. Send via SMTP Relay if Host and Password are provided (e.g. Brevo SMTP relay)
             if (!string.IsNullOrWhiteSpace(smtpHost) && !string.IsNullOrWhiteSpace(smtpPassword))
             {
                 var port = int.TryParse(_config["Smtp:Port"], out var parsedPort) ? parsedPort : 587;
@@ -61,10 +51,7 @@ public class EmailService : IEmailService
                 return;
             }
 
-            // 3. Fall back to Resend (for testing / existing setup)
-            var resendFromEmail = _config["Resend:FromEmail"] ?? "onboarding@resend.dev";
-            var resendFromName = _config["Resend:FromName"] ?? "PaddyWise AI";
-            await SendViaResendAsync(resendFromEmail, resendFromName, toEmail, officerName, htmlBody, cts.Token);
+            _logger.LogWarning("No email provider configured. Please provide Brevo:ApiKey or Smtp:Host/Password in appsettings.");
         }
         catch (Exception ex)
         {
@@ -104,7 +91,7 @@ public class EmailService : IEmailService
             throw new HttpRequestException($"Brevo API returned status {(int)response.StatusCode} ({response.ReasonPhrase}): {errorBody}");
         }
 
-        _logger.LogInformation("Officer approval email sent successfully via Brevo API to {Email} for {OfficerName}.", toEmail, officerName);
+        _logger.LogInformation("Officer approval email sent successfully via Brevo to {Email} for {OfficerName}.", toEmail, officerName);
     }
 
     private async Task SendViaSmtpAsync(
@@ -139,31 +126,6 @@ public class EmailService : IEmailService
 
         await client.SendMailAsync(message, cancellationToken);
         _logger.LogInformation("Officer approval email sent successfully via SMTP ({Host}:{Port}) to {Email} for {OfficerName}.", host, port, toEmail, officerName);
-    }
-
-    private async Task SendViaResendAsync(
-        string fromEmail,
-        string fromName,
-        string toEmail,
-        string officerName,
-        string htmlBody,
-        CancellationToken cancellationToken)
-    {
-        if (_resend == null)
-        {
-            throw new InvalidOperationException("Resend client is not registered.");
-        }
-
-        var message = new EmailMessage
-        {
-            From = $"{fromName} <{fromEmail}>",
-            Subject = "Your PaddyWise Officer Account Has Been Approved",
-            HtmlBody = htmlBody
-        };
-        message.To.Add(toEmail);
-
-        await _resend.EmailSendAsync(message, cancellationToken);
-        _logger.LogInformation("Officer approval email sent successfully via Resend to {Email} for {OfficerName}.", toEmail, officerName);
     }
 
     private static string GetOfficerApprovalHtmlBody(string officerName) =>

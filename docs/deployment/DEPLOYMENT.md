@@ -52,9 +52,9 @@ ASP.NET Core automatically maps environment variables using double underscores (
 | `Gemini__Model` | No | Gemini model name (defaults to `gemini-3.6-flash`) |
 | `Gemini__PestDiseaseApiKey` | No | Optional dedicated Gemini key for Component 3 (falls back to `Gemini__ApiKey` if unset) |
 | `Gemini__PestDiseaseModel` | No | Optional dedicated Gemini model for Component 3 (falls back to `Gemini__Model` if unset) |
-| `Resend__ApiKey` | **Yes** | Resend API token for automated email notifications |
-| `Resend__FromEmail` | No | Sender email address (defaults to `onboarding@resend.dev`) |
-| `Resend__FromName` | No | Sender display name (defaults to `PaddyWise AI`) |
+| `Brevo__ApiKey` | **Yes** | Brevo API key for automated email notifications |
+| `Brevo__FromEmail` | **Yes** | Sender email address (registered/verified in Brevo) |
+| `Brevo__FromName` | No | Sender display name (defaults to `PaddyWise AI`) |
 | `Storage__ConnectionString` | **Yes** | Azure Blob Storage connection string for crop observation photos |
 | `Storage__ContainerName` | **Yes** | Azure Blob Storage container name for uploaded photos |
 | `PORT` | Auto | Provided automatically by Render's container runtime environment |
