@@ -58,7 +58,7 @@ export default function OfficerApprovalPage() {
     setActionSuccess(null);
     try {
       await adminService.approveOfficerRequest(officer.id);
-      setActionSuccess(`Officer ${officer.name} (${officer.email}) has been approved. A confirmation email has been dispatched via Resend.`);
+      setActionSuccess(`Officer ${officer.name} (${officer.email}) has been approved. A confirmation email has been dispatched to ${officer.email}.`);
       setRequests((prev) => prev.filter((r) => r.id !== officer.id));
     } catch {
       setActionError(`Failed to approve officer ${officer.name}. Please try again.`);
@@ -145,7 +145,7 @@ export default function OfficerApprovalPage() {
                 </h1>
               </div>
               <p className="dashboard-welcome-desc">
-                Review and approve or reject pending Agricultural Officer registrations. Approving an account immediately grants system access and dispatches an official confirmation email via Resend.
+                Review and approve or reject pending Agricultural Officer registrations. Approving an account immediately grants system access and dispatches an official confirmation email.
               </p>
             </div>
             <button

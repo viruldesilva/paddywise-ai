@@ -128,15 +128,17 @@ builder.Services.AddScoped<IProfileService, ProfileService>();
 
 
 // ============================================================
-// RESEND EMAIL SERVICE
+// EMAIL SERVICES (Brevo REST API, SMTP Relay & Resend)
 // ============================================================
 
+builder.Services.AddHttpClient();
 builder.Services.AddHttpClient<IResend, ResendClient>();
 builder.Services.Configure<ResendClientOptions>(options =>
 {
-    options.ApiToken = builder.Configuration["Resend:ApiKey"]!;
+    options.ApiToken = builder.Configuration["Resend:ApiKey"] ?? string.Empty;
 });
 builder.Services.AddScoped<IEmailService, EmailService>();
+
 
 
 // ============================================================
