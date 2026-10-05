@@ -5,7 +5,11 @@ using Microsoft.Extensions.DependencyInjection;
 using PaddyWise.Api.Agents.Shared;
 using PaddyWise.Api.Data;
 using PaddyWise.Api.DTOs.PestDisease;
+using PaddyWise.Api.Entities.PestDisease;
 using PaddyWise.Api.Services.PestDisease;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats.Jpeg;
+using SixLabors.ImageSharp.Processing;
 
 namespace PaddyWise.Api.Agents.PestDisease;
 
@@ -20,8 +24,23 @@ public sealed class CropAnalysisAgent : IAgent<DelegatedTask, DelegatedTaskResul
 {
     private const string GetPestKnowledgeTool = "get_pest_knowledge";
 
-    /// <summary>Gemini's inline_data limit is ~20MB total request size; keep well under it.</summary>
+    /// <summary>DI key for the named HttpClient used to download an observation's ImageUrl —
+    /// see Program.cs's registration and ObservationImageSsrfGuard for why this one isn't the
+    /// plain default client.</summary>
+    public const string ImageDownloadHttpClientName = "ObservationImage";
+
+    /// <summary>Gemini's inline_data limit is ~20MB total request size; keep well under it.
+    /// Downscaling in LoadImageAsync means this should now almost never trip — kept as a
+    /// final safety net rather than removed.</summary>
     private const int MaxImageBytes = 6 * 1024 * 1024;
+
+    /// <summary>Long-edge target for a downscaled image — cuts upload time and Gemini's own
+    /// processing latency without meaningfully hurting symptom visibility in the photo.</summary>
+    private const int MaxImageDimension = 1024;
+
+    /// <summary>JPEG re-encode quality after a resize. Some quality loss is already accepted
+    /// for transfer/processing speed, and JPEG compresses photos well at this level.</summary>
+    private const int ResizedJpegQuality = 85;
 
     private const int ImageDownloadTimeoutSeconds = 10;
 
@@ -50,18 +69,38 @@ public sealed class CropAnalysisAgent : IAgent<DelegatedTask, DelegatedTaskResul
             """)
     };
 
-    private static readonly string SystemPrompt = $$"""
+    /// <summary>
+    /// Built fresh on every run from the live PestDiseaseKnowledge table (see RunAsync) rather
+    /// than a static field, so the model is told exactly what names currently exist instead of
+    /// guessing plausible-sounding ones from its own training data — a guess like "Sheath
+    /// Blight" when the seeded entry is actually "Sheath Rot" misses the exact-match lookup and
+    /// burns a full round trip for nothing. A hardcoded list would also go stale now that
+    /// PestDiseaseKnowledgeController lets admins add/remove entries at runtime.
+    /// </summary>
+    private static string BuildSystemPrompt(IReadOnlyList<string> knownNames)
+    {
+        var namesList = knownNames.Count > 0
+            ? string.Join(", ", knownNames)
+            : "(none — the knowledge base is currently empty)";
+
+        return $$"""
         You are the Crop Analysis Agent (Pest & Disease Diagnosis) for Sri Lankan paddy
         farming, part of the PaddyWise-AI (Kumburu) platform. A farmer has reported symptoms
         on their crop, optionally with a photo. Your job is to identify which pest(s) or
         disease(s) from the PaddyWise knowledge base could plausibly explain them.
 
-        You MUST call {{GetPestKnowledgeTool}} for every pest or disease name you are
-        considering, before naming it in your answer. Only include a possibleIssues entry
-        whose name matches a real, found entry returned by {{GetPestKnowledgeTool}} — never
-        invent a name, and never include one that came back notFound=true. If nothing in the
-        knowledge base plausibly matches, return an empty possibleIssues list rather than
-        guessing.
+        The knowledge base currently contains exactly these entries — consider ONLY names from
+        this list. Never guess or invent a name outside it, even one that sounds plausible from
+        your own training knowledge:
+        {{namesList}}
+
+        If the knowledge base above is empty, or none of those names plausibly matches, return
+        an empty possibleIssues list rather than guessing.
+
+        You MUST still call {{GetPestKnowledgeTool}} for every pest or disease name you are
+        considering, before naming it in your answer, to fetch its details and confirm its
+        source. Only include a possibleIssues entry whose name matches a real, found entry
+        returned by {{GetPestKnowledgeTool}} — never include one that came back notFound=true.
 
         Rules:
         - confidence is 0.00-1.00 and must never be presented or worded as certainty. Word your
@@ -88,6 +127,7 @@ public sealed class CropAnalysisAgent : IAgent<DelegatedTask, DelegatedTaskResul
           "recommendedNextStep": "string"
         }
         """;
+    }
 
     private readonly ApplicationDbContext _context;
     private readonly ILlmClient _llm;
@@ -120,6 +160,29 @@ public sealed class CropAnalysisAgent : IAgent<DelegatedTask, DelegatedTaskResul
         var agentInput = JsonSerializer.Deserialize<CropAnalysisAgentInput>(input.PayloadJson, JsonOptions)
             ?? throw new InvalidOperationException("CropAnalysisAgent received an empty payload.");
 
+        // Narrows the prompt to the farmer's own ObservationType when it's Pest or Disease —
+        // the knowledge base keeps growing, and listing every entry on every run was already
+        // pushing the first Gemini response alone past 120s with 25 entries. "Unknown" (or
+        // anything else) falls through to the unfiltered query, listing everything, same as
+        // before this change.
+        var knownNamesQuery = _context.PestDiseaseKnowledgeEntries.AsNoTracking();
+        if (Enum.TryParse<PestDiseaseCategory>(agentInput.ObservationType, true, out var category))
+            knownNamesQuery = knownNamesQuery.Where(k => k.Category == category);
+
+        var knownNames = await knownNamesQuery
+            .Select(k => k.Name)
+            .OrderBy(n => n)
+            .ToListAsync(ct);
+        var systemPrompt = BuildSystemPrompt(knownNames);
+
+        _logger.LogInformation(
+            "Crop analysis for observation {ObservationId} (correlation {CorrelationId}) built system prompt from {Count} known name(s) for ObservationType {ObservationType}: {Names}",
+            agentInput.ObservationId,
+            ctx.CorrelationId,
+            knownNames.Count,
+            agentInput.ObservationType,
+            string.Join(", ", knownNames));
+
         var images = await LoadImageAsync(agentInput.ImageUrl, ct);
         var userPrompt = BuildUserPrompt(agentInput, images.Count > 0);
 
@@ -131,7 +194,7 @@ public sealed class CropAnalysisAgent : IAgent<DelegatedTask, DelegatedTaskResul
         };
 
         var raw = await _llm.CompleteJsonWithImagesAsync(
-            SystemPrompt, userPrompt, images, ToolDefinitions, toolExecutor, ct);
+            systemPrompt, userPrompt, images, ToolDefinitions, toolExecutor, ct);
 
         var output = TryParse(raw);
 
@@ -144,7 +207,7 @@ public sealed class CropAnalysisAgent : IAgent<DelegatedTask, DelegatedTaskResul
                 "with ONLY the JSON object — no markdown fences, no prose.";
 
             raw = await _llm.CompleteJsonWithImagesAsync(
-                SystemPrompt, retryPrompt, images, ToolDefinitions, toolExecutor, ct);
+                systemPrompt, retryPrompt, images, ToolDefinitions, toolExecutor, ct);
             output = TryParse(raw);
         }
 
@@ -165,6 +228,16 @@ public sealed class CropAnalysisAgent : IAgent<DelegatedTask, DelegatedTaskResul
                 Duration = stopwatch.Elapsed
             };
         }
+
+        _logger.LogInformation(
+            "Crop analysis for observation {ObservationId} (correlation {CorrelationId}) parsed {Count} candidate(s): {Names}. recommendedNextStep: {NextStep}",
+            agentInput.ObservationId,
+            ctx.CorrelationId,
+            output.PossibleIssues.Count,
+            output.PossibleIssues.Count == 0
+                ? "(none)"
+                : string.Join(", ", output.PossibleIssues.Select(i => $"{i.Name} ({i.Confidence:P0})")),
+            output.RecommendedNextStep);
 
         var validation = CropAnalysisValidator.Validate(output, knowledgeLookups);
         if (!validation.IsValid)
@@ -262,6 +335,13 @@ public sealed class CropAnalysisAgent : IAgent<DelegatedTask, DelegatedTaskResul
 
         knowledgeLookups[trimmedName] = entry != null;
 
+        // EF Core's own SQL logging redacts parameter values (EnableSensitiveDataLogging is
+        // off), so this is the only place a candidate name the model actually considered is
+        // visible in logs — worth keeping for diagnosing "why no match" runs.
+        _logger.LogInformation(
+            "get_pest_knowledge lookup: '{PestName}' -> {Result}",
+            trimmedName, entry != null ? $"found ({entry.Name})" : "notFound");
+
         if (entry == null)
             return Serialize(new { notFound = true, queried = trimmedName });
 
@@ -280,18 +360,36 @@ public sealed class CropAnalysisAgent : IAgent<DelegatedTask, DelegatedTaskResul
     // ===== Helpers =====
 
     /// <summary>
-    /// Downloads the observation's photo and base64-encodes it for an inline image part. A
-    /// missing, unreachable or oversized image degrades to a text-only diagnosis rather than
-    /// failing the whole run — the farmer's symptom description alone is still useful input.
+    /// Downloads the observation's photo, downscales it to a 1024px long edge when larger, and
+    /// base64-encodes it for an inline image part. The downscale exists because a full-size
+    /// inline image — not the text turn, which alone completes in a few seconds — is what
+    /// pushes a real request past the HttpClient timeout: it cuts both the upload time and
+    /// Gemini's own processing latency. A missing, unreachable or oversized image still
+    /// degrades to a text-only diagnosis rather than failing the whole run — the farmer's
+    /// symptom description alone is still useful input.
     /// </summary>
     private async Task<List<LlmImagePart>> LoadImageAsync(string? imageUrl, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(imageUrl))
             return new List<LlmImagePart>();
 
+        // Reject anything but http(s) before attempting a connection at all — HttpClient
+        // itself throws InvalidOperationException for other schemes (e.g. file://), which
+        // isn't caught below and would fail the whole run instead of degrading to text-only.
+        if (!Uri.TryCreate(imageUrl, UriKind.Absolute, out var parsedUrl) ||
+            (parsedUrl.Scheme != Uri.UriSchemeHttp && parsedUrl.Scheme != Uri.UriSchemeHttps))
+        {
+            _logger.LogWarning(
+                "Observation image {ImageUrl} is not a valid http(s) URL; skipping.", imageUrl);
+            return new List<LlmImagePart>();
+        }
+
         try
         {
-            var client = _httpClientFactory.CreateClient();
+            // Named client: its SocketsHttpHandler.ConnectCallback (ObservationImageSsrfGuard,
+            // registered in Program.cs) blocks connections to private/internal/reserved IP
+            // ranges — this URL is farmer-supplied free text, not a trusted address.
+            var client = _httpClientFactory.CreateClient(ImageDownloadHttpClientName);
             using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             timeoutCts.CancelAfter(TimeSpan.FromSeconds(ImageDownloadTimeoutSeconds));
 
@@ -316,6 +414,11 @@ public sealed class CropAnalysisAgent : IAgent<DelegatedTask, DelegatedTaskResul
             }
 
             var bytes = await response.Content.ReadAsByteArrayAsync(timeoutCts.Token);
+
+            (bytes, mimeType) = DownscaleIfNeeded(bytes, mimeType, imageUrl);
+
+            // A final safety net, not the primary guard anymore — downscaling above should
+            // keep almost everything well under this now.
             if (bytes.Length == 0 || bytes.Length > MaxImageBytes)
             {
                 _logger.LogWarning(
@@ -325,10 +428,47 @@ public sealed class CropAnalysisAgent : IAgent<DelegatedTask, DelegatedTaskResul
 
             return new List<LlmImagePart> { new(mimeType, Convert.ToBase64String(bytes)) };
         }
-        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or UriFormatException)
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException
+            or UriFormatException or InvalidOperationException)
         {
             _logger.LogWarning(ex, "Failed to load observation image {ImageUrl}; continuing text-only.", imageUrl);
             return new List<LlmImagePart>();
+        }
+    }
+
+    /// <summary>
+    /// Resizes proportionally to a 1024px long edge and re-encodes as JPEG (quality 85) when
+    /// either dimension exceeds that — never upscales a smaller image. mimeType becomes
+    /// "image/jpeg" only when a resize actually happened; an image already within bounds keeps
+    /// its original bytes and mimeType untouched. If ImageSharp cannot decode the bytes for any
+    /// reason, this logs a warning and returns the original bytes/mimeType unchanged, so a
+    /// resize-step bug degrades to "send as-is" rather than failing the whole run.
+    /// </summary>
+    private (byte[] Bytes, string MimeType) DownscaleIfNeeded(byte[] bytes, string mimeType, string imageUrl)
+    {
+        try
+        {
+            using var image = Image.Load(bytes);
+
+            if (image.Width <= MaxImageDimension && image.Height <= MaxImageDimension)
+                return (bytes, mimeType);
+
+            var (width, height) = image.Width >= image.Height
+                ? (MaxImageDimension, (int)Math.Round(image.Height * (MaxImageDimension / (double)image.Width)))
+                : ((int)Math.Round(image.Width * (MaxImageDimension / (double)image.Height)), MaxImageDimension);
+
+            image.Mutate(x => x.Resize(width, height));
+
+            using var resizedStream = new MemoryStream();
+            image.Save(resizedStream, new JpegEncoder { Quality = ResizedJpegQuality });
+
+            return (resizedStream.ToArray(), "image/jpeg");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(
+                ex, "Could not downscale observation image {ImageUrl}; sending original bytes.", imageUrl);
+            return (bytes, mimeType);
         }
     }
 

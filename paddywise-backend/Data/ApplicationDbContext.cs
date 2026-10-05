@@ -26,12 +26,22 @@ public class ApplicationDbContext : DbContext
     public DbSet<PestDiseaseKnowledge> PestDiseaseKnowledgeEntries => Set<PestDiseaseKnowledge>();//DOA-sourced reference data
     public DbSet<DiagnosisRunLog> DiagnosisRunLogs => Set<DiagnosisRunLog>();//audit trail of Crop Analysis agent runs
     public DbSet<CropActivity> CropActivities => Set<CropActivity>();//farmer crop activities
+    public DbSet<CropActivityRecommendation> CropActivityRecommendations => Set<CropActivityRecommendation>();//agent recommendations awaiting officer review / executed
+    public DbSet<Notification> Notifications => Set<Notification>();//user notifications for review decisions and alerts
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<User>()
-            .HasIndex(u => u.Email)
-            .IsUnique();
+        modelBuilder.Entity<User>(entity =>
+        {
+            entity.HasIndex(u => u.Email).IsUnique();
+            entity.Property(u => u.AccountStatus).HasDefaultValue(AccountStatus.Approved);
+
+            entity.HasOne(u => u.Division)
+                .WithMany()
+                .HasForeignKey(u => u.DivisionId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
 
         modelBuilder.Entity<RefreshToken>()
             .HasIndex(r => r.Token)
@@ -164,6 +174,39 @@ public class ApplicationDbContext : DbContext
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
+        modelBuilder.Entity<CropActivityRecommendation>(entity =>
+        {
+            entity.HasKey(r => r.Id);
+            entity.Property(r => r.Id).UseIdentityByDefaultColumn();
+            entity.HasIndex(r => r.CultivationCycleId);
+            entity.HasIndex(r => r.Status);
+            entity.HasIndex(r => r.OfficerId);
+            entity.Property(r => r.CitationsJson).HasColumnType("jsonb");
+            entity.Property(r => r.ExecutionPayloadJson).HasColumnType("jsonb");
+
+            entity.HasOne(r => r.CultivationCycle)
+                .WithMany()
+                .HasForeignKey(r => r.CultivationCycleId)
+                .IsRequired()
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(r => r.RequestedByUser)
+                .WithMany()
+                .HasForeignKey(r => r.RequestedByUserId)
+                .IsRequired()
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(r => r.Officer)
+                .WithMany()
+                .HasForeignKey(r => r.OfficerId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(r => r.ExecutedActivity)
+                .WithMany()
+                .HasForeignKey(r => r.ExecutedActivityId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
         modelBuilder.Entity<CropObservation>(entity =>
         {
             entity.HasIndex(o => o.CultivationCycleId);
@@ -251,6 +294,7 @@ public class ApplicationDbContext : DbContext
             {
                 Id = 1,
                 Name = "Thrips",
+                Category = PestDiseaseCategory.Pest,
                 Symptoms = "Silvery streaks and curling on young leaves; stunted growth in seedlings.",
                 FavorableConditions = "Dry weather, drought-stressed nurseries.",
                 CropStages = "Nursery, Tillering",
@@ -261,6 +305,7 @@ public class ApplicationDbContext : DbContext
             {
                 Id = 2,
                 Name = "Brown Planthopper",
+                Category = PestDiseaseCategory.Pest,
                 Symptoms = "Yellowing and drying of leaves from the base upward (\"hopperburn\"); stunted, wilting tillers.",
                 FavorableConditions = "Dense planting, excess nitrogen, continuous flooding, high humidity.",
                 CropStages = "Tillering, PanicleInitiation",
@@ -271,6 +316,7 @@ public class ApplicationDbContext : DbContext
             {
                 Id = 3,
                 Name = "Yellow Stem Borer",
+                Category = PestDiseaseCategory.Pest,
                 Symptoms = "Dead heart (dried central shoot) during vegetative growth; whitehead (empty, upright panicle) at the reproductive stage.",
                 FavorableConditions = "Continuous rice cropping without fallow, high nitrogen.",
                 CropStages = "Tillering, Flowering",
@@ -281,6 +327,7 @@ public class ApplicationDbContext : DbContext
             {
                 Id = 4,
                 Name = "Rice Leaf Folder",
+                Category = PestDiseaseCategory.Pest,
                 Symptoms = "Leaves folded longitudinally and webbed together; white/transparent streaks where larvae scrape and feed inside the fold.",
                 FavorableConditions = "High nitrogen, dense canopy, high humidity.",
                 CropStages = "Tillering, PanicleInitiation",
@@ -291,6 +338,7 @@ public class ApplicationDbContext : DbContext
             {
                 Id = 5,
                 Name = "Rice Sheath Mite",
+                Category = PestDiseaseCategory.Pest,
                 Symptoms = "Brown to black lesions on the leaf sheath near the waterline; can cause unfilled or discolored grains.",
                 FavorableConditions = "Warm, humid conditions and dense planting.",
                 CropStages = "PanicleInitiation, Flowering",
@@ -301,6 +349,7 @@ public class ApplicationDbContext : DbContext
             {
                 Id = 6,
                 Name = "Rice Gall Midge",
+                Category = PestDiseaseCategory.Pest,
                 Symptoms = "Affected tiller produces a tubular \"silvershoot\"/onion-leaf gall instead of a normal leaf whorl and no panicle.",
                 FavorableConditions = "High humidity, shaded or low-lying fields, continuous rice cropping.",
                 CropStages = "Nursery, Tillering",
@@ -311,6 +360,7 @@ public class ApplicationDbContext : DbContext
             {
                 Id = 7,
                 Name = "Sheath Rot",
+                Category = PestDiseaseCategory.Disease,
                 Symptoms = "Reddish-brown lesions on the flag leaf sheath enclosing the panicle; panicle may fail to emerge fully or grains are discolored.",
                 FavorableConditions = "High humidity, excess nitrogen, dense planting.",
                 CropStages = "PanicleInitiation, Flowering",
@@ -318,5 +368,16 @@ public class ApplicationDbContext : DbContext
                 Source = "Sri Lanka Department of Agriculture"
             }
         );
+
+        modelBuilder.Entity<Notification>(entity =>
+        {
+            entity.HasIndex(n => n.UserId);
+            entity.HasIndex(n => n.IsRead);
+            entity.HasIndex(n => n.CreatedAt);
+            entity.HasOne(n => n.User)
+                .WithMany()
+                .HasForeignKey(n => n.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
     }
 }

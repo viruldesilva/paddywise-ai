@@ -6,7 +6,6 @@ import { useAuth } from '../../../hooks/useAuth';
 import { extractApiErrorMessage } from '../../../services/authService';
 import { AgentActivity } from '../components/AgentActivity';
 import { CycleStatusBadge } from '../components/CycleStatusBadge';
-import { PlanRequestPanel } from '../components/PlanRequestPanel';
 import { PlanStatusBadge, PlanView } from '../components/PlanView';
 import { StageTimeline } from '../components/StageTimeline';
 import { getCycleById, getPlansForCycle } from '../services/fieldApi';
@@ -124,19 +123,6 @@ export default function CycleDetailPage() {
     setReloadToken((previous) => previous + 1);
   }, []);
 
-  /** A new plan is the newest one, so it goes to the front of the list. */
-  const handlePlanCreated = useCallback(
-    (plan: CultivationPlan) => {
-      setPlansLoaded((previous) => ({
-        id: cycleId,
-        plans:
-          previous !== null && previous.id === cycleId ? [plan, ...previous.plans] : [plan],
-        error: null,
-      }));
-    },
-    [cycleId]
-  );
-
   /** A stage log comes back as the whole refreshed cycle. */
   const handleLogged = useCallback(
     (updated: CultivationCycle) => {
@@ -147,11 +133,11 @@ export default function CycleDetailPage() {
 
   if (!user) return null;
 
-  // POST /api/cycles/{id}/stages is open to the owning farmer and to officers.
-  const canLog =
-    user.role === 'Farmer' || user.role === 'AgriculturalOfficer' || user.role === 'FieldOfficer';
+  // Farmers log stages from the mobile app; on the web only an agricultural
+  // officer may, since POST /api/cycles/{id}/stages refuses Admin.
+  const canLog = user.role === 'AgriculturalOfficer';
 
-  // A farmer's plan may have drifted from what they have actually reported.
+  // The farmer's reports may have drifted from what they have actually reported.
   const isBehindPlan = cycle !== null && cycle.currentStage !== cycle.expectedStageToday;
 
   return (
@@ -177,7 +163,7 @@ export default function CycleDetailPage() {
                 <span className="dashboard-user-sub">{user.email}</span>
               </div>
               <button 
-                onClick={logout} 
+                onClick={() => logout()} 
                 className="btn btn-secondary btn-sm"
                 title="Sign Out"
                 style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
@@ -229,16 +215,7 @@ export default function CycleDetailPage() {
                   </p>
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.75rem' }}>
-                  <CycleStatusBadge status={cycle.status} />
-                  <Link 
-                    className="fc-btn" 
-                    to={`/cycles/${cycle.id}/activities/new`}
-                    style={{ textDecoration: 'none' }}
-                  >
-                    Add Crop Activity
-                  </Link>
-                </div>
+                <CycleStatusBadge status={cycle.status} />
               </div>
 
               <section className="fc-summary">
@@ -281,16 +258,7 @@ export default function CycleDetailPage() {
 
               <StageTimeline cycle={cycle} canLog={canLog} onLogged={handleLogged} />
 
-              {/* POST /api/cycles/{id}/plans is Farmer only, so only a farmer is
-                  offered the form; everyone who may read the cycle sees the plan. */}
-              {user.role === 'Farmer' && !arePlansLoading && (
-                <PlanRequestPanel
-                  cycleId={cycle.id}
-                  latestPlan={latestPlan}
-                  onPlanCreated={handlePlanCreated}
-                />
-              )}
-
+              {/* Farmers request plans from the mobile app; the web shows them. */}
               <section className="fc-section">
                 {arePlansLoading && <p className="fc-state-text">Loading this cycle's plans…</p>}
 

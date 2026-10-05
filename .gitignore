@@ -1,0 +1,82 @@
+# ===================================
+# .NET / ASP.NET Core
+# ===================================
+[Bb]in/
+[Oo]bj/
+**/bin/
+**/obj/
+*.user
+*.suo
+appsettings.Development.json
+appsettings.Local.json
+Logs/
+*.log
+sixlabors.lic
+
+# ===================================
+# Node / React (paddywise-web)
+# ===================================
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+build/
+.env
+.env.local
+.env.*.local
+*.tsbuildinfo
+.vite/
+
+# ===================================
+# Flutter / Dart (paddywise-mobile)
+# ===================================
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+*.g.dart
+*.freezed.dart
+
+# Flutter/Android
+paddywise-mobile/android/.gradle/
+paddywise-mobile/android/app/debug/
+paddywise-mobile/android/app/profile/
+paddywise-mobile/android/app/release/
+paddywise-mobile/android/local.properties
+paddywise-mobile/android/**/gradle-wrapper.jar
+
+# Flutter/iOS
+paddywise-mobile/ios/Pods/
+paddywise-mobile/ios/.symlinks/
+paddywise-mobile/ios/Flutter/Flutter.framework
+paddywise-mobile/ios/Flutter/Flutter.podspec
+
+# ===================================
+# Secrets / environment files
+# ===================================
+*.env
+.env*
+!*.env.example
+**/appsettings.Development.json
+**/appsettings.Local.json
+
+# ===================================
+# Editor / OS
+# ===================================
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+
+# ===================================
+# Database
+# ===================================
+*.sql.bak
+database/local-dumps/
+
+
+**/TestResults/
+**/CoverageReport/

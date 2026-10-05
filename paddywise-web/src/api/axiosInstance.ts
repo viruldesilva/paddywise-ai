@@ -2,7 +2,9 @@ import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import { tokenStorage } from '../services/tokenStorage';
 import type { AuthResponseDto } from '../types/auth';
 
-export const API_BASE_URL = 'http://localhost:5164/api';
+export const API_BASE_URL = (
+  import.meta.env.VITE_API_BASE_URL || 'http://localhost:5164/api'
+).replace(/\/+$/, '');
 
 export const axiosInstance = axios.create({
   baseURL: API_BASE_URL,

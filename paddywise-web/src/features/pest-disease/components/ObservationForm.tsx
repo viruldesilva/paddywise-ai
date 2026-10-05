@@ -1,10 +1,14 @@
-import { useEffect, useState } from 'react';
-import type { FormEvent } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import type { ChangeEvent, FormEvent } from 'react';
 import { AlertCircle } from 'lucide-react';
 import { extractApiErrorMessage } from '../../../services/authService';
 import { getMyCycles } from '../../field-cultivation/services/fieldApi';
 import type { CultivationCycle } from '../../field-cultivation/types';
-import { createObservation, updateObservation } from '../services/pestDiseaseApi';
+import {
+  createObservation,
+  updateObservation,
+  uploadObservationPhoto,
+} from '../services/pestDiseaseApi';
 import {
   OBSERVATION_RULES,
   OBSERVATION_SEVERITIES,
@@ -71,7 +75,12 @@ function validate(values: FormValues, isEditing: boolean): FormErrors {
 interface ObservationFormProps {
   /** Omit to submit a new observation; pass one to correct it in place. */
   observation?: Observation;
-  onSaved: (observation: Observation) => void;
+  /**
+   * `warning` is set when the observation itself saved but the photo upload right after it
+   * failed — the caller should still treat `observation` as saved (e.g. add/replace it in a
+   * list) and surface `warning` separately, rather than treating this as a failed submit.
+   */
+  onSaved: (observation: Observation, warning?: string) => void;
   onCancel: () => void;
 }
 
@@ -88,6 +97,37 @@ export function ObservationForm({ observation, onSaved, onCancel }: ObservationF
   const [cycles, setCycles] = useState<CultivationCycle[]>([]);
   const [isLoadingCycles, setIsLoadingCycles] = useState(!isEditing);
   const [cyclesError, setCyclesError] = useState<string | null>(null);
+
+  // A chosen file always wins over a typed URL — see handleSubmit.
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    // Revoke the previous object URL whenever it's replaced or the form unmounts,
+    // so selecting several photos in a row doesn't leak blob URLs.
+    return () => {
+      if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
+    };
+  }, [photoPreviewUrl]);
+
+  const handlePhotoSelected = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] ?? null;
+    setPhotoFile(file);
+    setPhotoPreviewUrl((previous) => {
+      if (previous) URL.revokeObjectURL(previous);
+      return file ? URL.createObjectURL(file) : null;
+    });
+  };
+
+  const clearPhoto = () => {
+    setPhotoFile(null);
+    setPhotoPreviewUrl((previous) => {
+      if (previous) URL.revokeObjectURL(previous);
+      return null;
+    });
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
 
   useEffect(() => {
     if (isEditing) return;
@@ -127,11 +167,16 @@ export function ObservationForm({ observation, onSaved, onCancel }: ObservationF
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
-    const imageUrl = values.imageUrl.trim().length > 0 ? values.imageUrl.trim() : null;
+    // A chosen file always wins over a typed URL — the photo upload call right after
+    // sets imageUrl to the stored file's own URL regardless of what's typed here.
+    const imageUrl =
+      photoFile || values.imageUrl.trim().length === 0 ? null : values.imageUrl.trim();
 
     setIsSubmitting(true);
+
+    let saved: Observation;
     try {
-      const saved =
+      saved =
         observation === undefined
           ? await createObservation({
               cultivationCycleId: Number(values.cultivationCycleId),
@@ -146,14 +191,34 @@ export function ObservationForm({ observation, onSaved, onCancel }: ObservationF
               severity: values.severity,
               imageUrl,
             });
-      onSaved(saved);
     } catch (err: unknown) {
       setSubmitError(
         extractApiErrorMessage(err, 'Could not save this report. Please try again.')
       );
-    } finally {
       setIsSubmitting(false);
+      return;
     }
+
+    if (photoFile) {
+      // The report above already saved successfully — a failure here is a distinct,
+      // narrower problem than "could not save this report", so it's surfaced to the
+      // caller as a warning on the saved observation rather than blocking on submitError
+      // (which would leave the farmer thinking nothing was saved and inviting a retry
+      // that creates a second observation instead of resuming this one).
+      try {
+        saved = await uploadObservationPhoto(saved.id, photoFile);
+      } catch (err: unknown) {
+        setIsSubmitting(false);
+        onSaved(
+          saved,
+          `The report was saved, but the photo could not be uploaded: ${extractApiErrorMessage(err, 'please try again.')}`
+        );
+        return;
+      }
+    }
+
+    setIsSubmitting(false);
+    onSaved(saved);
   };
 
   return (
@@ -248,7 +313,36 @@ export function ObservationForm({ observation, onSaved, onCancel }: ObservationF
       </div>
 
       <div className="pd-form-group">
-        <label htmlFor="pd-image">Photo URL (optional)</label>
+        <label htmlFor="pd-photo">Photo (optional)</label>
+        <input
+          id="pd-photo"
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          className="pd-input"
+          onChange={handlePhotoSelected}
+          disabled={isSubmitting}
+        />
+        {photoPreviewUrl && (
+          <div className="pd-photo-preview-row">
+            <img src={photoPreviewUrl} alt="Selected photo preview" className="pd-image-preview" />
+            <button
+              type="button"
+              className="pd-btn pd-btn-quiet"
+              onClick={clearPhoto}
+              disabled={isSubmitting}
+            >
+              Remove photo
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div className="pd-form-group">
+        <label htmlFor="pd-image">
+          {photoFile ? 'Photo URL (ignored — a photo is selected above)' : 'Or paste a photo URL instead'}
+        </label>
         <input
           id="pd-image"
           type="text"
@@ -256,7 +350,7 @@ export function ObservationForm({ observation, onSaved, onCancel }: ObservationF
           value={values.imageUrl}
           placeholder="https://…"
           onChange={(event) => setValue('imageUrl', event.target.value)}
-          disabled={isSubmitting}
+          disabled={isSubmitting || photoFile !== null}
         />
         {errors.imageUrl && <span className="pd-field-error">{errors.imageUrl}</span>}
       </div>

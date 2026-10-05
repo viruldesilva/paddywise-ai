@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, User, Briefcase, Phone, AlertCircle, CheckCircle } from 'lucide-react';
+import { Mail, Lock, User, Briefcase, Phone, AlertCircle, CheckCircle, Clock } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { extractApiErrorMessage } from '../services/authService';
 import { getRoleDashboardRoute } from '../utils/roleRoutes';
@@ -17,6 +17,7 @@ export default function RegisterPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPendingApproval, setIsPendingApproval] = useState(false);
 
   const { register } = useAuth();
   const navigate = useNavigate();
@@ -51,8 +52,15 @@ export default function RegisterPage() {
         phone: phone.trim() ? phone.trim() : undefined,
       });
 
+      if (response.requiresApproval) {
+        setIsPendingApproval(true);
+        setSuccess(response.message || 'Your account is pending admin verification. You will be able to log in once approved.');
+        setIsSubmitting(false);
+        return;
+      }
+
       setSuccess('Account created successfully! Redirecting to your dashboard...');
-      const targetRoute = getRoleDashboardRoute(response.role);
+      const targetRoute = getRoleDashboardRoute((response.role as UserRole) || (role as UserRole));
       setTimeout(() => {
         navigate(targetRoute, { replace: true });
       }, 1000);
@@ -149,26 +157,68 @@ export default function RegisterPage() {
             </div>
           )}
 
-          {success && (
+          {isPendingApproval ? (
             <div
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                backgroundColor: '#dcfce7',
-                color: '#166534',
-                padding: '0.75rem 1rem',
-                borderRadius: '8px',
-                fontSize: '0.875rem',
-                marginBottom: '1.25rem',
+                backgroundColor: '#fffbeb',
+                border: '1px solid #fde68a',
+                padding: '1.75rem',
+                borderRadius: '12px',
+                textAlign: 'center',
+                margin: '1.5rem 0',
               }}
             >
-              <CheckCircle size={18} />
-              <span>{success}</span>
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '56px',
+                  height: '56px',
+                  borderRadius: '50%',
+                  backgroundColor: '#fef3c7',
+                  color: '#d97706',
+                  marginBottom: '1rem',
+                }}
+              >
+                <Clock size={28} />
+              </div>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--ink)', marginBottom: '0.5rem' }}>
+                Account Pending Verification
+              </h2>
+              <p style={{ fontSize: '0.925rem', color: 'var(--ink-soft)', lineHeight: '1.5', marginBottom: '1.5rem' }}>
+                {success}
+              </p>
+              <Link
+                to="/login"
+                className="btn btn-primary"
+                style={{ display: 'inline-block', width: '100%', textAlign: 'center', textDecoration: 'none' }}
+              >
+                Go to Sign In
+              </Link>
             </div>
-          )}
+          ) : (
+            <>
+              {success && (
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    backgroundColor: '#dcfce7',
+                    color: '#166534',
+                    padding: '0.75rem 1rem',
+                    borderRadius: '8px',
+                    fontSize: '0.875rem',
+                    marginBottom: '1.25rem',
+                  }}
+                >
+                  <CheckCircle size={18} />
+                  <span>{success}</span>
+                </div>
+              )}
 
-          <form className="auth-form" onSubmit={handleSubmit}>
+              <form className="auth-form" onSubmit={handleSubmit}>
             <div className="form-group">
               <label htmlFor="name">Full Name *</label>
               <div className="auth-input-wrapper">
@@ -282,6 +332,8 @@ export default function RegisterPage() {
               {isSubmitting ? 'Creating Account...' : 'Create Account'}
             </button>
           </form>
+          </>
+          )}
 
           <p className="auth-footer">
             Already have an account?{' '}

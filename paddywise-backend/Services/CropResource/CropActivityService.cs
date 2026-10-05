@@ -25,6 +25,8 @@ public class CropActivityService : ICropActivityService
         var cycle = await _context.CultivationCycles
             .Include(c => c.Field)
                 .ThenInclude(f => f!.Farmer)
+            .Include(c => c.Field)
+                .ThenInclude(f => f!.Division)
             .FirstOrDefaultAsync(c => c.Id == cycleId, cancellationToken);
 
         if (cycle == null)
@@ -38,6 +40,9 @@ public class CropActivityService : ICropActivityService
             .Include(a => a.CultivationCycle)
                 .ThenInclude(c => c!.Field)
                     .ThenInclude(f => f!.Farmer)
+            .Include(a => a.CultivationCycle)
+                .ThenInclude(c => c!.Field)
+                    .ThenInclude(f => f!.Division)
             .Where(a => a.CultivationCycleId == cycleId)
             .OrderByDescending(a => a.Date)
             .ThenByDescending(a => a.CreatedAt)
@@ -56,7 +61,11 @@ public class CropActivityService : ICropActivityService
             FieldName = a.CultivationCycle?.Field?.Name ?? cycle.Field?.Name,
             FarmerName = a.CultivationCycle?.Field?.Farmer?.Name ?? cycle.Field?.Farmer?.Name ?? a.LoggedByUser?.Name,
             FarmerId = a.CultivationCycle?.Field?.FarmerId ?? cycle.Field?.FarmerId,
-            CycleName = $"{cycle.Season} {cycle.Year}"
+            CycleName = $"{cycle.Season} {cycle.Year}",
+            DivisionName = a.CultivationCycle?.Field?.Division?.Name ?? cycle.Field?.Division?.Name,
+            District = a.CultivationCycle?.Field?.Division?.District ?? cycle.Field?.Division?.District,
+            Province = a.CultivationCycle?.Field?.Division?.Province ?? cycle.Field?.Division?.Province,
+            FieldAreaAcres = a.CultivationCycle?.Field?.Area ?? cycle.Field?.Area
         }).ToList();
     }
 
@@ -68,6 +77,9 @@ public class CropActivityService : ICropActivityService
             .Include(a => a.CultivationCycle)
                 .ThenInclude(c => c!.Field)
                     .ThenInclude(f => f!.Farmer)
+            .Include(a => a.CultivationCycle)
+                .ThenInclude(c => c!.Field)
+                    .ThenInclude(f => f!.Division)
             .AsQueryable();
 
         if (farmerId.HasValue)
@@ -103,7 +115,11 @@ public class CropActivityService : ICropActivityService
             FieldName = a.CultivationCycle?.Field?.Name ?? "Unknown Field",
             FarmerName = a.CultivationCycle?.Field?.Farmer?.Name ?? a.LoggedByUser?.Name ?? "Unknown Farmer",
             FarmerId = a.CultivationCycle?.Field?.FarmerId,
-            CycleName = a.CultivationCycle != null ? $"{a.CultivationCycle.Season} {a.CultivationCycle.Year}" : null
+            CycleName = a.CultivationCycle != null ? $"{a.CultivationCycle.Season} {a.CultivationCycle.Year}" : null,
+            DivisionName = a.CultivationCycle?.Field?.Division?.Name,
+            District = a.CultivationCycle?.Field?.Division?.District,
+            Province = a.CultivationCycle?.Field?.Division?.Province,
+            FieldAreaAcres = a.CultivationCycle?.Field?.Area
         }).ToList();
     }
 

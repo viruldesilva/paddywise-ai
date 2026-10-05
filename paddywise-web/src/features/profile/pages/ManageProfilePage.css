@@ -1,0 +1,432 @@
+/* Farmer Profile Management Styling */
+.profile-page-container {
+  padding-bottom: 3rem;
+}
+
+.profile-header-section {
+  margin-bottom: 2rem;
+  text-align: left;
+}
+
+.profile-header-section .eyebrow {
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+.profile-header-section h1 {
+  font-family: var(--font-heading);
+  font-size: 2.4rem;
+  color: var(--ink);
+  margin: 0;
+  font-weight: 700;
+}
+
+.profile-header-section p {
+  color: var(--ink-soft);
+  font-size: 1.05rem;
+  margin-top: 0.4rem;
+}
+
+/* Hero Profile Identity Card */
+.profile-hero-card {
+  background: #ffffff;
+  border: 1px solid rgba(33, 45, 30, 0.12);
+  border-radius: 20px;
+  padding: 2rem;
+  box-shadow: 0 4px 20px rgba(33, 45, 30, 0.05);
+  margin-bottom: 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.profile-hero-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 5px;
+  background: linear-gradient(90deg, var(--forest), var(--shoot), var(--gold));
+}
+
+.profile-hero-identity {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.profile-avatar-large {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--forest), var(--forest-deep));
+  color: var(--cream);
+  font-size: 1.8rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 14px rgba(34, 57, 42, 0.25);
+  border: 3px solid #ffffff;
+}
+
+.profile-hero-meta h2 {
+  margin: 0 0 0.35rem 0;
+  font-size: 1.6rem;
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.profile-badges-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.4rem;
+}
+
+.role-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: rgba(74, 124, 89, 0.15);
+  color: var(--forest);
+  border: 1px solid rgba(74, 124, 89, 0.3);
+  padding: 0.25rem 0.75rem;
+  border-radius: 100px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.farmer-id-badge {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+  background: #F3F4F6;
+  padding: 0.25rem 0.65rem;
+  border-radius: 6px;
+}
+
+.member-since-text {
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* Farm Footprint Mini Stats */
+.profile-footprint-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 2.25rem;
+}
+
+.footprint-stat-card {
+  background: #ffffff;
+  border: 1px solid rgba(33, 45, 30, 0.1);
+  border-radius: 16px;
+  padding: 1.25rem 1.4rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 3px 12px rgba(33, 45, 30, 0.03);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.footprint-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(33, 45, 30, 0.06);
+}
+
+.footprint-icon-box {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.icon-fields { background: #EDFDF5; color: #15803D; }
+.icon-acreage { background: #FFFBEB; color: #B45309; }
+.icon-cycles { background: #EBF8FF; color: #1D4ED8; }
+.icon-division { background: #F5F3FF; color: #6D28D9; }
+
+.footprint-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.footprint-val {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.footprint-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 0.15rem;
+}
+
+/* Dual Column Forms Layout */
+.profile-forms-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+
+@media (max-width: 980px) {
+  .profile-forms-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.profile-card {
+  background: #ffffff;
+  border: 1px solid rgba(33, 45, 30, 0.12);
+  border-radius: 18px;
+  padding: 2rem;
+  box-shadow: 0 4px 20px rgba(33, 45, 30, 0.04);
+  display: flex;
+  flex-direction: column;
+}
+
+.profile-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(33, 45, 30, 0.08);
+}
+
+.profile-card-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(34, 57, 42, 0.06);
+  color: var(--forest);
+}
+
+.profile-card-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.profile-card-header p {
+  margin: 0.2rem 0 0 0;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
+/* Form Groups */
+.form-group {
+  margin-bottom: 1.35rem;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 0.45rem;
+}
+
+.form-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.form-input-icon {
+  position: absolute;
+  left: 1rem;
+  color: var(--ink-soft);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.profile-input {
+  width: 100%;
+  padding: 0.85rem 1rem 0.85rem 3rem !important;
+  border: 1px solid rgba(33, 45, 30, 0.2);
+  border-radius: 10px;
+  font-size: 0.95rem;
+  color: var(--ink);
+  background: #ffffff;
+  transition: all 0.2s ease;
+  font-family: var(--font-body);
+  position: relative;
+}
+
+.profile-input.has-toggle {
+  padding-right: 2.75rem !important;
+}
+
+.profile-input:focus {
+  outline: none;
+  border-color: var(--forest);
+  box-shadow: 0 0 0 3px rgba(34, 57, 42, 0.12);
+}
+
+.profile-input.disabled {
+  background: #F9FAFB;
+  color: #6B7280;
+  cursor: not-allowed;
+  border-color: rgba(33, 45, 30, 0.1);
+}
+
+.input-suffix-badge {
+  position: absolute;
+  right: 0.85rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  background: #E5E7EB;
+  color: #4B5563;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+}
+
+.password-toggle-btn {
+  position: absolute;
+  right: 0.85rem;
+  background: none;
+  border: none;
+  color: var(--ink-soft);
+  cursor: pointer;
+  padding: 0.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.password-toggle-btn:hover {
+  color: var(--ink);
+}
+
+.form-error-msg {
+  color: #c9302c;
+  font-size: 0.8rem;
+  font-weight: 500;
+  margin-top: 0.35rem;
+  display: block;
+}
+
+.form-help-text {
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  margin-top: 0.35rem;
+  display: block;
+}
+
+/* Feedback Alerts */
+.profile-alert {
+  padding: 0.85rem 1.1rem;
+  border-radius: 10px;
+  margin-bottom: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  font-size: 0.9rem;
+  animation: fadeIn 0.3s ease;
+}
+
+.profile-alert.success {
+  background: #EDFDF5;
+  border: 1px solid #A7F3D0;
+  color: #065F46;
+}
+
+.profile-alert.error {
+  background: #FEF2F2;
+  border: 1px solid #FECACA;
+  color: #991B1B;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Submit Buttons */
+.profile-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: var(--forest);
+  color: #ffffff;
+  padding: 0.85rem 1.6rem;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 0.5rem;
+}
+
+.profile-btn-primary:hover:not(:disabled) {
+  background: var(--forest-deep);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(34, 57, 42, 0.2);
+}
+
+.profile-btn-primary:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+/* Password Checklist */
+.password-rules {
+  background: #F9FAFB;
+  border: 1px solid #E5E7EB;
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+  margin-bottom: 1.25rem;
+  font-size: 0.82rem;
+  color: #4B5563;
+}
+
+.password-rules ul {
+  margin: 0.35rem 0 0 1.25rem;
+  padding: 0;
+}
+
+.password-rules li {
+  margin-bottom: 0.25rem;
+}
+
+.password-rules li.valid {
+  color: #059669;
+  font-weight: 600;
+}

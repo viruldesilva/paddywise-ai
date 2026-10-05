@@ -1,0 +1,8 @@
+**/.git
+**/.vs
+bin/
+obj/
+tests/
+test/
+*.Tests/
+appsettings.Development.json

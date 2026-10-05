@@ -60,6 +60,105 @@ namespace PaddyWise.Api.Migrations
                     b.ToTable("CropActivities");
                 });
 
+            modelBuilder.Entity("PaddyWise.Api.Entities.CropResource.CropActivityRecommendation", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("CitationsJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<double>("ConfidenceScore")
+                        .HasColumnType("double precision");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("CultivationCycleId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Evidence")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int?>("ExecutedActivityId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("ExecutedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("ExecutedByUserId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ExecutionPayloadJson")
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("OfficerComment")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("OfficerId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("OfficerName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Priority")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("RecommendationUid")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("RequestedByUserId")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("RequiresOfficerReview")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("ReviewedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CultivationCycleId");
+
+                    b.HasIndex("ExecutedActivityId");
+
+                    b.HasIndex("ExecutedByUserId");
+
+                    b.HasIndex("OfficerId");
+
+                    b.HasIndex("RequestedByUserId");
+
+                    b.HasIndex("Status");
+
+                    b.ToTable("CropActivityRecommendations");
+                });
+
             modelBuilder.Entity("PaddyWise.Api.Entities.FieldCultivation.AgentRunLog", b =>
                 {
                     b.Property<int>("Id")
@@ -491,6 +590,9 @@ namespace PaddyWise.Api.Migrations
                     b.Property<string>("ImageUrl")
                         .HasColumnType("text");
 
+                    b.Property<DateTime?>("LastAnalyzedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<int>("ObservationType")
                         .HasColumnType("integer");
 
@@ -576,6 +678,9 @@ namespace PaddyWise.Api.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<int>("Category")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -615,86 +720,93 @@ namespace PaddyWise.Api.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2026, 9, 20, 9, 48, 1, 188, DateTimeKind.Utc).AddTicks(233),
+                            Category = 0,
+                            CreatedAt = new DateTime(2026, 10, 5, 11, 8, 50, 163, DateTimeKind.Utc).AddTicks(7656),
                             CropStages = "Nursery, Tillering",
                             FavorableConditions = "Dry weather, drought-stressed nurseries.",
                             ManagementGuidance = "Maintain adequate field water level; apply an approved insecticide only once infestation passes the economic threshold.",
                             Name = "Thrips",
                             Source = "Sri Lanka Department of Agriculture",
                             Symptoms = "Silvery streaks and curling on young leaves; stunted growth in seedlings.",
-                            UpdatedAt = new DateTime(2026, 9, 20, 9, 48, 1, 188, DateTimeKind.Utc).AddTicks(236)
+                            UpdatedAt = new DateTime(2026, 10, 5, 11, 8, 50, 163, DateTimeKind.Utc).AddTicks(7659)
                         },
                         new
                         {
                             Id = 2,
-                            CreatedAt = new DateTime(2026, 9, 20, 9, 48, 1, 188, DateTimeKind.Utc).AddTicks(239),
+                            Category = 0,
+                            CreatedAt = new DateTime(2026, 10, 5, 11, 8, 50, 163, DateTimeKind.Utc).AddTicks(7662),
                             CropStages = "Tillering, PanicleInitiation",
                             FavorableConditions = "Dense planting, excess nitrogen, continuous flooding, high humidity.",
                             ManagementGuidance = "Avoid excess nitrogen; alternate wetting and drying; favor resistant varieties; targeted insecticide only at economic threshold.",
                             Name = "Brown Planthopper",
                             Source = "Sri Lanka Department of Agriculture",
                             Symptoms = "Yellowing and drying of leaves from the base upward (\"hopperburn\"); stunted, wilting tillers.",
-                            UpdatedAt = new DateTime(2026, 9, 20, 9, 48, 1, 188, DateTimeKind.Utc).AddTicks(239)
+                            UpdatedAt = new DateTime(2026, 10, 5, 11, 8, 50, 163, DateTimeKind.Utc).AddTicks(7662)
                         },
                         new
                         {
                             Id = 3,
-                            CreatedAt = new DateTime(2026, 9, 20, 9, 48, 1, 188, DateTimeKind.Utc).AddTicks(241),
+                            Category = 0,
+                            CreatedAt = new DateTime(2026, 10, 5, 11, 8, 50, 163, DateTimeKind.Utc).AddTicks(7663),
                             CropStages = "Tillering, Flowering",
                             FavorableConditions = "Continuous rice cropping without fallow, high nitrogen.",
                             ManagementGuidance = "Remove and destroy egg masses and post-harvest stubble; use light traps; targeted insecticide once dead-heart incidence passes threshold.",
                             Name = "Yellow Stem Borer",
                             Source = "Sri Lanka Department of Agriculture",
                             Symptoms = "Dead heart (dried central shoot) during vegetative growth; whitehead (empty, upright panicle) at the reproductive stage.",
-                            UpdatedAt = new DateTime(2026, 9, 20, 9, 48, 1, 188, DateTimeKind.Utc).AddTicks(241)
+                            UpdatedAt = new DateTime(2026, 10, 5, 11, 8, 50, 163, DateTimeKind.Utc).AddTicks(7663)
                         },
                         new
                         {
                             Id = 4,
-                            CreatedAt = new DateTime(2026, 9, 20, 9, 48, 1, 188, DateTimeKind.Utc).AddTicks(243),
+                            Category = 0,
+                            CreatedAt = new DateTime(2026, 10, 5, 11, 8, 50, 163, DateTimeKind.Utc).AddTicks(7665),
                             CropStages = "Tillering, PanicleInitiation",
                             FavorableConditions = "High nitrogen, dense canopy, high humidity.",
                             ManagementGuidance = "Balanced nitrogen application; conserve natural enemies; insecticide only above the recommended damage threshold.",
                             Name = "Rice Leaf Folder",
                             Source = "Sri Lanka Department of Agriculture",
                             Symptoms = "Leaves folded longitudinally and webbed together; white/transparent streaks where larvae scrape and feed inside the fold.",
-                            UpdatedAt = new DateTime(2026, 9, 20, 9, 48, 1, 188, DateTimeKind.Utc).AddTicks(244)
+                            UpdatedAt = new DateTime(2026, 10, 5, 11, 8, 50, 163, DateTimeKind.Utc).AddTicks(7665)
                         },
                         new
                         {
                             Id = 5,
-                            CreatedAt = new DateTime(2026, 9, 20, 9, 48, 1, 188, DateTimeKind.Utc).AddTicks(246),
+                            Category = 0,
+                            CreatedAt = new DateTime(2026, 10, 5, 11, 8, 50, 163, DateTimeKind.Utc).AddTicks(7666),
                             CropStages = "PanicleInitiation, Flowering",
                             FavorableConditions = "Warm, humid conditions and dense planting.",
                             ManagementGuidance = "Avoid excess nitrogen and overly dense planting; miticide only under severe, confirmed infestation.",
                             Name = "Rice Sheath Mite",
                             Source = "Sri Lanka Department of Agriculture",
                             Symptoms = "Brown to black lesions on the leaf sheath near the waterline; can cause unfilled or discolored grains.",
-                            UpdatedAt = new DateTime(2026, 9, 20, 9, 48, 1, 188, DateTimeKind.Utc).AddTicks(246)
+                            UpdatedAt = new DateTime(2026, 10, 5, 11, 8, 50, 163, DateTimeKind.Utc).AddTicks(7667)
                         },
                         new
                         {
                             Id = 6,
-                            CreatedAt = new DateTime(2026, 9, 20, 9, 48, 1, 188, DateTimeKind.Utc).AddTicks(247),
+                            Category = 0,
+                            CreatedAt = new DateTime(2026, 10, 5, 11, 8, 50, 163, DateTimeKind.Utc).AddTicks(7668),
                             CropStages = "Nursery, Tillering",
                             FavorableConditions = "High humidity, shaded or low-lying fields, continuous rice cropping.",
                             ManagementGuidance = "Synchronize planting across the area; use resistant varieties; remove wild grasses acting as alternate hosts.",
                             Name = "Rice Gall Midge",
                             Source = "Sri Lanka Department of Agriculture",
                             Symptoms = "Affected tiller produces a tubular \"silvershoot\"/onion-leaf gall instead of a normal leaf whorl and no panicle.",
-                            UpdatedAt = new DateTime(2026, 9, 20, 9, 48, 1, 188, DateTimeKind.Utc).AddTicks(247)
+                            UpdatedAt = new DateTime(2026, 10, 5, 11, 8, 50, 163, DateTimeKind.Utc).AddTicks(7668)
                         },
                         new
                         {
                             Id = 7,
-                            CreatedAt = new DateTime(2026, 9, 20, 9, 48, 1, 188, DateTimeKind.Utc).AddTicks(248),
+                            Category = 1,
+                            CreatedAt = new DateTime(2026, 10, 5, 11, 8, 50, 163, DateTimeKind.Utc).AddTicks(7669),
                             CropStages = "PanicleInitiation, Flowering",
                             FavorableConditions = "High humidity, excess nitrogen, dense planting.",
                             ManagementGuidance = "Avoid excess nitrogen; ensure adequate spacing/drainage for airflow; treat seed and apply fungicide at booting stage if severe.",
                             Name = "Sheath Rot",
                             Source = "Sri Lanka Department of Agriculture",
                             Symptoms = "Reddish-brown lesions on the flag leaf sheath enclosing the panicle; panicle may fail to emerge fully or grains are discolored.",
-                            UpdatedAt = new DateTime(2026, 9, 20, 9, 48, 1, 188, DateTimeKind.Utc).AddTicks(248)
+                            UpdatedAt = new DateTime(2026, 10, 5, 11, 8, 50, 163, DateTimeKind.Utc).AddTicks(7670)
                         });
                 });
 
@@ -743,6 +855,65 @@ namespace PaddyWise.Api.Migrations
                     b.ToTable("PestDiseaseReports");
                 });
 
+            modelBuilder.Entity("PaddyWise.Api.Entities.Shared.Notification", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ActionText")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("OfficerComment")
+                        .HasColumnType("text");
+
+                    b.Property<string>("OfficerName")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("RelatedCycleId")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("RelatedRecommendationId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("IsRead");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Notifications");
+                });
+
             modelBuilder.Entity("PaddyWise.Api.Entities.Shared.RefreshToken", b =>
                 {
                     b.Property<int>("Id")
@@ -783,8 +954,16 @@ namespace PaddyWise.Api.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<int>("AccountStatus")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("DivisionId")
+                        .HasColumnType("integer");
 
                     b.Property<string>("Email")
                         .IsRequired()
@@ -809,6 +988,8 @@ namespace PaddyWise.Api.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("DivisionId");
+
                     b.HasIndex("Email")
                         .IsUnique();
 
@@ -832,6 +1013,45 @@ namespace PaddyWise.Api.Migrations
                     b.Navigation("CultivationCycle");
 
                     b.Navigation("LoggedByUser");
+                });
+
+            modelBuilder.Entity("PaddyWise.Api.Entities.CropResource.CropActivityRecommendation", b =>
+                {
+                    b.HasOne("PaddyWise.Api.Entities.FieldCultivation.CultivationCycle", "CultivationCycle")
+                        .WithMany()
+                        .HasForeignKey("CultivationCycleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("PaddyWise.Api.Entities.CropResource.CropActivity", "ExecutedActivity")
+                        .WithMany()
+                        .HasForeignKey("ExecutedActivityId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("PaddyWise.Api.Entities.Shared.User", "ExecutedByUser")
+                        .WithMany()
+                        .HasForeignKey("ExecutedByUserId");
+
+                    b.HasOne("PaddyWise.Api.Entities.Shared.User", "Officer")
+                        .WithMany()
+                        .HasForeignKey("OfficerId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("PaddyWise.Api.Entities.Shared.User", "RequestedByUser")
+                        .WithMany()
+                        .HasForeignKey("RequestedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("CultivationCycle");
+
+                    b.Navigation("ExecutedActivity");
+
+                    b.Navigation("ExecutedByUser");
+
+                    b.Navigation("Officer");
+
+                    b.Navigation("RequestedByUser");
                 });
 
             modelBuilder.Entity("PaddyWise.Api.Entities.FieldCultivation.AgentRunLog", b =>
@@ -972,6 +1192,27 @@ namespace PaddyWise.Api.Migrations
                     b.Navigation("CropObservation");
 
                     b.Navigation("Officer");
+                });
+
+            modelBuilder.Entity("PaddyWise.Api.Entities.Shared.Notification", b =>
+                {
+                    b.HasOne("PaddyWise.Api.Entities.Shared.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("PaddyWise.Api.Entities.Shared.User", b =>
+                {
+                    b.HasOne("PaddyWise.Api.Entities.FieldCultivation.Division", "Division")
+                        .WithMany()
+                        .HasForeignKey("DivisionId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Division");
                 });
 
             modelBuilder.Entity("PaddyWise.Api.Entities.PestDisease.CropObservation", b =>

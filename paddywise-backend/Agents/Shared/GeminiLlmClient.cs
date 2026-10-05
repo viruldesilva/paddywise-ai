@@ -26,6 +26,9 @@ public sealed class GeminiLlmClient : ILlmClient
     /// <summary>The config key every caller falls back to when its own key is unset.</summary>
     public const string DefaultApiKeyConfigKey = "Gemini:ApiKey";
 
+    /// <summary>The config key every caller falls back to when its own model override is unset.</summary>
+    public const string DefaultModelConfigKey = "Gemini:Model";
+
     private const string BaseUrl = "https://generativelanguage.googleapis.com/v1beta";
 
     /// <summary>Tool rounds allowed before we stop feeding results back and take the text.</summary>
@@ -40,6 +43,7 @@ public sealed class GeminiLlmClient : ILlmClient
     private readonly IConfiguration _configuration;
     private readonly ILogger<GeminiLlmClient> _logger;
     private readonly string _apiKeyConfigKey;
+    private readonly string _modelConfigKey;
 
     /// <param name="apiKeyConfigKey">
     /// Which configuration key holds this instance's API key, e.g. "Gemini:ApiKey" (the
@@ -47,16 +51,24 @@ public sealed class GeminiLlmClient : ILlmClient
     /// this falls back to <see cref="DefaultApiKeyConfigKey"/> — so an agent that hasn't been
     /// given its own key still works off the shared one.
     /// </param>
+    /// <param name="modelConfigKey">
+    /// Which configuration key holds this instance's model override, e.g. "Gemini:Model" (the
+    /// default) or a per-agent key such as "Gemini:PestDiseaseModel". If that key is unset,
+    /// this falls back to <see cref="DefaultModelConfigKey"/>, and then to
+    /// <see cref="DefaultModel"/> if that too is unset.
+    /// </param>
     public GeminiLlmClient(
         IHttpClientFactory httpClientFactory,
         IConfiguration configuration,
         ILogger<GeminiLlmClient> logger,
-        string apiKeyConfigKey = DefaultApiKeyConfigKey)
+        string apiKeyConfigKey = DefaultApiKeyConfigKey,
+        string modelConfigKey = DefaultModelConfigKey)
     {
         _httpClientFactory = httpClientFactory;
         _configuration = configuration;
         _logger = logger;
         _apiKeyConfigKey = apiKeyConfigKey;
+        _modelConfigKey = modelConfigKey;
     }
 
     public Task<string> CompleteJsonAsync(
@@ -101,7 +113,15 @@ public sealed class GeminiLlmClient : ILlmClient
                 "deployment.");
         }
 
-        var model = NormalizeModel(_configuration["Gemini:Model"]);
+        var configuredModel = _configuration[_modelConfigKey];
+        if (string.IsNullOrWhiteSpace(configuredModel) && _modelConfigKey != DefaultModelConfigKey)
+        {
+            // No dedicated override for this instance — fall back to the shared setting rather
+            // than treating an agent that never opted into its own model as misconfigured.
+            configuredModel = _configuration[DefaultModelConfigKey];
+        }
+
+        var model = NormalizeModel(configuredModel);
 
         // Images lead the user turn, followed by the text — Gemini reads either order, but
         // this keeps the prompt referring to "the attached image" naturally after it.

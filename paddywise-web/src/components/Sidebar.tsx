@@ -11,7 +11,6 @@ import {
   Bug,
   Cloud,
   Brain,
-  FileText,
   CheckSquare,
   MessageSquare,
   BarChart2,
@@ -21,6 +20,8 @@ import {
   MapPin,
   Camera,
   CheckCircle,
+  UserCheck,
+  FileText,
   X,
   LogOut
 } from 'lucide-react';
@@ -39,6 +40,7 @@ export function Sidebar({ role, isOpen, onClose }: SidebarProps) {
   const farmerLinks = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { name: 'Manage Profile', path: '#profile', icon: User },
+    { name: 'Manage Profile', path: '/profile', icon: User },
     { name: 'Fields & Cultivation Cycles', path: '/fields', icon: Map },
     { name: 'Record Activities', path: '/activities', icon: Activity },
     { name: 'Report Pests/Diseases', path: '/observations', icon: Bug },
@@ -48,8 +50,9 @@ export function Sidebar({ role, isOpen, onClose }: SidebarProps) {
 
   const agriculturalOfficerLinks = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-    { name: 'Past Crop Activities', path: '/activities', icon: Activity },
-    { name: 'View Farmer Fields & Reports', path: '#fields', icon: FileText },
+    { name: 'View Farmer Fields & Cycles', path: '/officer/fields', icon: Map },
+    { name: 'Past Crop Activities', path: '/officer/reports', icon: Activity },
+    { name: 'Crop Activity Recomendation', path: '/officer/approvals', icon: UserCheck },
     { name: 'Review AI Recommendations', path: '/plans/pending', icon: CheckSquare },
     { name: 'Review Pest/Disease Reports', path: '/pest-disease-reports', icon: Bug },
     { name: 'Add Expert Recommendations', path: '#expert', icon: MessageSquare },
@@ -58,15 +61,17 @@ export function Sidebar({ role, isOpen, onClose }: SidebarProps) {
 
   const adminLinks = [
     { name: 'Dashboard', path: '/dashboard/admin', icon: LayoutDashboard },
-    { name: 'Past Crop Activities', path: '/activities', icon: Activity },
+    { name: 'Officer Approvals', path: '/admin/officer-requests', icon: UserCheck },
+    { name: 'Activity Report', path: '/officer/reports', icon: FileText },
     { name: 'Manage Users', path: '/admin/users', icon: Users },
-    { name: 'Manage Knowledge Base', path: '#knowledge', icon: Database },
+    { name: 'Manage Knowledge Base', path: '/pest-disease-knowledge', icon: Database },
     { name: 'System Settings & Audit Logs', path: '#settings', icon: Settings },
   ];
 
   const fieldOfficerLinks = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-    { name: 'Past Crop Activities', path: '/activities', icon: Activity },
+    { name: 'AI Approvals Queue', path: '/officer/approvals', icon: UserCheck },
+    { name: 'Activity Report', path: '/officer/reports', icon: FileText },
     { name: 'Visit Farms & Inspections', path: '#inspections', icon: MapPin },
     { name: 'Upload Field Images', path: '#upload', icon: Camera },
     { name: 'Verify Problems & Feedback', path: '#feedback', icon: CheckCircle },
@@ -125,7 +130,7 @@ export function Sidebar({ role, isOpen, onClose }: SidebarProps) {
         <div className="sidebar-footer">
           <button
             type="button"
-            onClick={logout}
+            onClick={() => logout()}
             className="sidebar-logout-btn"
             title="Sign Out"
           >

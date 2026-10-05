@@ -7,9 +7,11 @@ import { axiosInstance } from '../../../api/axiosInstance';
 import type {
   CreateObservationRequest,
   Observation,
+  PestDiseaseKnowledgeEntry,
   PestDiseaseReport,
   PestDiseaseReportStatus,
   ReviewReportRequest,
+  SaveKnowledgeEntryRequest,
   UpdateObservationRequest,
 } from '../types';
 
@@ -57,6 +59,27 @@ export async function requestAnalysis(id: number): Promise<Observation> {
   return response.data;
 }
 
+/**
+ * POST /api/observations/{id}/photo — uploads a photo and sets the observation's
+ * imageUrl to the stored file's public URL. Farmer only, and only while the
+ * observation has no diagnosis yet (same edit lock as updateObservation).
+ *
+ * axiosInstance sets a default 'Content-Type: application/json' header on every
+ * request, which — unlike an unset header — axios will NOT override with the
+ * correct 'multipart/form-data; boundary=...' just because the body is FormData.
+ * Left alone, the server receives a JSON-declared request with a multipart body
+ * and rejects it with 415. Clearing it here lets the browser set the real
+ * multipart header (with boundary) itself.
+ */
+export async function uploadObservationPhoto(id: number, file: File): Promise<Observation> {
+  const formData = new FormData();
+  formData.append('file', file);
+  const response = await axiosInstance.post<Observation>(`/observations/${id}/photo`, formData, {
+    headers: { 'Content-Type': undefined },
+  });
+  return response.data;
+}
+
 /* ---------------------------------------------------------- pest/disease reports */
 
 /**
@@ -96,13 +119,61 @@ export async function reviewPestDiseaseReport(
   return response.data;
 }
 
+/* ------------------------------------------------------ knowledge base (admin) */
+
+/** GET /api/pest-disease-knowledge — every entry, alphabetical by name. Any authenticated caller. */
+export async function getKnowledgeEntries(): Promise<PestDiseaseKnowledgeEntry[]> {
+  const response = await axiosInstance.get<PestDiseaseKnowledgeEntry[]>('/pest-disease-knowledge');
+  return response.data;
+}
+
+/** POST /api/pest-disease-knowledge. Admin only. 400 when the name already exists. */
+export async function createKnowledgeEntry(
+  request: SaveKnowledgeEntryRequest
+): Promise<PestDiseaseKnowledgeEntry> {
+  const response = await axiosInstance.post<PestDiseaseKnowledgeEntry>(
+    '/pest-disease-knowledge',
+    request
+  );
+  return response.data;
+}
+
+/**
+ * PUT /api/pest-disease-knowledge/{id} — a full replace. Admin only. 400 when the new
+ * name collides with a different entry's name.
+ */
+export async function updateKnowledgeEntry(
+  id: number,
+  request: SaveKnowledgeEntryRequest
+): Promise<PestDiseaseKnowledgeEntry> {
+  const response = await axiosInstance.put<PestDiseaseKnowledgeEntry>(
+    `/pest-disease-knowledge/${id}`,
+    request
+  );
+  return response.data;
+}
+
+/**
+ * DELETE /api/pest-disease-knowledge/{id}. Admin only. Safe to call even if the agent
+ * has cited this entry before — PestDiseaseReport.possibleIssue is a text snapshot, not
+ * a foreign key, so deleting an entry can't orphan a past diagnosis.
+ */
+export async function deleteKnowledgeEntry(id: number): Promise<void> {
+  await axiosInstance.delete(`/pest-disease-knowledge/${id}`);
+}
+
 export const pestDiseaseApi = {
   getObservations,
   getObservationById,
   createObservation,
   updateObservation,
   requestAnalysis,
+  uploadObservationPhoto,
   getPestDiseaseReports,
   getPestDiseaseReportById,
   reviewPestDiseaseReport,
+  getKnowledgeEntries,
+  createKnowledgeEntry,
+  updateKnowledgeEntry,
+  deleteKnowledgeEntry,
 };
