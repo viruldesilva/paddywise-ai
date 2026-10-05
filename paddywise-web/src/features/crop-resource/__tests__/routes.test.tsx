@@ -30,7 +30,6 @@ describe('Component 2 officer routes in App.tsx', () => {
   it.each([
     ['/officer/approvals', 'AgriculturalOfficer', 'PAGE: approvals'],
     ['/officer/approvals', 'FieldOfficer', 'PAGE: approvals'],
-    ['/officer/approvals', 'Admin', 'PAGE: approvals'],
     ['/officer/reports', 'AgriculturalOfficer', 'PAGE: activity report'],
     ['/officer/reports', 'FieldOfficer', 'PAGE: activity report'],
     ['/officer/reports', 'Admin', 'PAGE: activity report'],
@@ -39,8 +38,12 @@ describe('Component 2 officer routes in App.tsx', () => {
     expect(screen.getByText(page)).toBeInTheDocument();
   });
 
-  it.each(['/officer/approvals', '/officer/reports'])('%s sends a Farmer to the dashboard', (path) => {
-    visit(path, 'Farmer');
+  it.each([
+    ['/officer/approvals', 'Farmer'],
+    ['/officer/reports', 'Farmer'],
+    ['/officer/approvals', 'Admin'], // Admin was removed from this route in the deploy merge
+  ] as [string, UserRole][])('%s sends a %s to the dashboard', (path, role) => {
+    visit(path, role);
     expect(screen.queryByText(/PAGE: (approvals|activity report)/)).not.toBeInTheDocument();
     expect(screen.getByText('PAGE: dashboard')).toBeInTheDocument();
   });

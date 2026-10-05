@@ -9,7 +9,6 @@ using PaddyWise.Api.Data;
 using PaddyWise.Api.DTOs.Shared;
 using PaddyWise.Api.Entities.Shared;
 using PaddyWise.Api.Services.Shared;
-using Resend;
 using Xunit;
 
 namespace PaddyWise.Backend.Tests;
@@ -27,9 +26,9 @@ public class OfficerApprovalGateTests
             { "Jwt:Audience", "PaddyWiseClient" },
             { "Jwt:AccessTokenExpiryMinutes", "20" },
             { "Jwt:RefreshTokenExpiryDays", "7" },
-            { "Resend:ApiKey", "re_test_key" },
-            { "Resend:FromEmail", "onboarding@resend.dev" },
-            { "Resend:FromName", "PaddyWise AI" }
+            { "Brevo:ApiKey", "xkeysib_test_key" },
+            { "Brevo:FromEmail", "onboarding@paddywise.ai" },
+            { "Brevo:FromName", "PaddyWise AI" }
         };
 
         _config = new ConfigurationBuilder()
@@ -200,14 +199,9 @@ public class OfficerApprovalGateTests
     [Fact]
     public async Task EmailServiceFailure_DoesNotRollbackApproval_FailureLoggedGracefully()
     {
-        // 5a. Test EmailService directly with throwing IResend client
-        var mockResend = new Mock<IResend>();
-        mockResend
-            .Setup(r => r.EmailSendAsync(It.IsAny<EmailMessage>(), It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new TimeoutException("Resend API timed out"));
-
+        // 5a. Test EmailService directly when external email dispatch fails
         var mockEmailLogger = new Mock<ILogger<EmailService>>();
-        var emailService = new EmailService(mockResend.Object, _config, mockEmailLogger.Object);
+        var emailService = new EmailService(_config, mockEmailLogger.Object);
 
         // Must not throw
         var exception = await Record.ExceptionAsync(() =>
@@ -219,7 +213,7 @@ public class OfficerApprovalGateTests
         var officer = new User
         {
             Name = "Officer Kamal",
-            Email = "kamal.resendfail@example.com",
+            Email = "kamal.mailfail@example.com",
             PasswordHash = BCrypt.Net.BCrypt.HashPassword("Password123!"),
             Role = UserRole.AgriculturalOfficer,
             AccountStatus = AccountStatus.PendingApproval
@@ -230,7 +224,7 @@ public class OfficerApprovalGateTests
         var mockEmailService = new Mock<IEmailService>();
         mockEmailService
             .Setup(e => e.SendOfficerApprovalEmailAsync(It.IsAny<string>(), It.IsAny<string>()))
-            .ThrowsAsync(new InvalidOperationException("Resend API unavailable"));
+            .ThrowsAsync(new InvalidOperationException("Email dispatch unavailable"));
 
         // Use custom wrapper or test that approval succeeds even if IEmailService throws or logs
         var mockAdminLogger = new Mock<ILogger<AdminController>>();

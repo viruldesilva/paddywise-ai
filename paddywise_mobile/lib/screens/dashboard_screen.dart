@@ -1030,66 +1030,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ],
           ),
         ),
-      
-          const SizedBox(height: 20),
-          const Divider(height: 1, color: AppColors.line),
-          const SizedBox(height: 16),
-          Row(
-            children: const [
-              Icon(Icons.edit_calendar_rounded, color: AppColors.forest, size: 22),
-              SizedBox(width: 8),
-              Text(
-                'Crop Activity Tracking',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.ink,
-                  fontFamily: 'serif',
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Record fertilizer dosages, irrigation cycles, pesticide sprays, and farm operations within the 7-day compliance window.',
-            style: TextStyle(fontSize: 13, color: AppColors.inkSoft),
-          ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () {
-                    context.push('/activities');
-                  },
-                  icon: const Icon(Icons.history_rounded, size: 18),
-                  label: const Text('Past Activities', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.forest,
-                    side: const BorderSide(color: AppColors.forest),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    context.push('/activities/new');
-                  },
-                  icon: const Icon(Icons.add_task_rounded, size: 18),
-                  label: const Text('Record Activity', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.forest,
-                    foregroundColor: AppColors.cream,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      
       ],
     );
   }

@@ -26,9 +26,9 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
                 ["Jwt:Audience"] = TestJwtHelper.TestAudience,
                 ["Jwt:AccessTokenExpiryMinutes"] = "20",
                 ["Jwt:RefreshTokenExpiryDays"] = "7",
-                ["Resend:ApiKey"] = "re_test_key_sample_12345",
-                ["Resend:FromEmail"] = "onboarding@resend.dev",
-                ["Resend:FromName"] = "PaddyWise AI",
+                ["Brevo:ApiKey"] = "xkeysib_test_key_sample_12345",
+                ["Brevo:FromEmail"] = "onboarding@paddywise.ai",
+                ["Brevo:FromName"] = "PaddyWise AI",
                 ["Gemini:ApiKey"] = "gemini_test_api_key_sample_98765"
             });
         });

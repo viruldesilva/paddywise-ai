@@ -42,7 +42,11 @@ final Map<String, List<MenuItemConfig>> roleMenus = {
       icon: Icons.eco_outlined,
       route: '/cycles',
     ),
-    // TODO: 'Report Crop Problem' - awaiting Pest & Disease feature screen
+    const MenuItemConfig(
+      label: 'Crop Activities',
+      icon: Icons.edit_calendar_outlined,
+      route: '/activities',
+    ),
     const MenuItemConfig(
       label: 'Plan Status & AI Advice',
       icon: Icons.psychology_outlined,

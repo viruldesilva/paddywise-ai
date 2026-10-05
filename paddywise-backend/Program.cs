@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using PaddyWise.Api.Agents.CropResource;
@@ -12,7 +13,6 @@ using PaddyWise.Api.Services.FieldCultivation;
 using PaddyWise.Api.Services.PestDisease;
 using PaddyWise.Api.Services.ReportingApproval;
 using PaddyWise.Api.Services.Shared;
-using Resend;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -27,6 +27,8 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
     });
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddHealthChecks()
+    .AddCheck<PaddyWise.Api.Services.Shared.DatabaseHealthCheck>("database");
 
 
 // ============================================================
@@ -125,15 +127,12 @@ builder.Services.AddScoped<IProfileService, ProfileService>();
 
 
 // ============================================================
-// RESEND EMAIL SERVICE
+// EMAIL SERVICE (Brevo REST API & SMTP Relay)
 // ============================================================
 
-builder.Services.AddHttpClient<IResend, ResendClient>();
-builder.Services.Configure<ResendClientOptions>(options =>
-{
-    options.ApiToken = builder.Configuration["Resend:ApiKey"]!;
-});
+builder.Services.AddHttpClient();
 builder.Services.AddScoped<IEmailService, EmailService>();
+
 
 
 // ============================================================
@@ -178,6 +177,7 @@ builder.Services.AddHttpClient(CropAnalysisAgent.ImageDownloadHttpClientName)
 builder.Services.AddScoped<IRevisionDraftService, RevisionDraftService>();
 builder.Services.AddScoped<INotificationMessageService, NotificationMessageService>();
 builder.Services.AddScoped<PaddyWise.Api.Services.ReportingApproval.Agents.IValidationAgentService, PaddyWise.Api.Services.ReportingApproval.Agents.ValidationAgentService>();
+builder.Services.AddScoped<IOfficerDashboardService, OfficerDashboardService>();
 
 
 // ============================================================
@@ -278,12 +278,17 @@ builder.Services.AddAuthorization();
 // CORS
 // ============================================================
 
+var corsOrigins = builder.Configuration["Cors:AllowedOrigins"];
+var allowedOrigins = string.IsNullOrWhiteSpace(corsOrigins)
+    ? new[] { "http://localhost:5173" }
+    : corsOrigins.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp", policy =>
     {
         policy
-            .SetIsOriginAllowed(origin => new Uri(origin).Host == "localhost")
+            .WithOrigins(allowedOrigins)
             .AllowAnyHeader()
             .AllowAnyMethod();
     });
@@ -339,6 +344,14 @@ if (app.Environment.IsDevelopment())
 // HTTP PIPELINE
 // ============================================================
 
+var forwardedOptions = new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+};
+forwardedOptions.KnownNetworks.Clear();
+forwardedOptions.KnownProxies.Clear();
+app.UseForwardedHeaders(forwardedOptions);
+
 // First, so it wraps everything below: any unhandled exception gets logged server-side and
 // answered with a clean generic message — never a stack trace or the request's own headers
 // (which include the caller's Authorization Bearer token). Without this, ASP.NET Core's
@@ -362,11 +375,8 @@ app.UseExceptionHandler(errorApp =>
     });
 });
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
 
@@ -374,6 +384,28 @@ app.UseCors("AllowReactApp");
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+var healthCheckOptions = new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+{
+    ResponseWriter = async (context, report) =>
+    {
+        context.Response.ContentType = "application/json";
+        var dbStatus = report.Entries.TryGetValue("database", out var dbEntry)
+            ? dbEntry.Status.ToString()
+            : "Unknown";
+
+        var response = new
+        {
+            status = report.Status.ToString(),
+            database = dbStatus,
+            totalDurationMs = report.TotalDuration.TotalMilliseconds
+        };
+        await context.Response.WriteAsJsonAsync(response);
+    }
+};
+
+app.MapHealthChecks("/health").AllowAnonymous();
+app.MapHealthChecks("/api/health", healthCheckOptions).AllowAnonymous();
 
 app.MapControllers();
 

@@ -1,20 +1,18 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { API_BASE_URL } from '../api/axiosInstance';
 import { Sidebar } from '../components/Sidebar';
-import { PendingPlansCard } from '../features/field-cultivation/components/PendingPlansCard';
+import { OfficerDashboardView } from '../features/reporting-approval/components/OfficerDashboardView';
+import { AdminDashboardView } from '../components/AdminDashboardView';
 import type { UserRole } from '../types/auth';
 import { 
   Sprout, 
-  ShieldCheck, 
   LogOut, 
   CheckCircle, 
   Calendar,
-  FileCheck,
   Compass,
   Radio,
-  Server,
-  KeyRound,
   Menu
 } from 'lucide-react';
 import '../styles/Dashboard.css';
@@ -212,74 +210,7 @@ export default function DashboardPage({ roleView }: DashboardPageProps) {
 
         {/* 2. AGRICULTURAL OFFICER ROLE VIEW */}
         {activeRole === 'AgriculturalOfficer' && (
-          <div>
-            <div className="metrics-grid">
-              <div className="metric-card">
-                <span className="metric-label">Assigned Division</span>
-                <span className="metric-value" style={{ fontSize: '1.25rem' }}>Polonnaruwa Central</span>
-                <span className="metric-sub">Agrarian Services Centre</span>
-              </div>
-              <PendingPlansCard />
-              <div className="metric-card">
-                <span className="metric-label">Approved Treatments</span>
-                <span className="metric-value">42</span>
-                <span className="metric-sub">This cultivation season</span>
-              </div>
-              <div className="metric-card">
-                <span className="metric-label">Registered Farmers</span>
-                <span className="metric-value">186</span>
-                <span className="metric-sub">Across 6 GN divisions</span>
-              </div>
-            </div>
-
-            <div className="dashboard-panels-grid">
-              <div className="dashboard-panel">
-                <div className="panel-header">
-                  <h3 className="panel-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <ShieldCheck size={20} color="var(--forest)" />
-                    Pending Treatment Approval Queue
-                  </h3>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  <div style={{ padding: '1rem', border: '1px solid var(--line)', borderRadius: '8px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                      <strong>Farmer: Bandara Wanninayake</strong>
-                      <span className="badge-outline badge-farmer">Medirigiriya</span>
-                    </div>
-                    <p style={{ fontSize: '0.875rem', color: 'var(--ink-soft)' }}>
-                      <strong>Symptom:</strong> Hopper burn patches in 0.5 acre paddy patch.
-                    </p>
-                    <p style={{ fontSize: '0.875rem', color: 'var(--ink-soft)' }}>
-                      <strong>AI Diagnosis:</strong> Brown Plant Hopper (Nilaparvata lugens) with 96% confidence.
-                    </p>
-                    <p style={{ fontSize: '0.875rem', color: 'var(--shoot)', marginTop: '0.25rem' }}>
-                      <strong>Proposed Plan:</strong> Drain field water for 3 days; apply approved Thiamethoxam 25% WG at recommended dosage.
-                    </p>
-                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
-                      <button className="btn btn-primary btn-sm" onClick={() => alert('Treatment plan approved and notification dispatched to farmer via SMS/App.')}>
-                        Approve Treatment
-                      </button>
-                      <button className="btn btn-secondary btn-sm" onClick={() => alert('Plan returned for secondary field sample inspection.')}>
-                        Request Details
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="dashboard-panel">
-                <div className="panel-header">
-                  <h3 className="panel-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <FileCheck size={18} />
-                    Division Advisory Feed
-                  </h3>
-                </div>
-                <p style={{ fontSize: '0.875rem', color: 'var(--ink-soft)', lineHeight: 1.6 }}>
-                  High humidity detected over Medirigiriya and Polonnaruwa basin. Alert issued to watch for Rice Blast (Pyricularia oryzae) on high nitrogen plots.
-                </p>
-              </div>
-            </div>
-          </div>
+          <OfficerDashboardView />
         )}
 
         {/* 3. FIELD OFFICER ROLE VIEW */}
@@ -349,7 +280,7 @@ export default function DashboardPage({ roleView }: DashboardPageProps) {
                   GPS location and offline sensor packets automatically sync with the ASP.NET Core API server once within cellular range.
                 </div>
                 <p style={{ fontSize: '0.85rem', color: 'var(--ink-soft)', marginTop: '0.75rem' }}>
-                  Connected to backend gateway: <code>http://localhost:5164/api</code>
+                  Connected to backend gateway: <code>{API_BASE_URL}</code>
                 </p>
               </div>
             </div>
@@ -358,70 +289,7 @@ export default function DashboardPage({ roleView }: DashboardPageProps) {
 
         {/* 4. ADMIN ROLE VIEW */}
         {activeRole === 'Admin' && (
-          <div>
-            <div className="metrics-grid">
-              <div className="metric-card">
-                <span className="metric-label">Backend Environment</span>
-                <span className="metric-value" style={{ fontSize: '1.25rem' }}>ASP.NET Core</span>
-                <span className="metric-sub">PaddyWise.Api active</span>
-              </div>
-              <div className="metric-card">
-                <span className="metric-label">Target Database</span>
-                <span className="metric-value" style={{ fontSize: '1.25rem' }}>PostgreSQL</span>
-                <span className="metric-sub">Neon DB / Local</span>
-              </div>
-              <div className="metric-card">
-                <span className="metric-label">Auth Architecture</span>
-                <span className="metric-value" style={{ fontSize: '1.25rem' }}>JWT Bearer</span>
-                <span className="metric-sub">Rotated Refresh Tokens</span>
-              </div>
-              <div className="metric-card">
-                <span className="metric-label">Backend Status</span>
-                <span className="metric-value" style={{ color: '#2e7d32' }}>Ready</span>
-                <span className="metric-sub">http://localhost:5164/api</span>
-              </div>
-            </div>
-
-            <div className="dashboard-panels-grid">
-              <div className="dashboard-panel">
-                <div className="panel-header">
-                  <h3 className="panel-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <Server size={20} color="var(--forest)" />
-                    ASP.NET Core Backend Auth Configuration
-                  </h3>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.875rem' }}>
-                  <div style={{ padding: '0.75rem 1rem', background: 'var(--cream-deep)', borderRadius: '6px' }}>
-                    <strong>API Base URL:</strong> <code>http://localhost:5164/api</code>
-                  </div>
-                  <div style={{ padding: '0.75rem 1rem', background: 'var(--cream-deep)', borderRadius: '6px' }}>
-                    <strong>Authentication Endpoints:</strong>
-                    <ul style={{ paddingLeft: '1.2rem', marginTop: '0.25rem', lineHeight: '1.6' }}>
-                      <li><code>POST /api/auth/register</code> (JWT & Refresh token issue)</li>
-                      <li><code>POST /api/auth/login</code> (Credentials validation & token issue)</li>
-                      <li><code>POST /api/auth/refresh</code> (Sliding token pair rotation)</li>
-                      <li><code>GET /api/auth/me</code> (Bearer token verification)</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-
-              <div className="dashboard-panel">
-                <div className="panel-header">
-                  <h3 className="panel-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <KeyRound size={18} color="var(--gold-deep)" />
-                    Active Session Security
-                  </h3>
-                </div>
-                <div className="info-notice">
-                  Authenticated as <strong>{user.name}</strong> ({user.email}) with role <strong>{user.role}</strong>.
-                </div>
-                <p style={{ fontSize: '0.875rem', color: 'var(--ink-soft)', lineHeight: 1.6, marginTop: '0.75rem' }}>
-                  All outgoing Axios HTTP requests are intercepted to dynamically attach the Authorization Bearer header. If an access token expires, the Axios interceptor transparently exchanges the refresh token and re-executes pending requests without interrupting user workflow.
-                </p>
-              </div>
-            </div>
-          </div>
+          <AdminDashboardView />
         )}
       </main>
       </div>

@@ -1,3 +1,5 @@
+using PaddyWise.Api.Entities.FieldCultivation;
+
 namespace PaddyWise.Api.Entities.Shared;
 
 public class User
@@ -9,6 +11,9 @@ public class User
     public UserRole Role { get; set; }
     public AccountStatus AccountStatus { get; set; } = AccountStatus.Approved;
     public string? Phone { get; set; }
+    public int? DivisionId { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+    public Division? Division { get; set; }
 }

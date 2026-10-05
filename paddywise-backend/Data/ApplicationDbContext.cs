@@ -35,6 +35,12 @@ public class ApplicationDbContext : DbContext
         {
             entity.HasIndex(u => u.Email).IsUnique();
             entity.Property(u => u.AccountStatus).HasDefaultValue(AccountStatus.Approved);
+
+            entity.HasOne(u => u.Division)
+                .WithMany()
+                .HasForeignKey(u => u.DivisionId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<RefreshToken>()

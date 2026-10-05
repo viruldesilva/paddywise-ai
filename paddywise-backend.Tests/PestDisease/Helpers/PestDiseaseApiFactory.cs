@@ -36,9 +36,9 @@ public class PestDiseaseApiFactory : WebApplicationFactory<Program>
                 { "Jwt:AccessTokenExpiryMinutes", "20" },
                 { "Jwt:RefreshTokenExpiryDays", "7" },
                 { "ConnectionStrings:DefaultConnection", "Host=localhost;Database=unused;Username=unused;Password=unused" },
-                { "Resend:ApiKey", "re_test_key" },
-                { "Resend:FromEmail", "onboarding@resend.dev" },
-                { "Resend:FromName", "PaddyWise AI" }
+                { "Brevo:ApiKey", "xkeysib_test_key" },
+                { "Brevo:FromEmail", "onboarding@paddywise.ai" },
+                { "Brevo:FromName", "PaddyWise AI" }
             });
         });
 
