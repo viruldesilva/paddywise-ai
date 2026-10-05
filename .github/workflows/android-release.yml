@@ -1,0 +1,144 @@
+name: Build & Release Android APK
+
+on:
+  push:
+    branches:
+      - deploy
+    paths:
+      - 'paddywise_mobile/**'
+      - '.github/workflows/android-release.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-release:
+    name: Build & Release APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java 17 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Set up Flutter (stable channel)
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+          cache-key: "flutter-:os:-:channel:-:version:-:arch:-:hash:"
+          cache-path: "${{ runner.tool_cache }}/flutter/:channel:-:version:-:arch:"
+
+      - name: Verify Flutter & Java Installation
+        run: |
+          java -version
+          flutter --version
+
+      - name: Recreate Android Signing Files from Secrets
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::error::KEYSTORE_BASE64 secret is not set!"
+            exit 1
+          fi
+          echo "$KEYSTORE_BASE64" | base64 --decode > paddywise_mobile/android/upload-keystore.jks
+          cat <<EOF > paddywise_mobile/android/key.properties
+storePassword=$KEYSTORE_PASSWORD
+keyPassword=$KEY_PASSWORD
+keyAlias=$KEY_ALIAS
+storeFile=../upload-keystore.jks
+EOF
+          echo "Signing files generated successfully."
+
+      - name: Install Flutter Dependencies
+        working-directory: paddywise_mobile
+        run: flutter pub get
+
+      - name: Run Tests
+        working-directory: paddywise_mobile
+        run: flutter test
+
+      - name: Build Android Release APK
+        working-directory: paddywise_mobile
+        env:
+          API_BASE_URL: ${{ secrets.API_BASE_URL || 'https://paddywise-backend.azurewebsites.net/api' }}
+        run: |
+          flutter build apk --release \
+            --build-number=${{ github.run_number }} \
+            --dart-define=API_BASE_URL="$API_BASE_URL"
+
+      - name: Prepare Release Artifacts
+        id: prepare_artifacts
+        run: |
+          APK_DIR="paddywise_mobile/build/app/outputs/flutter-apk"
+          VERSION=$(grep '^version:' paddywise_mobile/pubspec.yaml | awk '{print $2}' | cut -d'+' -f1)
+          if [ -z "$VERSION" ]; then
+            VERSION="1.0.0"
+          fi
+          VERSIONED_APK="PaddyWise-v${VERSION}-${{ github.run_number }}.apk"
+          
+          echo "Version: $VERSION"
+          echo "Versioned APK Name: $VERSIONED_APK"
+          
+          # Copy to versioned name while preserving app-release.apk
+          cp "$APK_DIR/app-release.apk" "$APK_DIR/$VERSIONED_APK"
+          
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "versioned_apk=$VERSIONED_APK" >> $GITHUB_OUTPUT
+
+      - name: Generate Release Notes
+        id: release_notes
+        run: |
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          COMMIT_MSG=$(git log -1 --pretty=%s)
+          VERSION="${{ steps.prepare_artifacts.outputs.version }}"
+          VERSIONED_APK="${{ steps.prepare_artifacts.outputs.versioned_apk }}"
+          
+          cat <<EOF > release_notes.md
+## PaddyWise Mobile Release (Build #${{ github.run_number }})
+
+- **Version:** \`v${VERSION}+${{ github.run_number }}\`
+- **Commit:** \`${SHORT_SHA}\`
+- **Commit Message:** ${COMMIT_MSG}
+- **Target Backend:** \`${{ secrets.API_BASE_URL || 'https://paddywise-backend.azurewebsites.net/api' }}\`
+
+### Download Links
+- 📱 **[Direct Download: ${VERSIONED_APK}](https://github.com/${{ github.repository }}/releases/download/mobile-build-${{ github.run_number }}/${VERSIONED_APK})**
+- 🔗 **[Permanent Download: Latest Release APK](https://github.com/${{ github.repository }}/releases/latest/download/app-release.apk)**
+EOF
+
+      - name: Publish to GitHub Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: mobile-build-${{ github.run_number }}
+          name: PaddyWise Mobile v${{ steps.prepare_artifacts.outputs.version }} (Build #${{ github.run_number }})
+          body_path: release_notes.md
+          make_latest: true
+          draft: false
+          prerelease: false
+          files: |
+            paddywise_mobile/build/app/outputs/flutter-apk/app-release.apk
+            paddywise_mobile/build/app/outputs/flutter-apk/${{ steps.prepare_artifacts.outputs.versioned_apk }}
+
+      - name: Upload APK as Workflow Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PaddyWise-APK-Build-${{ github.run_number }}
+          path: |
+            paddywise_mobile/build/app/outputs/flutter-apk/app-release.apk
+            paddywise_mobile/build/app/outputs/flutter-apk/${{ steps.prepare_artifacts.outputs.versioned_apk }}
+          if-no-files-found: error
+          retention-days: 30
