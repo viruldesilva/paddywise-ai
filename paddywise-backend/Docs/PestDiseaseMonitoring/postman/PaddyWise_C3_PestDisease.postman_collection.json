@@ -1,0 +1,1234 @@
+{
+  "info": {
+    "_postman_id": "336eab88-7bd2-4e95-8a2c-b39f983da37c",
+    "name": "PaddyWise C3 - Pest & Disease API tests",
+    "description": "SE3110 manual API integration and authorisation tests for Component 3. Fill the email/password variables, start the backend, then run folders in order.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "00 Setup (run first)",
+      "item": [
+        {
+          "name": "Login Farmer A",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{farmerAEmail}}\",\n  \"password\": \"{{farmerAPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Login succeeds (200)\", () => pm.response.to.have.status(200));",
+                  "const t = pm.response.json().accessToken;",
+                  "pm.test(\"Access token returned\", () => pm.expect(t).to.be.a(\"string\").and.not.empty);",
+                  "pm.collectionVariables.set(\"farmerAToken\", t);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Farmer B",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{farmerBEmail}}\",\n  \"password\": \"{{farmerBPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Login succeeds (200)\", () => pm.response.to.have.status(200));",
+                  "const t = pm.response.json().accessToken;",
+                  "pm.test(\"Access token returned\", () => pm.expect(t).to.be.a(\"string\").and.not.empty);",
+                  "pm.collectionVariables.set(\"farmerBToken\", t);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Officer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{officerEmail}}\",\n  \"password\": \"{{officerPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Login succeeds (200)\", () => pm.response.to.have.status(200));",
+                  "const t = pm.response.json().accessToken;",
+                  "pm.test(\"Access token returned\", () => pm.expect(t).to.be.a(\"string\").and.not.empty);",
+                  "pm.collectionVariables.set(\"officerToken\", t);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Login succeeds (200)\", () => pm.response.to.have.status(200));",
+                  "const t = pm.response.json().accessToken;",
+                  "pm.test(\"Access token returned\", () => pm.expect(t).to.be.a(\"string\").and.not.empty);",
+                  "pm.collectionVariables.set(\"adminToken\", t);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Farmer A cycle id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/cycles",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cycles"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{farmerAToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+                  "let data = pm.response.json();",
+                  "const list = Array.isArray(data) ? data : (data.items || data.data || []);",
+                  "pm.test(\"Farmer A has at least one cultivation cycle\", () => pm.expect(list.length).to.be.above(0));",
+                  "const active = list.find(c => c.status === \"Active\") || list[0];",
+                  "if (active) pm.collectionVariables.set(\"cycleId\", active.id);",
+                  "console.log(\"Using cycleId\", active && active.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create observation as Farmer A",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/observations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "observations"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{farmerAToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cultivationCycleId\": {{cycleId}},\n  \"observationType\": \"Disease\",\n  \"symptoms\": \"Brown diamond-shaped spots with grey centres on many leaves, some leaves drying from the tip. Started after several rainy days.\",\n  \"severity\": \"Moderate\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"201 Created\", () => pm.response.to.have.status(201));",
+                  "const o = pm.response.json();",
+                  "pm.test(\"Owned by Farmer A and has no reports yet\", () => pm.expect(o.reports.length).to.eql(0));",
+                  "pm.collectionVariables.set(\"observationId\", o.id);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "01 API integration and authorisation",
+      "item": [
+        {
+          "name": "API-01 No token -> 401",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/observations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "observations"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"API-01: request without a token is rejected with 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "API-02 Farmer B reads Farmer A observation -> 403",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/observations/{{observationId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "observations",
+                "{{observationId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{farmerBToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"API-02: another farmer gets 403\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "API-03 Officer reads the observation -> 200",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/observations/{{observationId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "observations",
+                "{{observationId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{officerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"API-03: officer can read any observation\", () => pm.response.to.have.status(200));",
+                  "",
+                  "pm.test(\"Correct observation returned\", () => pm.expect(pm.response.json().id).to.eql(Number(pm.collectionVariables.get(\"observationId\"))));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "API-04a Farmer adds KB entry -> 403",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/pest-disease-knowledge",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "pest-disease-knowledge"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{farmerAToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{kbName}}\",\n  \"category\": \"Pest\",\n  \"symptoms\": \"Postman test entry - small holes in leaves.\",\n  \"managementGuidance\": \"Postman test entry - delete after test.\",\n  \"source\": \"Postman test\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set(\"kbName\", \"Postman Test Pest \" + Date.now());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"API-04a: farmer cannot add knowledge-base entries\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "API-04b Admin adds KB entry -> 201",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/pest-disease-knowledge",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "pest-disease-knowledge"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{kbName}}\",\n  \"category\": \"Pest\",\n  \"symptoms\": \"Postman test entry - small holes in leaves.\",\n  \"managementGuidance\": \"Postman test entry - delete after test.\",\n  \"source\": \"Postman test\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"API-04b: admin can add a knowledge-base entry\", () => pm.response.to.have.status(201));",
+                  "",
+                  "const e = pm.response.json();",
+                  "pm.test(\"Saved with the same name\", () => pm.expect(e.name).to.eql(pm.collectionVariables.get(\"kbName\")));",
+                  "pm.collectionVariables.set(\"kbId\", e.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "API-05 Duplicate KB name (different case) -> 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/pest-disease-knowledge",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "pest-disease-knowledge"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{kbNameLower}}\",\n  \"category\": \"Pest\",\n  \"symptoms\": \"Postman test entry - small holes in leaves.\",\n  \"managementGuidance\": \"Postman test entry - delete after test.\",\n  \"source\": \"Postman test\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set(\"kbNameLower\", pm.collectionVariables.get(\"kbName\").toLowerCase());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"API-05: duplicate name in different case is rejected\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cleanup: delete test KB entry -> 204",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/pest-disease-knowledge/{{kbId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "pest-disease-knowledge",
+                "{{kbId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Test entry removed\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "API-07a Empty symptoms -> 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/observations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "observations"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{farmerAToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cultivationCycleId\": {{cycleId}},\n  \"observationType\": \"Disease\",\n  \"symptoms\": \"\",\n  \"severity\": \"Moderate\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"API-07a: empty symptoms rejected\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "API-07b Invalid severity -> 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/observations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "observations"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{farmerAToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cultivationCycleId\": {{cycleId}},\n  \"observationType\": \"Disease\",\n  \"symptoms\": \"Yellow leaves\",\n  \"severity\": \"Extreme\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"API-07b: invalid severity rejected\", () => pm.response.to.have.status(400));",
+                  "",
+                  "pm.test(\"Clear error message\", () => pm.expect(pm.response.json().message).to.eql(\"Severity must be Low, Moderate or Severe.\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Request analysis (real Gemini, can take 1-4 min)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/observations/{{observationId}}/request-analysis",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "observations",
+                "{{observationId}}",
+                "request-analysis"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{farmerAToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+                  "const o = pm.response.json();",
+                  "pm.test(\"At least one possible issue suggested\", () => pm.expect(o.reports.length).to.be.above(0));",
+                  "pm.test(\"All suggestions wait for officer review\", () => o.reports.forEach(r => pm.expect(r.status).to.eql(\"PendingOfficerReview\")));",
+                  "if (o.reports.length) pm.collectionVariables.set(\"reportId\", o.reports[0].id);",
+                  "console.log(\"Agent took\", pm.response.responseTime, \"ms; suggestions:\", o.reports.map(r => r.possibleIssue + \" \" + r.confidence));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "API-06 Edit after diagnosis -> 400",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/observations/{{observationId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "observations",
+                "{{observationId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{farmerAToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"observationType\": \"Disease\",\n  \"symptoms\": \"Changed symptoms after diagnosis\",\n  \"severity\": \"Severe\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"API-06: edit blocked after diagnosis\", () => pm.response.to.have.status(400));",
+                  "",
+                  "pm.test(\"Edit-lock message\", () => pm.expect(pm.response.json().message).to.eql(\"This observation already has a diagnosis and can no longer be edited.\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "API-09 Analyse twice -> 400",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/observations/{{observationId}}/request-analysis",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "observations",
+                "{{observationId}}",
+                "request-analysis"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{farmerAToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"API-09: second analysis rejected\", () => pm.response.to.have.status(400));",
+                  "",
+                  "pm.test(\"Message\", () => pm.expect(pm.response.json().message).to.eql(\"This observation already has a diagnosis.\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "API-10 Farmer tries to review -> 403",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/pest-disease-reports/{{reportId}}/review",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "pest-disease-reports",
+                "{{reportId}}",
+                "review"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{farmerAToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"decision\": \"Approve\",\n  \"comment\": \"Farmer should not be able to do this\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"API-10: only officers can review\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "API-08 Officer approves report -> 200",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/pest-disease-reports/{{reportId}}/review",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "pest-disease-reports",
+                "{{reportId}}",
+                "review"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{officerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"decision\": \"Approve\",\n  \"comment\": \"Confirmed in field visit. Apply recommended fungicide.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"API-08: officer review accepted\", () => pm.response.to.have.status(200));",
+                  "",
+                  "const r = pm.response.json();",
+                  "pm.test(\"Status is Approved\", () => pm.expect(r.status).to.eql(\"Approved\"));",
+                  "pm.test(\"ReviewedAt is set\", () => pm.expect(r.reviewedAt).to.be.a(\"string\").and.not.empty);",
+                  "pm.test(\"Officer comment saved\", () => pm.expect(r.officerComment).to.eql(\"Confirmed in field visit. Apply recommended fungicide.\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "API-11 Review same report again -> 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/pest-disease-reports/{{reportId}}/review",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "pest-disease-reports",
+                "{{reportId}}",
+                "review"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{officerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"decision\": \"Reject\",\n  \"comment\": \"Second review attempt\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"API-11: an already reviewed report cannot be reviewed again\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "API-12 Farmer sees approved result",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/observations/{{observationId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "observations",
+                "{{observationId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{farmerAToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+                  "",
+                  "const rep = pm.response.json().reports.find(r => r.id === Number(pm.collectionVariables.get(\"reportId\")));",
+                  "pm.test(\"API-12: farmer sees Approved with officer comment\", () => {",
+                  "  pm.expect(rep.status).to.eql(\"Approved\");",
+                  "  pm.expect(rep.officerComment).to.not.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "SEC-03 Tampered token -> 401",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/observations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "observations"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tamperedToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const t = pm.collectionVariables.get(\"farmerAToken\");",
+                  "const last = t.slice(-1);",
+                  "pm.collectionVariables.set(\"tamperedToken\", t.slice(0, -1) + (last === \"A\" ? \"B\" : \"A\"));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"SEC-03: modified token rejected\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5164/api"
+    },
+    {
+      "key": "farmerAEmail",
+      "value": ""
+    },
+    {
+      "key": "farmerAPassword",
+      "value": ""
+    },
+    {
+      "key": "farmerBEmail",
+      "value": ""
+    },
+    {
+      "key": "farmerBPassword",
+      "value": ""
+    },
+    {
+      "key": "officerEmail",
+      "value": ""
+    },
+    {
+      "key": "officerPassword",
+      "value": ""
+    },
+    {
+      "key": "adminEmail",
+      "value": ""
+    },
+    {
+      "key": "adminPassword",
+      "value": ""
+    },
+    {
+      "key": "farmerAToken",
+      "value": ""
+    },
+    {
+      "key": "farmerBToken",
+      "value": ""
+    },
+    {
+      "key": "officerToken",
+      "value": ""
+    },
+    {
+      "key": "adminToken",
+      "value": ""
+    },
+    {
+      "key": "tamperedToken",
+      "value": ""
+    },
+    {
+      "key": "cycleId",
+      "value": ""
+    },
+    {
+      "key": "observationId",
+      "value": ""
+    },
+    {
+      "key": "reportId",
+      "value": ""
+    },
+    {
+      "key": "kbId",
+      "value": ""
+    },
+    {
+      "key": "kbName",
+      "value": ""
+    },
+    {
+      "key": "kbNameLower",
+      "value": ""
+    }
+  ]
+}
