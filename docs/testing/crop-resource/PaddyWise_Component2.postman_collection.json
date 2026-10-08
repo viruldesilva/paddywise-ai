@@ -1,8 +1,8 @@
 {
   "info": {
-    "_postman_id": "5c4cb2e2-e9bf-411f-8e8c-b43b1fdc6cc2",
-    "name": "PaddyWise Component 1 - Field & Cultivation",
-    "description": "Component 1 API checks: fields, cultivation cycles, growth stages and the Cultivation Planning Agent (request, background generation, officer approval). Run the folders in order; the collection creates its own field and cycle and cleans them up at the end. Needs the backend on http://localhost:5164 and the farmer/officer logins in the environment.",
+    "_postman_id": "bdc5d061-5fe6-4e52-b1a5-fe7ff06a1f07",
+    "name": "PaddyWise Component 2 - Crop Activity & Resource",
+    "description": "Component 2 API checks: crop activity logging (create, list, filter, update, delete, validation, roles), the Resource Analysis Agent, the officer recommendation approval queue and the agent audit trail. Creates its own field and cycle and removes them at the end. Needs the backend on http://localhost:5164 and the farmer/officer logins in the environment.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -104,10 +104,10 @@
       ]
     },
     {
-      "name": "2. Lookups",
+      "name": "2. Setup (test field and cycle)",
       "item": [
         {
-          "name": "Get divisions",
+          "name": "Get a division",
           "request": {
             "method": "GET",
             "header": [
@@ -133,17 +133,14 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
-                  "pm.test(\"Response time < 2000 ms\", () => pm.expect(pm.response.responseTime).to.be.below(2000));",
-                  "const j = pm.response.json();",
-                  "pm.test(\"At least one division\", () => pm.expect(j.length).to.be.above(0));",
-                  "pm.environment.set(\"divisionId\", j[0].id);"
+                  "pm.environment.set(\"divisionId\", pm.response.json()[0].id);"
                 ]
               }
             }
           ]
         },
         {
-          "name": "Get varieties",
+          "name": "Get a variety",
           "request": {
             "method": "GET",
             "header": [
@@ -169,22 +166,14 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
-                  "pm.test(\"Response time < 2000 ms\", () => pm.expect(pm.response.responseTime).to.be.below(2000));",
-                  "const j = pm.response.json();",
-                  "pm.test(\"At least one variety\", () => pm.expect(j.length).to.be.above(0));",
-                  "pm.environment.set(\"varietyId\", j[0].id);"
+                  "pm.environment.set(\"varietyId\", pm.response.json()[0].id);"
                 ]
               }
             }
           ]
-        }
-      ]
-    },
-    {
-      "name": "3. Fields",
-      "item": [
+        },
         {
-          "name": "Create field (farmer)",
+          "name": "Create a test field",
           "request": {
             "method": "POST",
             "header": [
@@ -208,7 +197,118 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Postman Field {{$timestamp}}\",\n  \"area\": 2.5,\n  \"soilType\": \"Clay loam\",\n  \"irrigationType\": \"Canal\",\n  \"divisionId\": {{divisionId}},\n  \"latitude\": 7.95,\n  \"longitude\": 80.95\n}",
+              "raw": "{\n  \"name\": \"Postman C2 Field {{$timestamp}}\",\n  \"area\": 1.5,\n  \"soilType\": \"Clay loam\",\n  \"irrigationType\": \"Canal\",\n  \"divisionId\": {{divisionId}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+                  "pm.environment.set(\"fieldId\", pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Start a cultivation cycle (sown today)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{farmerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/fields/{{fieldId}}/start-cultivation",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "fields",
+                "{{fieldId}}",
+                "start-cultivation"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"varietyId\": {{varietyId}},\n  \"season\": \"Maha\",\n  \"year\": {{year}},\n  \"method\": \"Transplanting\",\n  \"sowingDate\": \"{{today}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+                  "pm.environment.set(\"cycleId\", pm.response.json().id);"
+                ]
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const d = new Date(); pm.environment.set(\"today\", d.toISOString().slice(0, 10)); pm.environment.set(\"year\", d.getFullYear());",
+                  "const f = new Date(Date.now() + 3 * 86400000); pm.environment.set(\"futureDate\", f.toISOString().slice(0, 10));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Crop activities",
+      "item": [
+        {
+          "name": "Log an irrigation activity",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{farmerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cycles/{{cycleId}}/activities",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cycles",
+                "{{cycleId}}",
+                "activities"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"activityType\": \"Irrigation\",\n  \"date\": \"{{today}}\",\n  \"detailsJson\": \"{\\\"waterLevel\\\": 5, \\\"duration\\\": 2, \\\"source\\\": \\\"Canal\\\"}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -225,31 +325,56 @@
                   "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
                   "pm.test(\"Response time < 2000 ms\", () => pm.expect(pm.response.responseTime).to.be.below(2000));",
                   "const j = pm.response.json();",
-                  "pm.test(\"Field belongs to the caller and is active\", () => { pm.expect(j.id).to.be.a(\"number\"); pm.expect(j.isActive).to.eql(true); });",
-                  "pm.environment.set(\"fieldId\", j.id);"
+                  "pm.test(\"Saved as Irrigation for this cycle\", () => { pm.expect(j.activityType).to.eql(\"Irrigation\"); pm.expect(j.cultivationCycleId).to.eql(Number(pm.environment.get(\"cycleId\"))); });",
+                  "pm.environment.set(\"irrigationId\", j.id);"
+                ]
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const d = new Date(); pm.environment.set(\"today\", d.toISOString().slice(0, 10)); pm.environment.set(\"year\", d.getFullYear());",
+                  "const f = new Date(Date.now() + 3 * 86400000); pm.environment.set(\"futureDate\", f.toISOString().slice(0, 10));"
                 ]
               }
             }
           ]
         },
         {
-          "name": "List my fields",
+          "name": "Log a fertilizer activity",
           "request": {
-            "method": "GET",
+            "method": "POST",
             "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
               {
                 "key": "Authorization",
                 "value": "Bearer {{farmerToken}}"
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/fields",
+              "raw": "{{baseUrl}}/cycles/{{cycleId}}/activities",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "fields"
+                "cycles",
+                "{{cycleId}}",
+                "activities"
               ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"activityType\": \"Fertilizer\",\n  \"date\": \"{{today}}\",\n  \"detailsJson\": \"{\\\"type\\\": \\\"Urea\\\", \\\"quantity\\\": 25, \\\"cropStage\\\": \\\"Tillering\\\", \\\"region\\\": \\\"Dry Zone\\\", \\\"method\\\": \\\"Broadcasting\\\"}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             }
           },
           "event": [
@@ -258,33 +383,154 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
                   "pm.test(\"Response time < 2000 ms\", () => pm.expect(pm.response.responseTime).to.be.below(2000));",
-                  "pm.test(\"New field is listed\", () => pm.expect(pm.response.json().map(f => f.id)).to.include(Number(pm.environment.get(\"fieldId\"))));"
+                  "pm.environment.set(\"fertilizerId\", pm.response.json().id);"
                 ]
               }
             }
           ]
         },
         {
-          "name": "Officer reads the field",
+          "name": "Fertilizer quantity 0 (400)",
           "request": {
-            "method": "GET",
+            "method": "POST",
             "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{farmerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cycles/{{cycleId}}/activities",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cycles",
+                "{{cycleId}}",
+                "activities"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"activityType\": \"Fertilizer\",\n  \"date\": \"{{today}}\",\n  \"detailsJson\": \"{\\\"type\\\": \\\"Urea\\\", \\\"quantity\\\": 0, \\\"cropStage\\\": \\\"Tillering\\\", \\\"region\\\": \\\"Dry Zone\\\", \\\"method\\\": \\\"Broadcasting\\\"}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"Error uses the { message } shape\", () => pm.expect(pm.response.json()).to.have.property(\"message\"));",
+                  "pm.test(\"Explains the quantity rule\", () => pm.expect(pm.response.json().message).to.include(\"quantity\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Activity dated in the future (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{farmerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cycles/{{cycleId}}/activities",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cycles",
+                "{{cycleId}}",
+                "activities"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"activityType\": \"Irrigation\",\n  \"date\": \"{{futureDate}}\",\n  \"detailsJson\": \"{\\\"waterLevel\\\": 5, \\\"duration\\\": 2, \\\"source\\\": \\\"Canal\\\"}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"Error uses the { message } shape\", () => pm.expect(pm.response.json()).to.have.property(\"message\"));"
+                ]
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const d = new Date(); pm.environment.set(\"today\", d.toISOString().slice(0, 10)); pm.environment.set(\"year\", d.getFullYear());",
+                  "const f = new Date(Date.now() + 3 * 86400000); pm.environment.set(\"futureDate\", f.toISOString().slice(0, 10));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Log an activity as officer (403)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
               {
                 "key": "Authorization",
                 "value": "Bearer {{officerToken}}"
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/fields/{{fieldId}}",
+              "raw": "{{baseUrl}}/cycles/{{cycleId}}/activities",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "fields",
-                "{{fieldId}}"
+                "cycles",
+                "{{cycleId}}",
+                "activities"
               ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"activityType\": \"Irrigation\",\n  \"date\": \"{{today}}\",\n  \"detailsJson\": \"{\\\"waterLevel\\\": 5, \\\"duration\\\": 2, \\\"source\\\": \\\"Canal\\\"}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             }
           },
           "event": [
@@ -293,15 +539,14 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
-                  "pm.test(\"Response time < 2000 ms\", () => pm.expect(pm.response.responseTime).to.be.below(2000));"
+                  "pm.test(\"Status 403\", () => pm.response.to.have.status(403));"
                 ]
               }
             }
           ]
         },
         {
-          "name": "Create field with no token (401)",
+          "name": "Log an activity with no token (401)",
           "request": {
             "method": "POST",
             "header": [
@@ -311,17 +556,19 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/fields",
+              "raw": "{{baseUrl}}/cycles/{{cycleId}}/activities",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "fields"
+                "cycles",
+                "{{cycleId}}",
+                "activities"
               ]
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"No token\",\n  \"area\": 1,\n  \"divisionId\": {{divisionId}}\n}",
+              "raw": "{\n  \"activityType\": \"Irrigation\",\n  \"date\": \"{{today}}\",\n  \"detailsJson\": \"{\\\"waterLevel\\\": 5, \\\"duration\\\": 2, \\\"source\\\": \\\"Canal\\\"}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -342,255 +589,7 @@
           ]
         },
         {
-          "name": "Create field as officer (403)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{officerToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/fields",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "fields"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"Officer field\",\n  \"area\": 1,\n  \"divisionId\": {{divisionId}}\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status 403\", () => pm.response.to.have.status(403));"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Create field with empty name (400)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{farmerToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/fields",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "fields"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"\",\n  \"area\": 1,\n  \"divisionId\": {{divisionId}}\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status 400\", () => pm.response.to.have.status(400));"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Create field with area 0 (400)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{farmerToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/fields",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "fields"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"Zero area\",\n  \"area\": 0,\n  \"divisionId\": {{divisionId}}\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status 400\", () => pm.response.to.have.status(400));"
-                ]
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "4. Cycles and stages",
-      "item": [
-        {
-          "name": "Start cultivation",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{farmerToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/fields/{{fieldId}}/start-cultivation",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "fields",
-                "{{fieldId}}",
-                "start-cultivation"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"varietyId\": {{varietyId}},\n  \"season\": \"Maha\",\n  \"year\": {{year}},\n  \"method\": \"Transplanting\",\n  \"sowingDate\": \"{{today}}\",\n  \"notes\": \"Created by the Postman collection\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
-                  "pm.test(\"Response time < 2000 ms\", () => pm.expect(pm.response.responseTime).to.be.below(2000));",
-                  "const j = pm.response.json();",
-                  "pm.test(\"Cycle is Active at Nursery with a 6-stage timeline\", () => { pm.expect(j.status).to.eql(\"Active\"); pm.expect(j.currentStage).to.eql(\"Nursery\"); pm.expect(j.timeline.length).to.eql(6); });",
-                  "pm.environment.set(\"cycleId\", j.id);"
-                ]
-              }
-            },
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "const d = new Date(); pm.environment.set(\"today\", d.toISOString().slice(0, 10)); pm.environment.set(\"year\", d.getFullYear());"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Start a second cycle on the same field (400)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{farmerToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/fields/{{fieldId}}/start-cultivation",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "fields",
-                "{{fieldId}}",
-                "start-cultivation"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"varietyId\": {{varietyId}},\n  \"season\": \"Yala\",\n  \"year\": {{year}},\n  \"method\": \"Transplanting\",\n  \"sowingDate\": \"{{today}}\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status 400\", () => pm.response.to.have.status(400));",
-                  "pm.test(\"Error uses the { message } shape\", () => pm.expect(pm.response.json()).to.have.property(\"message\"));"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "List my cycles",
+          "name": "List the cycle's activities (farmer)",
           "request": {
             "method": "GET",
             "header": [
@@ -600,12 +599,14 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/cycles",
+              "raw": "{{baseUrl}}/cycles/{{cycleId}}/activities",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "cycles"
+                "cycles",
+                "{{cycleId}}",
+                "activities"
               ]
             }
           },
@@ -617,14 +618,15 @@
                 "exec": [
                   "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
                   "pm.test(\"Response time < 2000 ms\", () => pm.expect(pm.response.responseTime).to.be.below(2000));",
-                  "pm.test(\"New cycle is listed\", () => pm.expect(pm.response.json().map(c => c.id)).to.include(Number(pm.environment.get(\"cycleId\"))));"
+                  "const ids = pm.response.json().map(a => a.id);",
+                  "pm.test(\"Both new activities listed\", () => { pm.expect(ids).to.include(Number(pm.environment.get(\"irrigationId\"))); pm.expect(ids).to.include(Number(pm.environment.get(\"fertilizerId\"))); });"
                 ]
               }
             }
           ]
         },
         {
-          "name": "Officer reads the cycle",
+          "name": "List the cycle's activities (officer)",
           "request": {
             "method": "GET",
             "header": [
@@ -634,13 +636,14 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/cycles/{{cycleId}}",
+              "raw": "{{baseUrl}}/cycles/{{cycleId}}/activities",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "cycles",
-                "{{cycleId}}"
+                "{{cycleId}}",
+                "activities"
               ]
             }
           },
@@ -658,9 +661,93 @@
           ]
         },
         {
-          "name": "Officer logs a growth stage",
+          "name": "Farmer's activity history is scoped to the farmer",
           "request": {
-            "method": "POST",
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{farmerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/activities?farmerId=999999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "activities"
+              ],
+              "query": [
+                {
+                  "key": "farmerId",
+                  "value": "999999"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Response time < 2000 ms\", () => pm.expect(pm.response.responseTime).to.be.below(2000));",
+                  "pm.test(\"farmerId query is overridden: own activities still returned\", () => pm.expect(pm.response.json().map(a => a.id)).to.include(Number(pm.environment.get(\"irrigationId\"))));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Filter history by activity type",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{farmerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/activities?cycleId={{cycleId}}&activityType=Irrigation",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "activities"
+              ],
+              "query": [
+                {
+                  "key": "cycleId",
+                  "value": "{{cycleId}}"
+                },
+                {
+                  "key": "activityType",
+                  "value": "Irrigation"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Response time < 2000 ms\", () => pm.expect(pm.response.responseTime).to.be.below(2000));",
+                  "pm.test(\"Only irrigation activities\", () => pm.response.json().forEach(a => pm.expect(a.activityType).to.eql(\"Irrigation\")));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update the irrigation activity",
+          "request": {
+            "method": "PUT",
             "header": [
               {
                 "key": "Content-Type",
@@ -668,23 +755,22 @@
               },
               {
                 "key": "Authorization",
-                "value": "Bearer {{officerToken}}"
+                "value": "Bearer {{farmerToken}}"
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/cycles/{{cycleId}}/stages",
+              "raw": "{{baseUrl}}/activities/{{irrigationId}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "cycles",
-                "{{cycleId}}",
-                "stages"
+                "activities",
+                "{{irrigationId}}"
               ]
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"stage\": \"Nursery\",\n  \"observedOn\": \"{{today}}\",\n  \"notes\": \"Seedlings healthy (Postman)\"\n}",
+              "raw": "{\n  \"activityType\": \"Irrigation\",\n  \"date\": \"{{today}}\",\n  \"detailsJson\": \"{\\\"waterLevel\\\": 4, \\\"duration\\\": 3, \\\"source\\\": \\\"Canal\\\"}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -700,16 +786,16 @@
                 "exec": [
                   "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
                   "pm.test(\"Response time < 2000 ms\", () => pm.expect(pm.response.responseTime).to.be.below(2000));",
-                  "pm.test(\"Stage log saved\", () => pm.expect(pm.response.json().stageLogs.length).to.be.above(0));"
+                  "pm.test(\"Details updated\", () => pm.expect(pm.response.json().detailsJson).to.include(\"\\\"duration\\\":3\"));"
                 ]
               }
             }
           ]
         },
         {
-          "name": "Log an unknown stage (400)",
+          "name": "Update as officer (403)",
           "request": {
-            "method": "POST",
+            "method": "PUT",
             "header": [
               {
                 "key": "Content-Type",
@@ -721,171 +807,18 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/cycles/{{cycleId}}/stages",
+              "raw": "{{baseUrl}}/activities/{{irrigationId}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "cycles",
-                "{{cycleId}}",
-                "stages"
+                "activities",
+                "{{irrigationId}}"
               ]
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"stage\": \"Ripening\",\n  \"observedOn\": \"{{today}}\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status 400\", () => pm.response.to.have.status(400));",
-                  "pm.test(\"Error uses the { message } shape\", () => pm.expect(pm.response.json()).to.have.property(\"message\"));"
-                ]
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "5. Cultivation Planning Agent",
-      "item": [
-        {
-          "name": "Request a cultivation plan (202)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{farmerToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/cycles/{{cycleId}}/plans",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "cycles",
-                "{{cycleId}}",
-                "plans"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"objective\": \"Maximise yield this Maha season with minimal water use.\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status 202\", () => pm.response.to.have.status(202));",
-                  "pm.test(\"Response time < 2000 ms\", () => pm.expect(pm.response.responseTime).to.be.below(2000));",
-                  "const j = pm.response.json();",
-                  "pm.test(\"Plan saved as Draft for background generation\", () => pm.expect(j.status).to.eql(\"Draft\"));",
-                  "pm.environment.set(\"planId\", j.id); pm.environment.set(\"pollTries\", 0);"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Request another plan while one is generating (400)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{farmerToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/cycles/{{cycleId}}/plans",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "cycles",
-                "{{cycleId}}",
-                "plans"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"objective\": \"Second request\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status 400\", () => pm.response.to.have.status(400));",
-                  "pm.test(\"Error uses the { message } shape\", () => pm.expect(pm.response.json()).to.have.property(\"message\"));"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Request a plan as officer (403)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{officerToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/cycles/{{cycleId}}/plans",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "cycles",
-                "{{cycleId}}",
-                "plans"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"objective\": \"Officer request\"\n}",
+              "raw": "{\n  \"activityType\": \"Irrigation\",\n  \"date\": \"{{today}}\",\n  \"detailsJson\": \"{\\\"waterLevel\\\": 4, \\\"duration\\\": 3, \\\"source\\\": \\\"Canal\\\"}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -906,9 +839,9 @@
           ]
         },
         {
-          "name": "Request a plan with an empty objective (400)",
+          "name": "Update an unknown activity (404)",
           "request": {
-            "method": "POST",
+            "method": "PUT",
             "header": [
               {
                 "key": "Content-Type",
@@ -920,320 +853,23 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/cycles/{{cycleId}}/plans",
+              "raw": "{{baseUrl}}/activities/999999",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "cycles",
-                "{{cycleId}}",
-                "plans"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"objective\": \"\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status 400\", () => pm.response.to.have.status(400));"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Poll the plan until it is generated",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{farmerToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/plans/{{planId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "plans",
-                "{{planId}}"
-              ]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
-                  "const j = pm.response.json();",
-                  "const tries = Number(pm.environment.get(\"pollTries\") || 0);",
-                  "if (j.status === \"Draft\" && tries < 40) {",
-                  "  pm.environment.set(\"pollTries\", tries + 1);",
-                  "  setTimeout(() => {}, 3000);",
-                  "  postman.setNextRequest(\"Poll the plan until it is generated\");",
-                  "} else {",
-                  "  pm.environment.set(\"pollTries\", 0);",
-                  "  pm.environment.set(\"planStatus\", j.status);",
-                  "  pm.test(\"Plan left Draft (generated by the agent)\", () => pm.expect(j.status).to.not.eql(\"Draft\"));",
-                  "  pm.test(\"Never auto-approved\", () => pm.expect(j.status).to.be.oneOf([\"PendingOfficerApproval\", \"ValidationFailed\"]));",
-                  "  pm.test(\"Planning agent run is logged\", () => pm.expect(j.agentRuns.map(r => r.agentName)).to.include(\"CultivationPlanningAgent\"));",
-                  "}"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Pending queue as officer",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{officerToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/plans/pending",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "plans",
-                "pending"
-              ]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
-                  "pm.test(\"Response time < 2000 ms\", () => pm.expect(pm.response.responseTime).to.be.below(2000));",
-                  "if (pm.environment.get(\"planStatus\") === \"PendingOfficerApproval\") {",
-                  "  pm.test(\"New plan is in the queue\", () => pm.expect(pm.response.json().map(p => p.planId)).to.include(Number(pm.environment.get(\"planId\"))));",
-                  "}"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Pending queue as farmer (403)",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{farmerToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/plans/pending",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "plans",
-                "pending"
-              ]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status 403\", () => pm.response.to.have.status(403));"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Farmer tries to approve (403)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{farmerToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/plans/{{planId}}/review",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "plans",
-                "{{planId}}",
-                "review"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"decision\": \"Approve\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status 403\", () => pm.response.to.have.status(403));"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Reject without a comment (400)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{officerToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/plans/{{planId}}/review",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "plans",
-                "{{planId}}",
-                "review"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"decision\": \"Reject\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status 400\", () => pm.response.to.have.status(400));",
-                  "pm.test(\"Error uses the { message } shape\", () => pm.expect(pm.response.json()).to.have.property(\"message\"));"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Officer approves the plan",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{officerToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/plans/{{planId}}/review",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "plans",
-                "{{planId}}",
-                "review"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"decision\": \"Approve\",\n  \"comment\": \"Approved after review (Postman).\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "if (pm.environment.get(\"planStatus\") === \"PendingOfficerApproval\") {",
-                  "  pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
-                  "  pm.test(\"Plan Approved\", () => pm.expect(pm.response.json().status).to.eql(\"Approved\"));",
-                  "} else {",
-                  "  pm.test(\"A plan that failed validation cannot be approved (400)\", () => pm.response.to.have.status(400));",
-                  "}"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Unknown plan (404)",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{officerToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/plans/999999",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "plans",
+                "activities",
                 "999999"
               ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"activityType\": \"Irrigation\",\n  \"date\": \"{{today}}\",\n  \"detailsJson\": \"{\\\"waterLevel\\\": 4, \\\"duration\\\": 3, \\\"source\\\": \\\"Canal\\\"}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             }
           },
           "event": [
@@ -1252,7 +888,381 @@
       ]
     },
     {
-      "name": "6. Security",
+      "name": "4. Resource Analysis Agent and approval",
+      "item": [
+        {
+          "name": "Run the Resource Analysis Agent",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{farmerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cycles/{{cycleId}}/analysis",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cycles",
+                "{{cycleId}}",
+                "analysis"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"objective\": \"Optimise water and fertilizer use this season.\",\n  \"focusArea\": \"All\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"Analysis has a summary and a validation report\", () => { pm.expect(j.executiveSummary).to.be.a(\"string\"); pm.expect(j).to.have.property(\"validationReport\"); });",
+                  "pm.test(\"Every recommendation needs an officer (none auto-approved)\", () => j.recommendations.forEach(r => pm.expect(r.status).to.not.eql(\"APPROVED\")));",
+                  "const pending = j.recommendations.find(r => r.dbId && r.status === \"PENDING_OFFICER_REVIEW\");",
+                  "pm.environment.set(\"recId\", pending ? pending.dbId : \"\");"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Analysis of an unknown cycle (404)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{farmerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cycles/999999/analysis",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cycles",
+                "999999",
+                "analysis"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Error uses the { message } shape\", () => pm.expect(pm.response.json()).to.have.property(\"message\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Officer approval queue",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{officerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/recommendations/pending?status=PENDING_OFFICER_REVIEW",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "recommendations",
+                "pending"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "PENDING_OFFICER_REVIEW"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Response time < 2000 ms\", () => pm.expect(pm.response.responseTime).to.be.below(2000));",
+                  "pm.test(\"Only pending recommendations\", () => pm.response.json().forEach(r => pm.expect(r.status).to.eql(\"PENDING_OFFICER_REVIEW\")));",
+                  "if (pm.environment.get(\"recId\")) pm.test(\"New recommendation is in the queue\", () => pm.expect(pm.response.json().map(r => r.id)).to.include(Number(pm.environment.get(\"recId\"))));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Farmer tries to approve a recommendation (403)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{farmerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/recommendations/{{recId}}/officer-review",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "recommendations",
+                "{{recId}}",
+                "officer-review"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"decision\": \"Approve\",\n  \"comment\": \"Self-approval attempt\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 403\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.environment.get(\"recId\")) pm.environment.set(\"recId\", 999999);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Officer approves the recommendation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{officerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/recommendations/{{recId}}/officer-review",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "recommendations",
+                "{{recId}}",
+                "officer-review"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"decision\": \"Approve\",\n  \"comment\": \"Checked against DOA guidance (Postman).\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (Number(pm.environment.get(\"recId\")) !== 999999) {",
+                  "  pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "  pm.test(\"Recommendation APPROVED\", () => pm.expect(pm.response.json().status).to.eql(\"APPROVED\"));",
+                  "} else {",
+                  "  pm.test(\"No recommendation was produced, so 404\", () => pm.response.to.have.status(404));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Review an unknown recommendation (404)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{officerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/recommendations/999999/officer-review",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "recommendations",
+                "999999",
+                "officer-review"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"decision\": \"Approve\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Error uses the { message } shape\", () => pm.expect(pm.response.json()).to.have.property(\"message\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cycle recommendations",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{farmerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cycles/{{cycleId}}/recommendations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cycles",
+                "{{cycleId}}",
+                "recommendations"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Response time < 2000 ms\", () => pm.expect(pm.response.responseTime).to.be.below(2000));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Agent audit trail for the cycle",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{officerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cycles/{{cycleId}}/agent-audit",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cycles",
+                "{{cycleId}}",
+                "agent-audit"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Response time < 2000 ms\", () => pm.expect(pm.response.responseTime).to.be.below(2000));",
+                  "pm.test(\"At least one agent run logged\", () => pm.expect(pm.response.json().length).to.be.above(0));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5. Security",
       "item": [
         {
           "name": "Tampered token (401)",
@@ -1260,12 +1270,12 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/cycles",
+              "raw": "{{baseUrl}}/activities",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "cycles"
+                "activities"
               ]
             }
           },
@@ -1294,17 +1304,18 @@
           ]
         },
         {
-          "name": "No token on cycles (401)",
+          "name": "No token on the approval queue (401)",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/cycles",
+              "raw": "{{baseUrl}}/recommendations/pending",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "cycles"
+                "recommendations",
+                "pending"
               ]
             }
           },
@@ -1323,8 +1334,107 @@
       ]
     },
     {
-      "name": "7. Cleanup",
+      "name": "6. Cleanup",
       "item": [
+        {
+          "name": "Delete the irrigation activity",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{farmerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/activities/{{irrigationId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "activities",
+                "{{irrigationId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete the fertilizer activity",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{farmerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/activities/{{fertilizerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "activities",
+                "{{fertilizerId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete an unknown activity (404)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{farmerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/activities/999999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "activities",
+                "999999"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 404\", () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
         {
           "name": "Abandon the test cycle",
           "request": {
