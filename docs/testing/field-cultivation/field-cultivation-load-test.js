@@ -23,11 +23,19 @@ function login(email, password) {
     headers: { 'Content-Type': 'application/json' },
   });
   check(res, { 'login 200': r => r.status === 200 });
-  const body = res.json();
-  return body.accessToken || body.token || (body.data && body.data.accessToken);
+  if (res.status === 0) {
+    throw new Error(`Cannot reach ${BASE}. Start the backend first: cd paddywise-backend && dotnet run --launch-profile http`);
+  }
+  if (res.status !== 200) {
+    throw new Error(`Login failed for ${email} (HTTP ${res.status}): ${res.body}. Check the email/password and that an officer account is approved.`);
+  }
+  return res.json().accessToken;
 }
 
 export function setup() {
+  for (const k of ['FARMER_EMAIL', 'FARMER_PASSWORD', 'OFFICER_EMAIL', 'OFFICER_PASSWORD']) {
+    if (!__ENV[k] || __ENV[k] === '...') throw new Error(`Missing -e ${k}=<value> on the k6 command line`);
+  }
   return {
     farmer: login(__ENV.FARMER_EMAIL, __ENV.FARMER_PASSWORD),
     officer: login(__ENV.OFFICER_EMAIL, __ENV.OFFICER_PASSWORD),

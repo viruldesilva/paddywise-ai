@@ -80,3 +80,10 @@ database/local-dumps/
 
 **/TestResults/
 **/CoverageReport/
+
+# ===================================
+# Test / coverage / perf outputs
+# ===================================
+**/coverage-report*/
+coverage.cobertura.xml
+docs/testing/**/perf-summary.json
