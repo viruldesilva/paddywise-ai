@@ -8,6 +8,7 @@ using PaddyWise.Api.Data;
 using PaddyWise.Api.DTOs.FieldCultivation;
 using PaddyWise.Api.Entities.FieldCultivation;
 using PaddyWise.Api.Entities.Shared;
+using PaddyWise.Api.Services.ReportingApproval.Agents;
 
 namespace PaddyWise.Api.Services.FieldCultivation;
 
@@ -19,17 +20,22 @@ public class CultivationPlanService : ICultivationPlanService
     // The delegate agents are registered under a DI key, so they are resolved by name at
     // dispatch time rather than injected — the plan decides which of them it needs.
     private readonly IServiceProvider _services;
+
+    // Component 4's second pass, run on a plan this component's own validator passed.
+    private readonly IValidationAgentService _validationAgent;
     private readonly ILogger<CultivationPlanService> _logger;
 
     public CultivationPlanService(
         ApplicationDbContext context,
         IAgent<PlanAgentInput, CultivationPlanOutput> agent,
         IServiceProvider services,
+        IValidationAgentService validationAgent,
         ILogger<CultivationPlanService> logger)
     {
         _context = context;
         _agent = agent;
         _services = services;
+        _validationAgent = validationAgent;
         _logger = logger;
     }
 
@@ -45,14 +51,17 @@ public class CultivationPlanService : ICultivationPlanService
         if (cycle.Field.FarmerId != farmerId)
             throw new UnauthorizedAccessException("You do not have access to this cultivation cycle.");
 
-        // A plan already with an officer, or already signed off, is not replaced behind their back.
+        // A plan still being generated, already with an officer, or already signed off is not
+        // replaced behind anyone's back.
         var blocking = await _context.CultivationPlans
             .AnyAsync(p => p.CultivationCycleId == cycleId &&
-                          (p.Status == PlanStatus.PendingOfficerApproval || p.Status == PlanStatus.Approved));
+                          (p.Status == PlanStatus.Draft ||
+                           p.Status == PlanStatus.PendingOfficerApproval ||
+                           p.Status == PlanStatus.Approved));
 
         if (blocking)
             throw new InvalidOperationException(
-                "This cycle already has a plan awaiting officer approval or already approved.");
+                "This cycle already has a plan being generated, awaiting officer approval or already approved.");
 
         var plan = new CultivationPlan
         {
@@ -62,37 +71,85 @@ public class CultivationPlanService : ICultivationPlanService
             Status = PlanStatus.Draft
         };
 
-        // Saved before the agent runs so the run log can point at the plan whatever happens.
+        // Draft is the "being generated" state; PlanGenerationWorker takes it from here.
         _context.CultivationPlans.Add(plan);
         await _context.SaveChangesAsync();
 
+        return await MapToResponseAsync(plan);
+    }
+
+    public async Task ProcessPlanAsync(int planId, CancellationToken ct)
+    {
+        var plan = await _context.CultivationPlans
+            .Include(p => p.CultivationCycle)
+            .FirstOrDefaultAsync(p => p.Id == planId, CancellationToken.None);
+
+        // Already processed (a re-enqueue after a restart can race a finished run) or gone.
+        if (plan == null || plan.Status != PlanStatus.Draft)
+            return;
+
+        var cycle = plan.CultivationCycle;
+        var cycleId = plan.CultivationCycleId;
+
+        // Everything the agent and its delegates read comes from these two objects and the
+        // database — none of them reads the HTTP request — so both rebuild fully from the plan.
         var correlationId = Guid.NewGuid().ToString("N");
-        var input = new PlanAgentInput { CycleId = cycleId, Objective = objective };
-        var context = new AgentContext { RequestedByUserId = farmerId, CorrelationId = correlationId };
+        var input = new PlanAgentInput { CycleId = cycleId, Objective = plan.Objective };
+        var context = new AgentContext { RequestedByUserId = plan.RequestedByUserId, CorrelationId = correlationId };
 
         var stopwatch = Stopwatch.StartNew();
         AgentResult<CultivationPlanOutput> result;
 
         try
         {
-            result = await _agent.RunAsync(input, context, CancellationToken.None);
+            result = await _agent.RunAsync(input, context, ct);
         }
-        catch (LlmException ex)
+        catch (OperationCanceledException ex) when (ct.IsCancellationRequested)
         {
-            // The provider being down or rate-limiting is a failed run, not a crashed request.
+            // The server is shutting down. The plan stays Draft so the restart re-runs it; the
+            // interrupted attempt is still logged.
+            _logger.LogInformation(
+                ex,
+                "Planning agent for plan {PlanId} (correlation {CorrelationId}) was interrupted by shutdown.",
+                plan.Id,
+                correlationId);
+
+            stopwatch.Stop();
+            _context.AgentRunLogs.Add(FailedRunLog(
+                plan.Id,
+                correlationId,
+                JsonSerializer.Serialize(input, CultivationPlanJson.Options),
+                "Interrupted by a server shutdown; the plan is generated again on restart.",
+                stopwatch.Elapsed));
+            await _context.SaveChangesAsync(CancellationToken.None);
+            return;
+        }
+        catch (Exception ex) when (ex is LlmException or TaskCanceledException or HttpRequestException)
+        {
+            // The provider being down, slow or unreachable is a failed run, not a crashed job.
+            var message = ex switch
+            {
+                LlmException llm =>
+                    $"The planning assistant is unavailable right now ({(int)llm.StatusCode}). Please try again.",
+                TaskCanceledException =>
+                    "The planning assistant took too long to respond. Please try again.",
+                _ =>
+                    "Could not reach the planning assistant. Please try again."
+            };
+
             _logger.LogWarning(
                 ex,
-                "Planning agent for cycle {CycleId} (correlation {CorrelationId}) failed with status {StatusCode}.",
+                "Planning agent for cycle {CycleId} (correlation {CorrelationId}) failed: {Message}",
                 cycleId,
                 correlationId,
-                (int)ex.StatusCode);
+                message);
 
             stopwatch.Stop();
 
             result = new AgentResult<CultivationPlanOutput>
             {
                 Success = false,
-                Error = $"The planning assistant is unavailable right now ({(int)ex.StatusCode}). Please try again.",
+                Error = message,
                 Duration = stopwatch.Elapsed
             };
         }
@@ -147,10 +204,78 @@ public class CultivationPlanService : ICultivationPlanService
         }
 
         plan.UpdatedAt = DateTime.UtcNow;
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(CancellationToken.None);
 
-        return await MapToResponseAsync(plan);
+        // Component 4's second pass only checks shape and dosages, and it sets the status
+        // either way, so run it only on a plan CultivationPlanValidator passed: it may fail
+        // such a plan, but must never promote one this component already failed.
+        if (plan.Status == PlanStatus.PendingOfficerApproval)
+            await _validationAgent.ValidateCultivationPlanAsync(plan.Id, CancellationToken.None);
     }
+
+    public async Task MarkFailedAsync(int planId, string message)
+    {
+        var plan = await _context.CultivationPlans.FirstOrDefaultAsync(p => p.Id == planId);
+        if (plan == null || plan.Status != PlanStatus.Draft)
+            return;
+
+        Fail(plan, message);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task<List<int>> RecoverDraftsAsync(TimeSpan staleAfter)
+    {
+        var cutoff = DateTime.UtcNow - staleAfter;
+
+        var drafts = await _context.CultivationPlans
+            .Where(p => p.Status == PlanStatus.Draft)
+            .OrderBy(p => p.CreatedAt)
+            .ThenBy(p => p.Id)
+            .ToListAsync();
+
+        var requeue = new List<int>();
+
+        foreach (var plan in drafts)
+        {
+            if (plan.CreatedAt < cutoff)
+                Fail(plan, "Plan generation was interrupted. Please request a new plan.");
+            else
+                requeue.Add(plan.Id);
+        }
+
+        await _context.SaveChangesAsync();
+        return requeue;
+    }
+
+    /// <summary>Moves a Draft to ValidationFailed with one readable message and logs the failed run.</summary>
+    private void Fail(CultivationPlan plan, string message)
+    {
+        plan.Status = PlanStatus.ValidationFailed;
+        plan.ValidationErrorsJson = JsonSerializer.Serialize(new[] { message });
+        plan.UpdatedAt = DateTime.UtcNow;
+
+        var input = new PlanAgentInput { CycleId = plan.CultivationCycleId, Objective = plan.Objective };
+        _context.AgentRunLogs.Add(FailedRunLog(
+            plan.Id,
+            Guid.NewGuid().ToString("N"),
+            JsonSerializer.Serialize(input, CultivationPlanJson.Options),
+            message,
+            TimeSpan.Zero));
+    }
+
+    private AgentRunLog FailedRunLog(int planId, string correlationId, string inputJson, string error, TimeSpan duration) =>
+        new()
+        {
+            CultivationPlanId = planId,
+            AgentName = _agent.Name,
+            CorrelationId = correlationId,
+            InputJson = inputJson,
+            ToolCallsJson = "[]",
+            RawOutput = error,
+            Success = false,
+            Error = error,
+            DurationMs = (int)duration.TotalMilliseconds
+        };
 
     /// <summary>
     /// Runs the deterministic validator against the cycle's own stored dates — the variety's

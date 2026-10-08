@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../../../core/api/api_config.dart';
 import '../../../services/auth_service.dart';
 import '../models/crop_analysis_models.dart';
 
@@ -17,7 +18,7 @@ class CropAnalysisService {
     String focusArea = 'All',
   }) async {
     final token = AuthService.getAccessToken();
-    final url = Uri.parse('${AuthService.apiBaseUrl}/cycles/$cycleId/analysis');
+    final url = ApiConfig.buildUri(AuthService.apiBaseUrl, '/cycles/$cycleId/analysis');
 
     try {
       final response = await http
@@ -52,7 +53,7 @@ class CropAnalysisService {
   /// Fetch the latest recorded analysis
   static Future<CropActivityAnalysisOutput> getLatestAnalysis(int cycleId) async {
     final token = AuthService.getAccessToken();
-    final url = Uri.parse('${AuthService.apiBaseUrl}/cycles/$cycleId/analysis/latest');
+    final url = ApiConfig.buildUri(AuthService.apiBaseUrl, '/cycles/$cycleId/analysis/latest');
 
     try {
       final response = await http.get(
@@ -84,7 +85,7 @@ class CropAnalysisService {
     List<AiChatMessage>? history,
   }) async {
     final token = AuthService.getAccessToken();
-    final url = Uri.parse('${AuthService.apiBaseUrl}/cycles/$cycleId/ai-chat');
+    final url = ApiConfig.buildUri(AuthService.apiBaseUrl, '/cycles/$cycleId/ai-chat');
 
     try {
       final response = await http
@@ -123,7 +124,7 @@ class CropAnalysisService {
     String? payloadJson,
   }) async {
     final token = AuthService.getAccessToken();
-    final url = Uri.parse('${AuthService.apiBaseUrl}/cycles/$cycleId/recommendations/review');
+    final url = ApiConfig.buildUri(AuthService.apiBaseUrl, '/cycles/$cycleId/recommendations/review');
 
     try {
       final response = await http

@@ -1,0 +1,182 @@
+# PaddyWise-AI continuous integration
+#
+# BLOCKING jobs (these decide whether a pull request is green):
+#   backend  – Release build of the API and every backend test (all components).
+#   web      – the web suites that pass today, lint on those folders, and the full
+#              type-checked production build (`npm run build` = tsc -b + vite build).
+#   mobile   – `flutter analyze` and the full `flutter test`.
+#
+# REPORT-ONLY job (continue-on-error), so known failures stay visible without blocking:
+#   web-full – `npm run lint` on the whole app and the full Vitest run.
+#              Known causes: 40 lint errors in crop-resource / profile / AuthContext /
+#              OfficerApprovalPage / src/test/setup.ts, and 4 teammate test files written
+#              against an older AuthContext (ProtectedRoute, AdminOfficerLogin,
+#              LoginSelectionPage, OfficerApprovalPage — 18 failing tests).
+#              When those are fixed: fold these two steps into the `web` job (replace the
+#              scoped vitest/eslint steps with `npx vitest run` and `npm run lint`) and delete
+#              this job.
+#
+# Skipped tests (known bugs documented in paddywise-backend/Docs/*/test-cases.md) never fail CI.
+#
+# The deploy branch has its own workflows (android-release.yml, deploy_paddywise-backend.yml);
+# they run only on pushes to `deploy` and don't overlap with this one.
+
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # ---------------------------------------------------------------- blocking
+
+  backend:
+    name: Backend — build + all tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore paddywise-backend.Tests/PaddyWise.Backend.Tests.csproj
+
+      # No secrets are needed: the test factories supply placeholder Jwt / connection-string
+      # settings, swap Postgres for an InMemory database, and every LLM call is mocked.
+      - name: Build (API + tests)
+        run: dotnet build paddywise-backend.Tests/PaddyWise.Backend.Tests.csproj -c Release --no-restore
+
+      - name: Test (every component)
+        run: >
+          dotnet test paddywise-backend.Tests/PaddyWise.Backend.Tests.csproj
+          -c Release --no-build
+          --logger "trx;LogFileName=backend-tests.trx"
+          --results-directory TestResults
+          --collect "XPlat Code Coverage"
+
+      - name: Upload test results and coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-results
+          path: TestResults
+          if-no-files-found: ignore
+
+  web:
+    name: Web — passing suites + lint + type-checked build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: paddywise-web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: paddywise-web/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      # The suites that pass today: Components 1, 2 and 4 (including reviewsApi.test.ts).
+      # Widen to a plain `npx vitest run` once the teammates' auth/approval tests are fixed.
+      - name: Test (component suites)
+        run: >
+          npx vitest run
+          src/features/field-cultivation
+          src/features/crop-resource
+          src/features/reporting-approval
+
+      - name: Lint (component test folders + field-cultivation)
+        run: >
+          npx eslint
+          src/features/field-cultivation
+          src/features/crop-resource/__tests__
+          src/features/reporting-approval/__tests__
+
+      # Full type-check (tsc -b) + production bundle (vite build).
+      - name: Build (type-checked)
+        run: npm run build
+
+  mobile:
+    name: Mobile — analyze + all tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: paddywise_mobile
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.47.3
+          cache: true
+
+      - name: Install
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Test (all files)
+        run: flutter test
+
+  # ---------------------------------------------------------------- report-only
+
+  web-full:
+    name: Web — full lint + all tests (report only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    continue-on-error: true # known failures — see the header of this file
+    defaults:
+      run:
+        working-directory: paddywise-web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: paddywise-web/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Lint (whole app)
+        id: lint
+        continue-on-error: true
+        run: npm run lint
+
+      - name: Test (all suites)
+        id: test
+        continue-on-error: true
+        run: npx vitest run
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "### Web — full checks (report only)"
+            echo "| Check | Result |"
+            echo "|---|---|"
+            echo "| npm run lint | ${{ steps.lint.outcome }} |"
+            echo "| npx vitest run (all) | ${{ steps.test.outcome }} |"
+          } >> "$GITHUB_STEP_SUMMARY"

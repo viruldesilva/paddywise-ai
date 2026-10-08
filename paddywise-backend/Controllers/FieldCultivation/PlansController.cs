@@ -1,10 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PaddyWise.Api.DTOs.FieldCultivation;
-using PaddyWise.Api.Entities.FieldCultivation;
 using PaddyWise.Api.Entities.Shared;
 using PaddyWise.Api.Services.FieldCultivation;
-using PaddyWise.Api.Services.ReportingApproval.Agents;
 using System.Security.Claims;
 
 namespace PaddyWise.Api.Controllers.FieldCultivation;
@@ -14,19 +12,21 @@ namespace PaddyWise.Api.Controllers.FieldCultivation;
 public class PlansController : ControllerBase
 {
     private readonly ICultivationPlanService _planService;
-    private readonly IValidationAgentService _validationAgentService;
+    private readonly IPlanGenerationQueue _planQueue;
 
     public PlansController(
         ICultivationPlanService planService,
-        IValidationAgentService validationAgentService)
+        IPlanGenerationQueue planQueue)
     {
         _planService = planService;
-        _validationAgentService = validationAgentService;
+        _planQueue = planQueue;
     }
 
     /// <summary>
     /// Ask the Cultivation Planning Agent for a plan. Lives here rather than on
-    /// CyclesController because everything it creates is a plan.
+    /// CyclesController because everything it creates is a plan. Generation takes minutes,
+    /// so this saves a Draft, queues it, and answers 202 at once; the client polls
+    /// GET /api/plans/{id} until the status is no longer Draft.
     /// </summary>
     [Authorize(Roles = "Farmer")]
     [HttpPost("/api/cycles/{cycleId:int}/plans")]
@@ -42,18 +42,9 @@ public class PlansController : ControllerBase
             if (result == null)
                 return NotFound(new { message = "Cultivation cycle not found." });
 
-            // Component 4's second pass only checks shape and dosages, and it sets the status
-            // either way, so run it only on a plan CultivationPlanValidator passed: it may
-            // fail such a plan, but must never promote one this component already failed.
-            if (result.Status != nameof(PlanStatus.PendingOfficerApproval))
-                return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
+            await _planQueue.EnqueueAsync(result.Id);
 
-            await _validationAgentService.ValidateCultivationPlanAsync(result.Id);
-
-            // The second pass can change status, errors and comment, so return the stored plan.
-            var validated = await _planService.GetByIdAsync(result.Id, farmerId.Value, UserRole.Farmer) ?? result;
-
-            return CreatedAtAction(nameof(GetById), new { id = validated.Id }, validated);
+            return AcceptedAtAction(nameof(GetById), new { id = result.Id }, result);
         }
         catch (InvalidOperationException ex)
         {

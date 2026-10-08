@@ -217,6 +217,7 @@ builder.Services.AddKeyedScoped<ILlmClient, GeminiLlmClient>(AgentNames.PestDise
 builder.Services.AddScoped<
     IAgent<PlanAgentInput, CultivationPlanOutput>,
     CultivationPlanningAgent>();
+builder.Services.AddCultivationPlanGeneration();
 
 // Component 2 (Crop Resource & Activity Analysis)
 builder.Services.AddScoped<

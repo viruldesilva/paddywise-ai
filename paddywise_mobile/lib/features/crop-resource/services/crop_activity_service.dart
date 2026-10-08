@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../../../core/api/api_config.dart';
 import '../../../services/auth_service.dart';
 import '../models/crop_activity_models.dart';
 
@@ -106,7 +107,7 @@ class CropActivityService {
   /// Fetch a single cultivation cycle by ID
   static Future<CultivationCycleSummary> getCycleById(int id) async {
     final token = AuthService.getAccessToken();
-    final url = Uri.parse('${AuthService.apiBaseUrl}/cycles/$id');
+    final url = ApiConfig.buildUri(AuthService.apiBaseUrl, '/cycles/$id');
 
     try {
       final response = await http.get(
@@ -134,7 +135,7 @@ class CropActivityService {
   /// Fetch all cultivation cycles available to the current user
   static Future<List<CultivationCycleSummary>> getCycles() async {
     final token = AuthService.getAccessToken();
-    final url = Uri.parse('${AuthService.apiBaseUrl}/cycles');
+    final url = ApiConfig.buildUri(AuthService.apiBaseUrl, '/cycles');
 
     try {
       final response = await http.get(
@@ -187,9 +188,7 @@ class CropActivityService {
     if (cycleId != null) queryParams['cycleId'] = cycleId.toString();
     if (activityType != null && activityType != 'All') queryParams['activityType'] = activityType;
 
-    final uri = Uri.parse('${AuthService.apiBaseUrl}/activities').replace(
-      queryParameters: queryParams.isNotEmpty ? queryParams : null,
-    );
+    final uri = ApiConfig.buildUri(AuthService.apiBaseUrl, '/activities', queryParams);
 
     try {
       final response = await http.get(
@@ -228,7 +227,7 @@ class CropActivityService {
   /// Fetch activities specifically recorded for one cultivation cycle
   static Future<List<CropActivityDto>> getActivitiesForCycle(int cycleId) async {
     final token = AuthService.getAccessToken();
-    final url = Uri.parse('${AuthService.apiBaseUrl}/cycles/$cycleId/activities');
+    final url = ApiConfig.buildUri(AuthService.apiBaseUrl, '/cycles/$cycleId/activities');
 
     try {
       final response = await http.get(
@@ -259,7 +258,7 @@ class CropActivityService {
   /// Delete a recorded activity by ID
   static Future<void> deleteActivity(int activityId) async {
     final token = AuthService.getAccessToken();
-    final url = Uri.parse('${AuthService.apiBaseUrl}/activities/$activityId');
+    final url = ApiConfig.buildUri(AuthService.apiBaseUrl, '/activities/$activityId');
 
     try {
       final response = await http.delete(
@@ -294,7 +293,7 @@ class CropActivityService {
     required CreateCropActivityRequest request,
   }) async {
     final token = AuthService.getAccessToken();
-    final url = Uri.parse('${AuthService.apiBaseUrl}/cycles/$cycleId/activities');
+    final url = ApiConfig.buildUri(AuthService.apiBaseUrl, '/cycles/$cycleId/activities');
 
     http.Response? response;
     bool networkError = false;
@@ -381,7 +380,7 @@ class CropActivityService {
     required UpdateCropActivityRequest request,
   }) async {
     final token = AuthService.getAccessToken();
-    final url = Uri.parse('${AuthService.apiBaseUrl}/activities/$activityId');
+    final url = ApiConfig.buildUri(AuthService.apiBaseUrl, '/activities/$activityId');
 
     http.Response? response;
     bool networkError = false;

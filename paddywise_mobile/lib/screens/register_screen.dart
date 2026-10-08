@@ -321,18 +321,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             value: UserRole.farmer,
                             child: Text('🌾 Farmer'),
                           ),
-                          DropdownMenuItem(
-                            value: UserRole.extensionOfficer,
-                            child: Text('🛡️ Extension Officer'),
-                          ),
-                          DropdownMenuItem(
-                            value: UserRole.buyer,
-                            child: Text('🏪 Buyer / Miller'),
-                          ),
-                          DropdownMenuItem(
-                            value: UserRole.admin,
-                            child: Text('⚙️ System Admin'),
-                          ),
+              
                         ],
                         onChanged: (role) {
                           if (role != null) {

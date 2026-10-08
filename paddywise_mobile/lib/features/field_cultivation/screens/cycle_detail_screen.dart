@@ -100,8 +100,10 @@ class _CycleDetailScreenState extends State<CycleDetailScreen> {
         await context.push<CultivationPlan>('/cycles/${widget.cycleId}/plans/new', extra: _cycle);
     if (plan != null && mounted) {
       await context.push('/plans/${plan.id}');
-      if (mounted) _load();
     }
+    // Also after leaving the request screen early: the plan is still being
+    // generated and should show up as "Being prepared".
+    if (mounted) _load();
   }
 
   Future<void> _openPlan(CultivationPlan plan) async {
