@@ -80,3 +80,5 @@ database/local-dumps/
 
 **/TestResults/
 **/CoverageReport/
+
+paddywise-backend.Tests/CoverageReport-C3/
