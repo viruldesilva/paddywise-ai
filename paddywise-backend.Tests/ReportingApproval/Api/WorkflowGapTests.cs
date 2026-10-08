@@ -96,8 +96,8 @@ public class WorkflowGapTests
         });
 
         using var farmer = factory.CreateClientAs(1, "Farmer");
-        var body = await ApiAssert.JsonAsync(
-            await farmer.PostAsJsonAsync($"/api/cycles/{cycle.Id}/plans", new { objective = "Good yield." }), HttpStatusCode.Created);
+        var body = await PlanPolling.AcceptedThenGeneratedAsync(
+            farmer, await farmer.PostAsJsonAsync($"/api/cycles/{cycle.Id}/plans", new { objective = "Good yield." }));
 
         Assert.Equal("ValidationFailed", body.GetProperty("status").GetString());
         Assert.Contains("Plan summary contains prohibited numeric dosage: '50 kg'",

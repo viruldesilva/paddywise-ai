@@ -127,7 +127,7 @@ void main() {
         expect(CultivationPlan.fromJson(planJson(status: status.wire)).status, status);
       }
       expect(PlanStatus.values.where((s) => s.blocksNewRequest),
-          [PlanStatus.pendingOfficerApproval, PlanStatus.approved]);
+          [PlanStatus.draft, PlanStatus.pendingOfficerApproval, PlanStatus.approved]);
       expect(PlanStatus.values.where((s) => s.invitesNewRequest), [
         PlanStatus.validationFailed,
         PlanStatus.rejected,

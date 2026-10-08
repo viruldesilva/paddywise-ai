@@ -7,6 +7,7 @@ import '../../../theme/app_theme.dart';
 import '../models/cycle_models.dart';
 import '../models/plan_models.dart';
 import '../services/field_cultivation_service.dart';
+import '../services/plan_poller.dart';
 import '../widgets/fc_common.dart';
 
 /// Starting points so the farmer does not face an empty box.
@@ -16,17 +17,21 @@ const List<String> _exampleObjectives = [
   'Protect the crop from brown planthopper, which hit my field last season.',
 ];
 
-/// What the agent works through while the request is in flight. This is a
+/// What the agent works through while the plan is generated. This is a
 /// description, not progress: it advances on a timer and holds on the last
-/// line until the real request settles.
+/// line until the plan is ready.
 const List<String> _progressMessages = [
+  'Waiting for the planning assistant…',
   'Reading your field and season…',
   'Lining tasks up with your growth stages…',
   'Checking the plan against safety rules…',
-  'Almost there — finishing the checks…',
+  'Still working — finishing the checks…',
 ];
 
-/// Ask the Cultivation Planning Agent for a plan. Pops with the created plan.
+/// Ask the Cultivation Planning Agent for a plan. The backend saves a Draft and
+/// generates it in the background, so this polls until the plan is ready and
+/// then pops with it. Leaving early is fine: the plan keeps generating and
+/// shows on the season as "Being prepared".
 class RequestPlanScreen extends StatefulWidget {
   final int cycleId;
   final CultivationCycle? cycle;
@@ -39,14 +44,20 @@ class RequestPlanScreen extends StatefulWidget {
 
 class _RequestPlanScreenState extends State<RequestPlanScreen> {
   final _objectiveController = TextEditingController();
+  /// True while the POST itself is in flight (a few seconds at most).
   bool _isSubmitting = false;
+
+  /// True once the Draft exists and the plan is being generated.
+  bool _isGenerating = false;
   int _progressIndex = 0;
   Timer? _progressTimer;
+  PlanPoller? _poller;
   String? _errorMessage;
 
   @override
   void dispose() {
     _progressTimer?.cancel();
+    _poller?.cancel();
     _objectiveController.dispose();
     super.dispose();
   }
@@ -70,28 +81,58 @@ class _RequestPlanScreenState extends State<RequestPlanScreen> {
       }
     });
 
+    final CultivationPlan draft;
     try {
-      final plan = await FieldCultivationService.requestPlan(widget.cycleId, objective);
-      if (mounted) context.pop(plan);
+      draft = await FieldCultivationService.requestPlan(widget.cycleId, objective);
     } catch (e) {
+      _progressTimer?.cancel();
       if (!mounted) return;
       setState(() {
         _errorMessage = e.toString();
         _isSubmitting = false;
       });
-    } finally {
-      _progressTimer?.cancel();
+      return;
     }
+    if (!mounted) return;
+
+    if (draft.status != PlanStatus.draft) {
+      _finish(draft);
+      return;
+    }
+
+    setState(() {
+      _isSubmitting = false;
+      _isGenerating = true;
+    });
+    _poller = PlanPoller(
+      planId: draft.id,
+      onUpdate: (plan) {
+        if (mounted && plan.status != PlanStatus.draft) _finish(plan);
+      },
+      // The plan exists either way; its detail screen keeps checking on it.
+      onError: (_, {required timedOut}) {
+        if (mounted) _finish(draft);
+      },
+    )..start();
+  }
+
+  void _finish(CultivationPlan plan) {
+    _progressTimer?.cancel();
+    _poller?.cancel();
+    context.pop(plan);
   }
 
   @override
   Widget build(BuildContext context) {
     return PopScope(
+      // Only the short POST holds the screen; once generating, leaving is safe.
       canPop: !_isSubmitting,
       child: Scaffold(
         backgroundColor: AppColors.cream,
         appBar: fcFormAppBar('AI cultivation plan'),
-        body: SafeArea(child: _isSubmitting ? _buildWaiting() : _buildForm()),
+        body: SafeArea(
+          child: _isSubmitting || _isGenerating ? _buildWaiting() : _buildForm(),
+        ),
       ),
     );
   }
@@ -124,10 +165,14 @@ class _RequestPlanScreenState extends State<RequestPlanScreen> {
               ),
             ),
             const SizedBox(height: 10),
-            const Text(
-              'This usually takes under a minute. Please keep the app open.',
+            Text(
+              _isGenerating
+                  ? 'Plans are prepared one at a time, so yours may be waiting behind other '
+                      'farmers\' plans. This can take several minutes. You can leave this '
+                      'screen — your plan will appear on your season when it is ready.'
+                  : 'Sending your request…',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: AppColors.inkSoft),
+              style: const TextStyle(fontSize: 13, color: AppColors.inkSoft, height: 1.4),
             ),
           ],
         ),

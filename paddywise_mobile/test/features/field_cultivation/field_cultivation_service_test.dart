@@ -3,12 +3,14 @@ import 'package:http/http.dart' as http;
 import 'package:paddywise_mobile/core/api/api_client.dart';
 import 'package:paddywise_mobile/features/field_cultivation/models/cycle_models.dart';
 import 'package:paddywise_mobile/features/field_cultivation/models/field_models.dart';
+import 'package:paddywise_mobile/features/field_cultivation/models/plan_models.dart';
 import 'package:paddywise_mobile/features/field_cultivation/services/field_cultivation_service.dart';
 
 import 'fc_test_harness.dart';
 
 /// FieldCultivationService through the real ApiClient, against a fake backend.
-/// Component 1 has no polling: a plan request is one POST with a long timeout.
+/// A plan request is one short POST that returns a Draft; PlanPoller (see
+/// plan_poller_test.dart) then follows it until it is generated.
 void main() {
   group('reads', () {
     test('getDivisions, getVarieties and getMyFields parse lists', () async {
@@ -127,16 +129,17 @@ void main() {
       expect(calls.single.body, {'status': 'Abandoned'});
     });
 
-    test('requestPlan posts the objective once and parses the plan', () async {
-      final calls = await withFakeBackend((_) => jsonResponse(planJson(), 201), () async {
+    test('requestPlan posts the objective once and parses the Draft it gets back', () async {
+      final calls = await withFakeBackend((_) => jsonResponse(planJson(status: 'Draft'), 202), () async {
         final plan = await FieldCultivationService.requestPlan(12, 'Good yield.');
-        expect(plan.steps, hasLength(1));
+        expect(plan.status, PlanStatus.draft);
       });
 
       expect(calls, hasLength(1));
       expect(calls.single.path, '/cycles/12/plans');
       expect(calls.single.body, {'objective': 'Good yield.'});
-      expect(FieldCultivationService.planRequestTimeout, const Duration(seconds: 120));
+      expect(FieldCultivationService.planPollInterval, const Duration(seconds: 4));
+      expect(FieldCultivationService.planPollLimit, const Duration(minutes: 20));
     });
   });
 

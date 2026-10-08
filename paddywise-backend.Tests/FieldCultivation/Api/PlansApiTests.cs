@@ -38,7 +38,7 @@ public class PlansApiTests
     // ---------------------------------------------------------------- request a plan
 
     [Fact]
-    public async Task API15a_OwnerRequestsAPlan_Returns201PendingOfficerApproval_WithTheAgentRun()
+    public async Task API15a_OwnerRequestsAPlan_Returns202Draft_ThenBecomesPendingOfficerApproval_WithTheAgentRun()
     {
         using var factory = new FieldCultivationApiFactory();
         var cycle = await SeedCycleAsync(factory);
@@ -47,7 +47,7 @@ public class PlansApiTests
         using var farmer = factory.CreateClientAs(1, Farmer);
         var response = await farmer.PostAsJsonAsync($"/api/cycles/{cycle.Id}/plans", new { objective = "Plan the rest of the season." });
 
-        var body = await ApiAssert.JsonAsync(response, HttpStatusCode.Created);
+        var body = await PlanPolling.AcceptedThenGeneratedAsync(farmer, response);
         Assert.Equal("PendingOfficerApproval", body.GetProperty("status").GetString());
         Assert.Equal(3, body.GetProperty("plan").GetProperty("steps").GetArrayLength());
         var run = Assert.Single(body.GetProperty("agentRuns").EnumerateArray(),
@@ -77,17 +77,23 @@ public class PlansApiTests
     }
 
     [Fact]
-    public async Task API15c_ASecondRequestWhileOneIsPending_Returns400WithMessage()
+    public async Task API15c_ASecondRequestWhileOneIsGeneratingOrPending_Returns400WithMessage()
     {
         using var factory = new FieldCultivationApiFactory();
         var cycle = await SeedCycleAsync(factory);
         UseValidModel(factory, cycle);
         using var farmer = factory.CreateClientAs(1, Farmer);
-        await farmer.PostAsJsonAsync($"/api/cycles/{cycle.Id}/plans", new { objective = "First." });
+        var first = await farmer.PostAsJsonAsync($"/api/cycles/{cycle.Id}/plans", new { objective = "First." });
 
-        var second = await farmer.PostAsJsonAsync($"/api/cycles/{cycle.Id}/plans", new { objective = "Second." });
+        // Straight away, while the first may still be a Draft...
+        var whileGenerating = await farmer.PostAsJsonAsync($"/api/cycles/{cycle.Id}/plans", new { objective = "Second." });
+        Assert.Contains("being generated, awaiting officer approval",
+            await ApiAssert.MessageAsync(whileGenerating, HttpStatusCode.BadRequest));
 
-        Assert.Contains("awaiting officer approval", await ApiAssert.MessageAsync(second, HttpStatusCode.BadRequest));
+        // ...and again once it is waiting for the officer.
+        await PlanPolling.AcceptedThenGeneratedAsync(farmer, first);
+        var whilePending = await farmer.PostAsJsonAsync($"/api/cycles/{cycle.Id}/plans", new { objective = "Third." });
+        Assert.Contains("awaiting officer approval", await ApiAssert.MessageAsync(whilePending, HttpStatusCode.BadRequest));
         Assert.Single(factory.CapturedCalls);
     }
 
@@ -105,7 +111,7 @@ public class PlansApiTests
         var response = await farmer.PostAsJsonAsync($"/api/cycles/{cycle.Id}/plans", new { objective = new string('o', length) });
 
         if (expectedValid)
-            Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+            await PlanPolling.AcceptedThenGeneratedAsync(farmer, response);
         else
             await ApiAssert.ModelErrorsAsync(response);
     }
@@ -118,8 +124,8 @@ public class PlansApiTests
         UseValidModel(factory, cycle);
         using var farmer = factory.CreateClientAs(1, Farmer);
 
-        var body = await ApiAssert.JsonAsync(
-            await farmer.PostAsJsonAsync($"/api/cycles/{cycle.Id}/plans", new { objective = "Plan." }), HttpStatusCode.Created);
+        var body = await PlanPolling.AcceptedThenGeneratedAsync(
+            farmer, await farmer.PostAsJsonAsync($"/api/cycles/{cycle.Id}/plans", new { objective = "Plan." }));
 
         factory.ValidationAgent.Verify(
             v => v.ValidateCultivationPlanAsync(body.GetProperty("id").GetInt32(), It.IsAny<CancellationToken>()), Times.Once);
@@ -137,13 +143,38 @@ public class PlansApiTests
         });
         using var farmer = factory.CreateClientAs(1, Farmer);
 
-        var body = await ApiAssert.JsonAsync(
-            await farmer.PostAsJsonAsync($"/api/cycles/{cycle.Id}/plans", new { objective = "Plan." }), HttpStatusCode.Created);
+        var body = await PlanPolling.AcceptedThenGeneratedAsync(
+            farmer, await farmer.PostAsJsonAsync($"/api/cycles/{cycle.Id}/plans", new { objective = "Plan." }));
 
         Assert.Equal("ValidationFailed", body.GetProperty("status").GetString());
         Assert.Contains("dosage decision out of scope", body.GetProperty("validationErrors")[0].GetString());
         factory.ValidationAgent.Verify(
             v => v.ValidateCultivationPlanAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task API17c_AtStartup_ARecentDraftIsGeneratedAgain_AndAStaleDraftIsFailed()
+    {
+        using var factory = new FieldCultivationApiFactory();
+        CultivationCycle cycle;
+        CultivationPlan recent, stale;
+        // Seeded before the host starts, as if left over from a restart mid-run.
+        await using (var db = factory.CreateDbContext())
+        {
+            cycle = await FcTestDb.SeedFarmerCycleAsync(db, 1, "Farmer 1");
+            recent = await FcTestDb.SeedPlanAsync(db, cycle, 1, PlanStatus.Draft, DateTime.UtcNow.AddMinutes(-5));
+            stale = await FcTestDb.SeedPlanAsync(db, cycle, 1, PlanStatus.Draft, DateTime.UtcNow.AddHours(-2));
+        }
+        UseValidModel(factory, cycle);
+
+        using var farmer = factory.CreateClientAs(1, Farmer);
+
+        var regenerated = await PlanPolling.WaitUntilGeneratedAsync(farmer, recent.Id);
+        Assert.Equal("PendingOfficerApproval", regenerated.GetProperty("status").GetString());
+        var failed = await PlanPolling.WaitUntilGeneratedAsync(farmer, stale.Id);
+        Assert.Equal("ValidationFailed", failed.GetProperty("status").GetString());
+        Assert.Contains("interrupted", failed.GetProperty("validationErrors")[0].GetString());
+        Assert.False(Assert.Single(failed.GetProperty("agentRuns").EnumerateArray()).GetProperty("success").GetBoolean());
     }
 
     // ---------------------------------------------------------------- officer queue
@@ -304,8 +335,8 @@ public class PlansApiTests
         var cycle = await SeedCycleAsync(factory, farmerId: 2);
         UseValidModel(factory, cycle);
         using var owner = factory.CreateClientAs(2, Farmer);
-        var created = await ApiAssert.JsonAsync(
-            await owner.PostAsJsonAsync($"/api/cycles/{cycle.Id}/plans", new { objective = "Plan." }), HttpStatusCode.Created);
+        var created = await PlanPolling.AcceptedThenGeneratedAsync(
+            owner, await owner.PostAsJsonAsync($"/api/cycles/{cycle.Id}/plans", new { objective = "Plan." }));
         var planId = created.GetProperty("id").GetInt32();
 
         using var farmerA = factory.CreateClientAs(1, Farmer);

@@ -249,6 +249,57 @@ void main() {
       expect(popped, isA<CultivationPlan>());
     });
 
+    testWidgets('a Draft is polled until it is generated, then the screen pops with it', (tester) async {
+      Object? popped;
+      var polls = 0;
+      final calls = await withFakeBackend((call) {
+        if (call.method == 'POST') return jsonResponse(planJson(status: 'Draft'), 202);
+        polls++;
+        return jsonResponse(planJson(status: polls < 2 ? 'Draft' : 'PendingOfficerApproval'));
+      }, () async {
+        await pumpPushed(tester, const RequestPlanScreen(cycleId: 12), onPopped: (r) => popped = r);
+        await tester.enterText(find.byType(TextField), 'A good yield.');
+        await tester.tap(find.text('Generate my plan'));
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.textContaining('waiting behind other'), findsOneWidget);
+        expect(popped, isNull);
+
+        await tester.pump(const Duration(seconds: 4)); // first poll: still Draft
+        await tester.pump();
+        expect(popped, isNull);
+        await tester.pump(const Duration(seconds: 4)); // second poll: generated
+        await tester.pumpAndSettle();
+      });
+
+      expect(calls.map((c) => '${c.method} ${c.path}'),
+          ['POST /cycles/12/plans', 'GET /plans/31', 'GET /plans/31']);
+      expect((popped as CultivationPlan).status, PlanStatus.pendingOfficerApproval);
+    });
+
+    testWidgets('leaving while the plan is generated stops polling', (tester) async {
+      final calls = await withFakeBackend((call) => call.method == 'POST'
+          ? jsonResponse(planJson(status: 'Draft'), 202)
+          : jsonResponse(planJson(status: 'Draft')), () async {
+        await pumpPushed(tester, const RequestPlanScreen(cycleId: 12));
+        await tester.enterText(find.byType(TextField), 'A good yield.');
+        await tester.tap(find.text('Generate my plan'));
+        await tester.pump();
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 4));
+        await tester.pump();
+
+        await tester.binding.handlePopRoute(); // the system back button
+        await tester.pumpAndSettle();
+        expect(find.byType(RequestPlanScreen), findsNothing);
+
+        await tester.pump(const Duration(seconds: 30));
+      });
+
+      expect(calls.where((c) => c.method == 'GET'), hasLength(1));
+    });
+
     testWidgets('a backend refusal is shown and the form comes back', (tester) async {
       const message = 'This cycle already has a plan awaiting officer approval or already approved.';
       await withFakeBackend((_) => jsonResponse({'message': message}, 400), () async {

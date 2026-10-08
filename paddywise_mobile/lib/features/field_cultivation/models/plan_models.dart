@@ -28,8 +28,10 @@ enum PlanStatus {
   static PlanStatus fromString(String? value) =>
       values.firstWhere((s) => s.wire == value, orElse: () => draft);
 
-  /// The backend refuses a new request while a plan is pending or approved.
-  bool get blocksNewRequest => this == pendingOfficerApproval || this == approved;
+  /// The backend refuses a new request while a plan is being generated,
+  /// pending or approved.
+  bool get blocksNewRequest =>
+      this == draft || this == pendingOfficerApproval || this == approved;
 
   /// The farmer is expected to ask again after these outcomes.
   bool get invitesNewRequest =>

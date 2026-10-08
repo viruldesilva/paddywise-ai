@@ -5,6 +5,7 @@ import '../../../theme/app_theme.dart';
 import '../models/cycle_models.dart';
 import '../models/plan_models.dart';
 import '../services/field_cultivation_service.dart';
+import '../services/plan_poller.dart';
 import '../widgets/fc_common.dart';
 import '../widgets/status_badges.dart';
 
@@ -23,10 +24,20 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
   CultivationPlan? _plan;
   String? _errorMessage;
 
+  /// Set while the plan is still being generated (Draft); see [_watchIfGenerating].
+  PlanPoller? _poller;
+  String? _pollMessage;
+
   @override
   void initState() {
     super.initState();
     _load();
+  }
+
+  @override
+  void dispose() {
+    _poller?.cancel();
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -37,10 +48,28 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
         _plan = plan;
         _errorMessage = null;
       });
+      _watchIfGenerating(plan);
     } catch (e) {
       if (!mounted) return;
       setState(() => _errorMessage = e.toString());
     }
+  }
+
+  /// A Draft is still being generated in the background: keep checking until
+  /// it becomes something the farmer can act on.
+  void _watchIfGenerating(CultivationPlan plan) {
+    if (plan.status != PlanStatus.draft || (_poller?.isActive ?? false)) return;
+
+    _pollMessage = null;
+    _poller = PlanPoller(
+      planId: plan.id,
+      onUpdate: (updated) {
+        if (mounted) setState(() => _plan = updated);
+      },
+      onError: (message, {required timedOut}) {
+        if (mounted) setState(() => _pollMessage = message);
+      },
+    )..start();
   }
 
   Future<void> _requestAgain() async {
@@ -103,6 +132,13 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
       ),
       const SizedBox(height: 14),
       _StatusBanner(plan: plan),
+      if (plan.status == PlanStatus.draft) ...[
+        const SizedBox(height: 12),
+        if (_pollMessage != null)
+          FcBanner.notice(message: '$_pollMessage Pull down to check again.')
+        else
+          const _GeneratingRow(),
+      ],
       if (plan.officerComment != null && plan.officerComment!.isNotEmpty) ...[
         const SizedBox(height: 12),
         FcCard(
@@ -227,6 +263,36 @@ class _PlanDetailScreenState extends State<PlanDetailScreen> {
         ),
       ],
     ];
+  }
+}
+
+/// Shown under a Draft while the poller is waiting for the plan.
+class _GeneratingRow extends StatelessWidget {
+  const _GeneratingRow();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: EdgeInsets.only(top: 2),
+          child: SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(color: AppColors.gold, strokeWidth: 2),
+          ),
+        ),
+        SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            'Generating plan… Plans are prepared one at a time, so this one may be '
+            'waiting behind others. This page updates by itself.',
+            style: TextStyle(fontSize: 13, color: AppColors.inkSoft, height: 1.4),
+          ),
+        ),
+      ],
+    );
   }
 }
 

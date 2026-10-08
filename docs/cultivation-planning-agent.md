@@ -48,8 +48,14 @@ at another farmer's data gets nothing back.
 
 ## Error handling
 
-- **Provider failure** (`LlmException`, including 429) — never retried silently. The run is
-  logged as failed and the plan becomes `ValidationFailed` with a farmer-readable message.
+- **Provider failure** (`LlmException` including 429/503, an HttpClient timeout
+  (`TaskCanceledException`), or an unreachable host (`HttpRequestException`)) — never retried
+  silently. The run is logged as failed and the plan becomes `ValidationFailed` with a
+  farmer-readable message.
+- **Server shutdown mid-run** — the interrupted run is logged as failed, but the plan stays
+  `Draft` and is generated again on the next start (see *Background generation*).
+- **Anything else the job throws** — `PlanGenerationWorker` logs it and fails the plan with a
+  generic message, so no plan is left in `Draft` and the worker keeps running.
 - **Unparseable reply** — the raw text is kept in `AgentRunLog.RawOutput` and `Error` so a bad
   parse can be diagnosed; the run is a failure, not a crashed request.
 - **Unknown tool or bad tool arguments** — returned to the model as `{"error": "..."}` so it
@@ -87,8 +93,8 @@ delegation is mapped onto the shared `DelegatedTask` (`TaskType` = the instructi
 
 ## Second validation pass (Component 4)
 
-After `CultivationPlanService.RequestPlanAsync` returns, `PlansController.RequestPlan` calls
-Component 4's `IValidationAgentService.ValidateCultivationPlanAsync`
+At the end of `CultivationPlanService.ProcessPlanAsync`, after the plan's own status is saved,
+the service calls Component 4's `IValidationAgentService.ValidateCultivationPlanAsync`
 (`Services/ReportingApproval/Agents/ValidationAgentService.cs`).
 
 **What it checks:** the plan's shape (steps, assumptions and delegations are present, and no
@@ -101,18 +107,40 @@ writes an LLM-generated explanation into `OfficerComment`.
 already `PendingOfficerApproval`**. It can fail a plan that passed `CultivationPlanValidator`,
 but it can never promote a plan that failed it.
 
-**Response:** the controller re-reads the plan after this pass, so the 201 response shows the
-final stored status, errors and comment.
+**Result:** the pass runs inside the background job, so the plan a client reads once it leaves
+`Draft` already shows the final stored status, errors and comment.
 
 The service must be registered in `Program.cs` (`AddScoped<IValidationAgentService,
-ValidationAgentService>`). Without that registration, every `PlansController` route fails with
-a 500.
+ValidationAgentService>`). Without that registration, `CultivationPlanService` cannot be
+resolved and every `PlansController` route fails with a 500.
+
+## Background generation
+
+A run takes minutes (the agent's tool loop, then the delegated agents, then the second pass),
+so it does not happen inside the HTTP request:
+
+1. `POST /api/cycles/{cycleId}/plans` → `RequestPlanAsync` checks ownership and the blocking
+   rule, saves the plan as **`Draft`** ("being generated"), and the controller puts its id on
+   `IPlanGenerationQueue` (an in-memory `Channel<int>`). The response is **202 Accepted** with
+   the Draft as its body and `Location: /api/plans/{id}`.
+2. `PlanGenerationWorker` (a `BackgroundService`) takes plans off the queue **one at a time**
+   and calls `ProcessPlanAsync` in a fresh DI scope per job, so its `DbContext`, `ILlmClient`
+   and agents are never shared across threads.
+3. The client polls `GET /api/plans/{id}` until the status is no longer `Draft`.
+
+Nothing in the run reads the HTTP request: `PlanAgentInput` and `AgentContext` are rebuilt
+from the stored plan (`Objective`, `RequestedByUserId`), and every tool reads the database.
+
+**Restarts.** The queue does not survive a restart. On startup the worker re-enqueues every
+`Draft` (`ProcessPlanAsync` skips a plan that is no longer `Draft`, so a duplicate is
+harmless), except Drafts older than 30 minutes, which are failed with "Plan generation was
+interrupted" and a failed run log. This assumes a single backend instance.
 
 ## Workflow states
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Draft: farmer requests a plan
+    [*] --> Draft: farmer requests a plan (generated in the background)
     Draft --> ValidationFailed: agent run failed or plan broke a rule
     Draft --> PendingOfficerApproval: plan valid, delegations dispatched
     PendingOfficerApproval --> ValidationFailed: second pass (Component 4) finds a violation
@@ -125,8 +153,9 @@ stateDiagram-v2
     Approved --> [*]
 ```
 
-A cycle may hold only one plan that is `PendingOfficerApproval` or `Approved` at a time, so a
-plan already with an officer is never replaced behind their back. Approval is one database
+A cycle may hold only one plan that is `Draft`, `PendingOfficerApproval` or `Approved` at a
+time, so a second request cannot start a parallel run and a plan already with an officer is
+never replaced behind their back. Approval is one database
 transaction: the plan becomes `Approved` and the cycle moves `Planned` to `Active` together,
 or neither does.
 
@@ -140,8 +169,9 @@ or neither does.
 | GET | `/api/plans/pending?divisionId=` | AgriculturalOfficer |
 | POST | `/api/plans/{id}/review` | AgriculturalOfficer |
 
-The POST can take 20–60 seconds: the agent's tool loop, then the second pass with its optional
-explanation. Clients should allow up to 120 seconds.
+The POST returns at once (202, status `Draft`). Generation can take several minutes, and
+longer if other plans are queued ahead; the mobile app polls every 4 seconds for up to
+20 minutes.
 
 ## Clients
 

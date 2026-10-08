@@ -6,13 +6,30 @@ namespace PaddyWise.Api.Services.FieldCultivation;
 public interface ICultivationPlanService
 {
     /// <summary>
-    /// Runs the Cultivation Planning Agent for one cycle and stores the result. Null means the
-    /// cycle does not exist — the controller turns that into a 404. A cycle belonging to
-    /// someone else throws UnauthorizedAccessException; a cycle that already has a plan awaiting
-    /// or holding approval throws InvalidOperationException. A failed agent run is not an
-    /// exception: it comes back as a plan with Status "ValidationFailed".
+    /// Saves a Draft plan for one cycle and returns it; the agent does not run here — the
+    /// caller enqueues the plan for <see cref="ProcessPlanAsync"/>. Null means the cycle does
+    /// not exist — the controller turns that into a 404. A cycle belonging to someone else
+    /// throws UnauthorizedAccessException; a cycle that already has a plan being generated,
+    /// awaiting or holding approval throws InvalidOperationException.
     /// </summary>
     Task<CultivationPlanResponseDto?> RequestPlanAsync(int farmerId, int cycleId, string objective);
+
+    /// <summary>
+    /// Runs the Cultivation Planning Agent for a Draft plan, validates the result, dispatches
+    /// its delegations and runs Component 4's second pass. Does nothing for a plan that is
+    /// missing or no longer Draft. A failed agent run is not an exception: the plan ends up
+    /// "ValidationFailed" with a readable message, and an AgentRunLog is always written.
+    /// </summary>
+    Task ProcessPlanAsync(int planId, CancellationToken ct);
+
+    /// <summary>Fails a plan that is still Draft with the given message and logs a failed run.</summary>
+    Task MarkFailedAsync(int planId, string message);
+
+    /// <summary>
+    /// Startup recovery: fails every Draft older than <paramref name="staleAfter"/> and returns
+    /// the ids of the remaining Drafts, oldest first, for the caller to re-enqueue.
+    /// </summary>
+    Task<List<int>> RecoverDraftsAsync(TimeSpan staleAfter);
 
     Task<CultivationPlanResponseDto?> GetByIdAsync(int planId, int callerId, UserRole callerRole);
 

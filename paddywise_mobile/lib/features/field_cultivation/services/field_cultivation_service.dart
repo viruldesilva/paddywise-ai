@@ -9,8 +9,13 @@ List<T> _list<T>(dynamic data, T Function(Map<String, dynamic>) parse) =>
 /// Farmer-side calls for Component 1: fields, cultivation cycles and the
 /// Cultivation Planning Agent. Every call throws [ApiException] on failure.
 class FieldCultivationService {
-  /// The planning agent and the validation pass are two LLM round trips.
-  static const Duration planRequestTimeout = Duration(seconds: 120);
+  /// A plan request returns a Draft at once; the backend generates it in the
+  /// background, so the app polls the plan at this interval...
+  static const Duration planPollInterval = Duration(seconds: 4);
+
+  /// ...and stops after this long. Plans are generated one at a time and a run
+  /// can take several minutes, so a plan may also wait behind others.
+  static const Duration planPollLimit = Duration(minutes: 20);
 
   // ---------------------------------------------------------------- lookups
 
@@ -81,11 +86,11 @@ class FieldCultivationService {
 
   // ------------------------------------------------------------------ plans
 
+  /// Returns the new plan as a Draft (202 Accepted); poll it with [PlanPoller].
   static Future<CultivationPlan> requestPlan(int cycleId, String objective) async =>
       CultivationPlan.fromJson(await ApiClient.post(
         '/cycles/$cycleId/plans',
         body: {'objective': objective},
-        timeout: planRequestTimeout,
       ) as Map<String, dynamic>);
 
   static Future<CultivationPlan> getPlan(int id) async => CultivationPlan.fromJson(
