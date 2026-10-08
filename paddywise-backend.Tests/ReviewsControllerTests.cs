@@ -8,6 +8,7 @@ using Xunit;
 
 namespace PaddyWise.Backend.Tests;
 
+[Trait("Component", "ReportingApproval")]
 public class ReviewsControllerTests : IClassFixture<CustomWebApplicationFactory>
 {
     private readonly CustomWebApplicationFactory _factory;

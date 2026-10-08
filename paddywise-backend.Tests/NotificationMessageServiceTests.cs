@@ -10,6 +10,7 @@ using Xunit;
 
 namespace PaddyWise.Backend.Tests;
 
+[Trait("Component", "ReportingApproval")]
 public class NotificationMessageServiceTests
 {
     private static ApplicationDbContext CreateInMemoryDbContext()

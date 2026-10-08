@@ -11,6 +11,7 @@ using Xunit;
 
 namespace PaddyWise.Backend.Tests;
 
+[Trait("Component", "ReportingApproval")]
 public class DatabaseIntegrationTests
 {
     private static ApplicationDbContext CreateInMemoryDbContext()

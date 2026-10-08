@@ -12,6 +12,7 @@ using Xunit;
 
 namespace PaddyWise.Backend.Tests;
 
+[Trait("Component", "ReportingApproval")]
 public class ValidationAgentServiceTests
 {
     private static ApplicationDbContext CreateInMemoryDbContext()

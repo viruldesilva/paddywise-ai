@@ -11,6 +11,7 @@ using PaddyWise.Api.Services.ReportingApproval;
 using Xunit;
 
 namespace PaddyWise.Backend.Tests;
+[Trait("Component", "ReportingApproval")]
 
 public class OfficerDashboardTests
 {

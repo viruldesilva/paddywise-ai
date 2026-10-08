@@ -13,6 +13,7 @@ using Xunit;
 
 namespace PaddyWise.Backend.Tests;
 
+[Trait("Component", "ReportingApproval")]
 public class AgenticAiEvaluationTests
 {
     private static ApplicationDbContext CreateInMemoryDbContext()

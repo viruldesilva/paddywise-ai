@@ -8,6 +8,7 @@ using Xunit;
 
 namespace PaddyWise.Backend.Tests;
 
+[Trait("Component", "ReportingApproval")]
 public class AuthServiceTests
 {
     private readonly IConfiguration _config;
