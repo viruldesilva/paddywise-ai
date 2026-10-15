@@ -16,6 +16,7 @@ export default function AdminLoginPage() {
       visualQuote="Securing our agricultural"
       visualHighlight="governance & operations."
       visualDescription="Centralized administration for user lifecycle, access control, audit verification, and system settings."
+      showRequestAccess={false}
     />
   );
 }

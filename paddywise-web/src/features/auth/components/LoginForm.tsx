@@ -18,6 +18,7 @@ export interface LoginFormProps {
   visualQuote: string;
   visualHighlight: string;
   visualDescription: string;
+  showRequestAccess?: boolean;
 }
 
 export const LoginForm: React.FC<LoginFormProps> = ({
@@ -33,6 +34,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   visualQuote,
   visualHighlight,
   visualDescription,
+  showRequestAccess = expectedRole !== 'Admin',
 }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -234,12 +236,14 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             </Link>
           </div>
 
-          <p className="auth-footer">
-            Don't have an account?{' '}
-            <Link to="/register" className="auth-link">
-              Request access
-            </Link>
-          </p>
+          {showRequestAccess && (
+            <p className="auth-footer">
+              Don't have an account?{' '}
+              <Link to="/register" className="auth-link">
+                Request access
+              </Link>
+            </p>
+          )}
         </div>
       </div>
     </div>
